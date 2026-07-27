@@ -1,69 +1,69 @@
 const products = [
   {
-    id: 100,
-    name: "FLUIDE 100 Blooming",
+    id: 19,
+    name: "FLUIDE 019 Cherry",
     gender: "female",
     label: "Для неё",
     type: "Люкс",
     price: 1990,
-    notes: "Пион · дамасская роза · белый мускус",
-    image: "assets/products/blooming.jpg",
-    color: "#f2e7de"
+    notes: "Кислая вишня · малина · ваниль · сандал",
+    image: "assets/product-line/fragrance-cherry.png",
+    color: "#eadfd5"
   },
   {
-    id: 49,
-    name: "FLUIDE 049 Dark Opium",
-    gender: "female",
-    label: "Для неё",
-    type: "Люкс",
-    price: 1990,
-    notes: "Кофе · жасмин · ваниль · пачули",
-    image: "assets/products/dark-opium.jpg",
-    color: "#e8e4df"
+    id: 6,
+    name: "FLUIDE 006 Hayati",
+    gender: "unisex",
+    label: "Унисекс",
+    type: "Селектив",
+    price: 3490,
+    notes: "Малина · сливки · ваниль · белый мускус",
+    image: "assets/product-line/fragrance-hayati.png",
+    color: "#e9c8c1"
   },
   {
-    id: 16,
-    name: "FLUIDE 016 Aventus",
+    id: 7,
+    name: "FLUIDE 007 Musk Kashmir",
+    gender: "unisex",
+    label: "Унисекс",
+    type: "Селектив",
+    price: 3490,
+    notes: "Белый мускус · белый перец · сандал · гардения",
+    image: "assets/product-line/fragrance-musk-kashmir.png",
+    color: "#dfe5ed"
+  },
+  {
+    id: 50,
+    name: "FLUIDE 050 Black Pepper",
+    gender: "unisex",
+    label: "Унисекс",
+    type: "Селектив",
+    price: 3490,
+    notes: "Чёрный перец · амбра · нероли",
+    image: "assets/product-line/fragrance-black-pepper.png",
+    color: "#d8d6cb"
+  },
+  {
+    id: 185,
+    name: "FLUIDE 185 White",
     gender: "male",
     label: "Для него",
-    type: "Селектив",
-    price: 3490,
-    notes: "Бергамот · ананас · берёза · мускус",
-    image: "assets/products/aventus.jpg",
-    color: "#e4e9e7"
-  },
-  {
-    id: 25,
-    name: "FLUIDE 025 Baccarat",
-    gender: "unisex",
-    label: "Унисекс",
-    type: "Селектив",
-    price: 3490,
-    notes: "Шафран · жасмин · амбра · кедр",
-    image: "assets/products/baccarat.jpg",
-    color: "#eee8dc"
-  },
-  {
-    id: 44,
-    name: "FLUIDE 044 Bright Crystal",
-    gender: "female",
-    label: "Для неё",
     type: "Люкс",
     price: 1990,
-    notes: "Юдзу · пион · лотос · амбра",
-    image: "assets/products/bright-crystal.jpg",
-    color: "#e7edf6"
+    notes: "Грейпфрут · розмарин · кедр · ветивер",
+    image: "assets/product-line/fragrance-white.png",
+    color: "#e6e8e4"
   },
   {
-    id: 26,
-    name: "FLUIDE 026 Ganymede",
+    id: 526,
+    name: "FLUIDE 526 Vanilla Powder",
     gender: "unisex",
     label: "Унисекс",
     type: "Селектив",
     price: 3490,
-    notes: "Мандарин · кожа · фиалка · бессмертник",
-    image: "assets/products/ganymede.jpg",
-    color: "#f1e2e1"
+    notes: "Кокосовая пудра · ваниль · мускус · пало санто",
+    image: "assets/product-line/fragrance-vanilla-powder.png",
+    color: "#eee7da"
   }
 ];
 

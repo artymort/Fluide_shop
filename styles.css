@@ -297,8 +297,8 @@ em {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(5, 10, 25, 0.88) 0%, rgba(5, 10, 25, 0.67) 34%, rgba(5, 10, 25, 0.04) 72%),
-    linear-gradient(0deg, rgba(5, 10, 25, 0.25), transparent 35%);
+    linear-gradient(90deg, rgba(5, 10, 25, 0.72) 0%, rgba(5, 10, 25, 0.34) 39%, rgba(5, 10, 25, 0) 65%),
+    linear-gradient(0deg, rgba(5, 10, 25, 0.24), transparent 35%);
 }
 
 .campaign-copy {
@@ -423,6 +423,46 @@ em {
   letter-spacing: 0.12em;
 }
 
+.campaign-products {
+  position: absolute;
+  right: 2.5%;
+  bottom: 4.5%;
+  z-index: 3;
+  width: 54%;
+  height: 78%;
+  pointer-events: none;
+}
+
+.campaign-product {
+  position: absolute;
+  bottom: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 34px 30px rgba(0, 0, 0, 0.4));
+}
+
+.campaign-product-solid {
+  right: 3%;
+  z-index: 1;
+  width: 27%;
+  height: 57%;
+  transform: rotate(3deg);
+}
+
+.campaign-product-spray {
+  right: 33%;
+  z-index: 3;
+  width: 25%;
+  height: 75%;
+}
+
+.campaign-product-diffuser {
+  right: 53%;
+  z-index: 2;
+  width: 32%;
+  height: 68%;
+  transform: rotate(-2deg);
+}
+
 .collection-nav {
   display: grid;
   grid-template-columns: 1.2fr repeat(3, 0.8fr) 1.4fr;
@@ -462,6 +502,138 @@ em {
 
 .collection-selection span {
   margin-left: 10px;
+}
+
+.product-world {
+  padding: clamp(110px, 10vw, 180px) 0 0;
+}
+
+.product-world-heading {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.36fr) minmax(0, 1.64fr);
+  align-items: start;
+  gap: 45px;
+}
+
+.product-world-heading .eyebrow {
+  padding-top: 14px;
+}
+
+.product-world-heading h2 {
+  max-width: 1160px;
+  margin: 0;
+  font-size: clamp(54px, 5.7vw, 102px);
+  font-weight: 300;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+.product-world-heading h2 em {
+  display: block;
+}
+
+.product-world-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 72px;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+}
+
+.world-card {
+  --world-bg: var(--milk);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: clamp(500px, 42vw, 720px);
+  overflow: hidden;
+  background: var(--world-bg);
+}
+
+.world-card-perfume {
+  --world-bg: #eadfd5;
+}
+
+.world-card-home {
+  --world-bg: #dfe5ed;
+}
+
+.world-card-care {
+  --world-bg: #e9c8c1;
+}
+
+.world-card-object {
+  --world-bg: #d8d6cb;
+}
+
+.world-index {
+  position: absolute;
+  top: 26px;
+  left: 26px;
+  z-index: 2;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+.world-arrow {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  z-index: 2;
+  font-size: 15px;
+  transition: transform 200ms ease;
+}
+
+.world-card:hover .world-arrow {
+  transform: translate(4px, -4px);
+}
+
+.world-image {
+  display: grid;
+  flex: 1;
+  place-items: end center;
+  min-height: 0;
+  padding: 62px 25px 2px;
+}
+
+.world-image img {
+  width: 76%;
+  height: 100%;
+  max-height: 515px;
+  object-fit: contain;
+  filter: drop-shadow(0 26px 22px rgba(67, 72, 101, 0.18));
+  transition: transform 550ms cubic-bezier(0.2, 0.65, 0.2, 1);
+}
+
+.world-card:hover .world-image img {
+  transform: translateY(-7px);
+}
+
+.world-card-object .world-image img {
+  width: 91%;
+}
+
+.world-copy {
+  position: relative;
+  z-index: 2;
+  min-height: 125px;
+  padding: 25px 26px 28px;
+  border-top: 1px solid rgba(67, 72, 101, 0.22);
+}
+
+.world-copy p {
+  margin: 0 0 9px;
+  font-size: 21px;
+  font-weight: 400;
+}
+
+.world-copy span {
+  color: rgba(67, 72, 101, 0.65);
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 .catalog-section {
@@ -585,10 +757,10 @@ em {
 }
 
 .product-media img {
-  width: 78%;
-  height: 78%;
+  width: 76%;
+  height: 84%;
   object-fit: contain;
-  mix-blend-mode: multiply;
+  filter: drop-shadow(0 24px 18px rgba(67, 72, 101, 0.17));
   transition: transform 600ms cubic-bezier(0.2, 0.65, 0.2, 1);
 }
 
@@ -798,33 +970,32 @@ em {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  mix-blend-mode: multiply;
   filter: drop-shadow(0 25px 26px rgba(37, 42, 66, 0.17));
 }
 
 .bottle-one {
   z-index: 2;
-  bottom: 27px;
+  bottom: 22px;
   left: 4%;
-  width: 39%;
-  height: 62%;
+  width: 34%;
+  height: 67%;
   transform: rotate(-5deg);
 }
 
 .bottle-two {
   z-index: 4;
-  right: 28%;
-  bottom: 12px;
-  width: 40%;
-  height: 72%;
+  right: 31%;
+  bottom: 8px;
+  width: 35%;
+  height: 76%;
 }
 
 .bottle-three {
   z-index: 3;
   right: 2%;
-  bottom: 25px;
-  width: 38%;
-  height: 61%;
+  bottom: 19px;
+  width: 34%;
+  height: 68%;
   transform: rotate(5deg);
 }
 
@@ -973,6 +1144,19 @@ em {
     padding-left: 62px;
   }
 
+  .campaign-products {
+    right: 0;
+    width: 55%;
+  }
+
+  .product-world-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .world-card {
+    min-height: 610px;
+  }
+
   .catalog-heading,
   .brand-note {
     column-gap: 50px;
@@ -1077,25 +1261,42 @@ em {
   }
 
   .campaign-image {
-    object-position: 63% center;
+    object-position: 66% center;
   }
 
   .campaign-shade {
     background:
-      linear-gradient(90deg, rgba(5, 10, 25, 0.84), rgba(5, 10, 25, 0.22)),
-      linear-gradient(0deg, rgba(5, 10, 25, 0.45), transparent 60%);
+      linear-gradient(90deg, rgba(5, 10, 25, 0.76), rgba(5, 10, 25, 0.12)),
+      linear-gradient(0deg, rgba(5, 10, 25, 0.72) 0%, rgba(5, 10, 25, 0.12) 75%);
   }
 
   .campaign-copy {
     justify-content: flex-end;
     width: 100%;
     min-height: 650px;
-    padding: 50px 27px 70px;
+    padding: 50px 27px 60px;
   }
 
   .campaign h1 {
     max-width: 530px;
     font-size: clamp(44px, 10vw, 66px);
+  }
+
+  .campaign-copy .eyebrow,
+  .campaign-text {
+    max-width: 54%;
+  }
+
+  .campaign h1 {
+    max-width: 58%;
+  }
+
+  .campaign-products {
+    right: -5%;
+    bottom: 4%;
+    width: 63%;
+    height: 72%;
+    opacity: 0.94;
   }
 
   .campaign-text {
@@ -1123,6 +1324,23 @@ em {
 
   .catalog-section {
     padding: 95px 0 115px;
+  }
+
+  .product-world-heading {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .product-world-heading .eyebrow {
+    padding-top: 0;
+  }
+
+  .product-world-grid {
+    margin-top: 50px;
+  }
+
+  .world-card {
+    min-height: 550px;
   }
 
   .catalog-heading {
@@ -1200,7 +1418,24 @@ em {
     font-size: 43px;
   }
 
+  .campaign-copy .eyebrow {
+    max-width: 100%;
+  }
+
+  .campaign h1 {
+    max-width: 100%;
+    margin-bottom: 255px;
+  }
+
+  .campaign-products {
+    right: -7%;
+    bottom: 4%;
+    width: 103%;
+    height: 53%;
+  }
+
   .campaign-text {
+    display: none;
     margin-top: 22px;
     font-size: 12px;
   }
@@ -1219,6 +1454,22 @@ em {
   .collection-nav a {
     padding-inline: 3px;
     font-size: 10px;
+  }
+
+  .product-world {
+    padding-top: 95px;
+  }
+
+  .product-world-heading h2 {
+    font-size: 47px;
+  }
+
+  .product-world-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .world-card {
+    min-height: 590px;
   }
 
   .catalog-heading h2 {

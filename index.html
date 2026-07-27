@@ -51,7 +51,7 @@
     <nav class="desktop-nav" aria-label="Основная навигация">
       <a href="#catalog">Новинки</a>
       <a href="#catalog">Ароматы</a>
-      <a href="#collections">Коллекции</a>
+      <a href="#product-world">Для дома и тела</a>
       <a href="#selection">Подбор аромата</a>
       <a href="#about">О бренде</a>
     </nav>
@@ -59,7 +59,7 @@
     <div class="mobile-menu" id="mobile-menu">
       <a href="#catalog">Новинки</a>
       <a href="#catalog">Ароматы</a>
-      <a href="#collections">Коллекции</a>
+      <a href="#product-world">Для дома и тела</a>
       <a href="#selection">Подбор аромата</a>
       <a href="#about">О бренде</a>
     </div>
@@ -75,27 +75,89 @@
 
   <main>
     <section class="campaign page-frame" aria-labelledby="campaign-title">
-      <img class="campaign-image" src="assets/media/hero-campaign-v3.png" alt="Флакон аромата FLUIDE в студийной композиции">
+      <img class="campaign-image" src="assets/media/hero-campaign-v4-bg.png" alt="">
       <div class="campaign-shade"></div>
       <div class="campaign-copy">
         <p class="eyebrow">Парфюмерное ателье · Екатеринбург</p>
-        <h1 id="campaign-title">Ароматы, которые становятся <em>частью образа.</em></h1>
-        <p class="campaign-text">Коллекция композиций для тех, кто выбирает не громкость, а точность впечатления.</p>
+        <h1 id="campaign-title">Аромат как часть <em>вашего пространства.</em></h1>
+        <p class="campaign-text">Парфюмерия, уход и ароматы для дома — единая коллекция состояний FLUIDE.</p>
         <div class="campaign-actions">
           <a class="button button-light" href="#catalog">Смотреть ароматы</a>
           <a class="text-link text-link-light" href="#selection">Найти свой аромат <span>↗</span></a>
         </div>
       </div>
-      <p class="campaign-caption"><span>01</span> The olfactory wardrobe</p>
+      <div class="campaign-products" aria-label="Продукция FLUIDE">
+        <img class="campaign-product campaign-product-solid" src="assets/product-line/solid-perfume-matsukita.png" alt="Твёрдый парфюм FLUIDE Matsukita">
+        <img class="campaign-product campaign-product-spray" src="assets/product-line/hair-spray-devils-intrigue.png" alt="Спрей для волос FLUIDE Devils Intrigue">
+        <img class="campaign-product campaign-product-diffuser" src="assets/product-line/diffuser-cashmere.png" alt="Аромадиффузор FLUIDE Cashmere">
+      </div>
+      <p class="campaign-caption"><span>01</span> FLUIDE rituals</p>
     </section>
 
-    <nav class="collection-nav page-frame" id="collections" aria-label="Коллекции ароматов">
+    <nav class="collection-nav page-frame" id="collections" aria-label="Коллекции FLUIDE">
       <span>Коллекции</span>
-      <a href="#catalog" data-collection="female">Для неё <sup>01</sup></a>
-      <a href="#catalog" data-collection="male">Для него <sup>02</sup></a>
-      <a href="#catalog" data-collection="unisex">Унисекс <sup>03</sup></a>
+      <a href="#catalog">Парфюмерия <sup>01</sup></a>
+      <a href="#product-world">Для дома <sup>02</sup></a>
+      <a href="#product-world">Уход <sup>03</sup></a>
       <a class="collection-selection" href="#selection">Подбор по настроению <span>↗</span></a>
     </nav>
+
+    <section class="product-world page-frame" id="product-world" aria-labelledby="product-world-title">
+      <div class="product-world-heading">
+        <p class="eyebrow eyebrow-dark">Вся коллекция FLUIDE</p>
+        <h2 id="product-world-title">Аромат продолжается <em>за пределами флакона.</em></h2>
+      </div>
+
+      <div class="product-world-grid">
+        <a class="world-card world-card-perfume" href="#catalog">
+          <span class="world-index">01</span>
+          <div class="world-image">
+            <img src="assets/product-line/fragrance-matsukita.png" alt="Парфюмерия FLUIDE">
+          </div>
+          <div class="world-copy">
+            <p>Парфюмерия</p>
+            <span>Ароматы для неё, для него и унисекс</span>
+          </div>
+          <span class="world-arrow">↗</span>
+        </a>
+
+        <a class="world-card world-card-home" href="#top">
+          <span class="world-index">02</span>
+          <div class="world-image">
+            <img src="assets/product-line/diffuser-cashmere.png" alt="Аромадиффузоры FLUIDE">
+          </div>
+          <div class="world-copy">
+            <p>Для пространства</p>
+            <span>Диффузоры и парфюм для дома</span>
+          </div>
+          <span class="world-arrow">↗</span>
+        </a>
+
+        <a class="world-card world-card-care" href="#top">
+          <span class="world-index">03</span>
+          <div class="world-image">
+            <img src="assets/product-line/hair-spray-devils-intrigue.png" alt="Парфюмированный уход FLUIDE">
+          </div>
+          <div class="world-copy">
+            <p>Уход и ритуалы</p>
+            <span>Спреи для волос, кремы и мыло</span>
+          </div>
+          <span class="world-arrow">↗</span>
+        </a>
+
+        <a class="world-card world-card-object" href="#top">
+          <span class="world-index">04</span>
+          <div class="world-image">
+            <img src="assets/product-line/candle-ballerina.png" alt="Ароматическая свеча FLUIDE">
+          </div>
+          <div class="world-copy">
+            <p>Свечи и объекты</p>
+            <span>Ароматы как часть интерьера</span>
+          </div>
+          <span class="world-arrow">↗</span>
+        </a>
+      </div>
+    </section>
 
     <section class="catalog-section page-frame" id="catalog" aria-labelledby="catalog-title">
       <div class="catalog-heading">
@@ -131,11 +193,11 @@
         <button class="button button-light selection-button" type="button">Начать подбор</button>
       </div>
       <div class="editorial-visual" aria-hidden="true">
-        <p class="visual-kicker">The FLUIDE selection</p>
+        <p class="visual-kicker">The FLUIDE fragrance selection</p>
         <span class="visual-number">03</span>
-        <div class="bottle bottle-one"><img src="assets/products/blooming.jpg" alt=""></div>
-        <div class="bottle bottle-two"><img src="assets/products/aventus.jpg" alt=""></div>
-        <div class="bottle bottle-three"><img src="assets/products/ganymede.jpg" alt=""></div>
+        <div class="bottle bottle-one"><img src="assets/product-line/fragrance-hayati.png" alt=""></div>
+        <div class="bottle bottle-two"><img src="assets/product-line/fragrance-black-pepper.png" alt=""></div>
+        <div class="bottle bottle-three"><img src="assets/product-line/fragrance-cherry.png" alt=""></div>
         <p class="visual-note">Три характера.<br>Одно точное впечатление.</p>
       </div>
     </section>
