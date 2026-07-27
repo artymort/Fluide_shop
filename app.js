@@ -1,201 +1,228 @@
 const products = [
   {
-    id: "100",
-    title: "Blooming",
+    id: 100,
+    name: "FLUIDE 100 Blooming",
     gender: "female",
-    category: "Люкс",
+    label: "Для неё",
+    type: "Люкс",
     price: 1990,
-    image: "assets/products/blooming.jpg",
     notes: "Пион · дамасская роза · белый мускус",
+    image: "assets/products/blooming.jpg",
+    color: "#f2e7de"
   },
   {
-    id: "049",
-    title: "Dark Opium",
+    id: 49,
+    name: "FLUIDE 049 Dark Opium",
     gender: "female",
-    category: "Люкс",
+    label: "Для неё",
+    type: "Люкс",
     price: 1990,
-    image: "assets/products/dark-opium.jpg",
     notes: "Кофе · жасмин · ваниль · пачули",
+    image: "assets/products/dark-opium.jpg",
+    color: "#e8e4df"
   },
   {
-    id: "016",
-    title: "Aventus",
+    id: 16,
+    name: "FLUIDE 016 Aventus",
     gender: "male",
-    category: "Селектив",
+    label: "Для него",
+    type: "Селектив",
     price: 3490,
-    image: "assets/products/aventus.jpg",
     notes: "Бергамот · ананас · берёза · мускус",
+    image: "assets/products/aventus.jpg",
+    color: "#e4e9e7"
   },
   {
-    id: "025",
-    title: "Baccarat",
+    id: 25,
+    name: "FLUIDE 025 Baccarat",
     gender: "unisex",
-    category: "Селектив",
+    label: "Унисекс",
+    type: "Селектив",
     price: 3490,
-    image: "assets/products/baccarat.jpg",
     notes: "Шафран · жасмин · амбра · кедр",
+    image: "assets/products/baccarat.jpg",
+    color: "#eee8dc"
   },
   {
-    id: "044",
-    title: "Bright Crystal",
+    id: 44,
+    name: "FLUIDE 044 Bright Crystal",
     gender: "female",
-    category: "Люкс",
+    label: "Для неё",
+    type: "Люкс",
     price: 1990,
-    image: "assets/products/bright-crystal.jpg",
     notes: "Юдзу · пион · лотос · амбра",
+    image: "assets/products/bright-crystal.jpg",
+    color: "#e7edf6"
   },
   {
-    id: "026",
-    title: "Ganymede",
+    id: 26,
+    name: "FLUIDE 026 Ganymede",
     gender: "unisex",
-    category: "Селектив",
+    label: "Унисекс",
+    type: "Селектив",
     price: 3490,
-    image: "assets/products/ganymede.jpg",
     notes: "Мандарин · кожа · фиалка · бессмертник",
-  },
+    image: "assets/products/ganymede.jpg",
+    color: "#f1e2e1"
+  }
 ];
 
-const genderNames = {
-  female: "Для неё",
-  male: "Для него",
-  unisex: "Унисекс",
-};
+const productRail = document.querySelector(".product-rail");
+const emptyState = document.querySelector(".empty-state");
+const filterButtons = document.querySelectorAll(".filter-button");
+const collectionLinks = document.querySelectorAll("[data-collection]");
+const globalSearchInput = document.querySelector("#global-search-input");
+const searchToggle = document.querySelector(".search-toggle");
+const searchClose = document.querySelector(".search-close");
+const menuButton = document.querySelector(".menu-button");
+const mobileLinks = document.querySelectorAll(".mobile-menu a");
+const cartCount = document.querySelector(".cart-count");
+const toast = document.querySelector(".toast");
 
-const state = { filter: "all", query: "", cart: 0 };
+let activeFilter = "all";
+let searchQuery = "";
+let cartTotal = 0;
+let toastTimer;
 
-const header = document.querySelector("[data-header]");
-const logo = document.querySelector("[data-logo]");
-const grid = document.querySelector("[data-product-grid]");
-const searchInput = document.querySelector("[data-search]");
-const cartCount = document.querySelector("[data-cart-count]");
-const toast = document.querySelector("[data-toast]");
-const nav = document.querySelector("[data-nav]");
-const menuButton = document.querySelector("[data-menu-button]");
+function formatPrice(price) {
+  return `${new Intl.NumberFormat("ru-RU").format(price)} ₽`;
+}
 
-const formatPrice = (value) => `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
-
-function card(product) {
+function productTemplate(product) {
   return `
-    <article class="product-card">
-      <div class="product-card__visual">
-        <img src="${product.image}" alt="FLUIDE ${product.id} ${product.title}" loading="lazy" />
-        <span class="product-card__badge">${product.category}</span>
-        <button class="favorite" type="button" aria-label="Добавить ${product.title} в избранное" data-favorite>♡</button>
-        <button class="quick-add" type="button" data-add="${product.id}">Добавить в корзину</button>
+    <article class="product-card" data-id="${product.id}">
+      <div class="product-media" style="--card-color: ${product.color}">
+        <span class="product-badge">${product.type}</span>
+        <button class="heart-button" type="button" aria-label="Добавить ${product.name} в избранное">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.8 8.7c0 5-8.8 10.1-8.8 10.1S3.2 13.7 3.2 8.7c0-2.2 1.7-3.9 3.9-3.9 2.4 0 3.8 2 4.9 3.5 1.1-1.5 2.5-3.5 4.9-3.5 2.2 0 3.9 1.7 3.9 3.9Z"></path>
+          </svg>
+        </button>
+        <img src="${product.image}" alt="${product.name}" loading="lazy">
+        <button class="quick-add" type="button">Добавить в корзину</button>
       </div>
-      <div class="product-card__info">
-        <p class="product-card__meta">${genderNames[product.gender]} · 30 мл</p>
-        <div class="product-card__title">
-          <h3>FLUIDE ${product.id} ${product.title}</h3>
-          <strong>${formatPrice(product.price)}</strong>
+      <div class="product-info">
+        <p class="product-meta">${product.label} · 30 мл</p>
+        <div class="product-title-row">
+          <h3>${product.name}</h3>
+          <p>${formatPrice(product.price)}</p>
         </div>
-        <p class="product-card__notes">${product.notes}</p>
+        <p class="product-notes">${product.notes}</p>
       </div>
     </article>
   `;
 }
 
-function visibleProducts() {
-  const query = state.query.trim().toLowerCase();
-  return products.filter((product) => {
-    const byGender = state.filter === "all" || product.gender === state.filter;
-    const byQuery =
-      !query ||
-      [product.id, product.title, product.category, product.notes]
-        .join(" ")
-        .toLowerCase()
-        .includes(query);
-    return byGender && byQuery;
+function renderProducts() {
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filtered = products.filter((product) => {
+    const matchesFilter = activeFilter === "all" || product.gender === activeFilter;
+    const searchSource = `${product.name} ${product.notes} ${product.label} ${product.type}`.toLowerCase();
+    return matchesFilter && searchSource.includes(normalizedQuery);
   });
+
+  productRail.innerHTML = filtered.map(productTemplate).join("");
+  emptyState.hidden = filtered.length > 0;
+  productRail.hidden = filtered.length === 0;
+  bindProductActions();
 }
 
-function render() {
-  const visible = visibleProducts();
-  grid.innerHTML = visible.length
-    ? visible.map(card).join("")
-    : '<p class="catalog-empty">Ничего не найдено. Попробуйте другую ноту или категорию.</p>';
+function bindProductActions() {
+  document.querySelectorAll(".heart-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      button.classList.toggle("is-active");
+      const card = button.closest(".product-card");
+      const product = products.find((item) => item.id === Number(card.dataset.id));
+      showToast(button.classList.contains("is-active")
+        ? `${product.name} — в избранном`
+        : `${product.name} — удалён из избранного`);
+    });
+  });
+
+  document.querySelectorAll(".quick-add").forEach((button) => {
+    button.addEventListener("click", () => {
+      const card = button.closest(".product-card");
+      const product = products.find((item) => item.id === Number(card.dataset.id));
+      cartTotal += 1;
+      cartCount.textContent = cartTotal;
+      showToast(`${product.name} добавлен в корзину`);
+    });
+  });
 }
 
 function setFilter(filter) {
-  state.filter = filter;
-  document.querySelectorAll("[data-filter]").forEach((button) => {
+  activeFilter = filter;
+  filterButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.filter === filter);
   });
-  render();
+  renderProducts();
+  productRail.scrollLeft = 0;
 }
 
-function notify(message) {
+function showToast(message) {
+  clearTimeout(toastTimer);
   toast.textContent = message;
   toast.classList.add("is-visible");
-  window.clearTimeout(notify.timer);
-  notify.timer = window.setTimeout(() => toast.classList.remove("is-visible"), 2200);
+  toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 2600);
 }
 
-function updateHeader() {
-  const scrolled = window.scrollY > 90;
-  header.classList.toggle("is-scrolled", scrolled);
-  logo.src = scrolled || document.body.classList.contains("menu-open")
-    ? "assets/brand/logo-blue.svg"
-    : "assets/brand/logo-white.svg";
-}
-
-document.querySelectorAll("[data-filter]").forEach((button) => {
+filterButtons.forEach((button) => {
   button.addEventListener("click", () => setFilter(button.dataset.filter));
 });
 
-document.querySelectorAll("[data-direction]").forEach((link) => {
-  link.addEventListener("click", () => setFilter(link.dataset.direction));
+collectionLinks.forEach((link) => {
+  link.addEventListener("click", () => setFilter(link.dataset.collection));
 });
 
-searchInput.addEventListener("input", (event) => {
-  state.query = event.target.value;
-  render();
+document.querySelector(".rail-prev").addEventListener("click", () => {
+  productRail.scrollBy({ left: -productRail.clientWidth * 0.72, behavior: "smooth" });
 });
 
-document.querySelector(".search-button").addEventListener("click", () => {
+document.querySelector(".rail-next").addEventListener("click", () => {
+  productRail.scrollBy({ left: productRail.clientWidth * 0.72, behavior: "smooth" });
+});
+
+searchToggle.addEventListener("click", () => {
+  document.body.classList.add("search-open");
+  setTimeout(() => globalSearchInput.focus(), 200);
+});
+
+searchClose.addEventListener("click", () => {
+  document.body.classList.remove("search-open");
+});
+
+globalSearchInput.addEventListener("input", (event) => {
+  searchQuery = event.target.value;
+  setFilter("all");
+});
+
+document.querySelector(".global-search").addEventListener("submit", (event) => {
+  event.preventDefault();
+  document.body.classList.remove("search-open");
   document.querySelector("#catalog").scrollIntoView({ behavior: "smooth" });
-  window.setTimeout(() => searchInput.focus(), 450);
-});
-
-grid.addEventListener("click", (event) => {
-  const favorite = event.target.closest("[data-favorite]");
-  const add = event.target.closest("[data-add]");
-
-  if (favorite) {
-    const active = favorite.classList.toggle("is-active");
-    favorite.textContent = active ? "♥" : "♡";
-    favorite.setAttribute("aria-pressed", String(active));
-  }
-
-  if (add) {
-    const product = products.find((item) => item.id === add.dataset.add);
-    state.cart += 1;
-    cartCount.textContent = state.cart;
-    notify(`${product.title} добавлен в корзину`);
-  }
 });
 
 menuButton.addEventListener("click", () => {
-  const open = document.body.classList.toggle("menu-open");
-  nav.classList.toggle("is-open", open);
-  menuButton.setAttribute("aria-expanded", String(open));
-  updateHeader();
+  const isOpen = document.body.classList.toggle("menu-open");
+  menuButton.setAttribute("aria-expanded", String(isOpen));
 });
 
-nav.addEventListener("click", (event) => {
-  if (event.target.matches("a")) {
+mobileLinks.forEach((link) => {
+  link.addEventListener("click", () => {
     document.body.classList.remove("menu-open");
-    nav.classList.remove("is-open");
     menuButton.setAttribute("aria-expanded", "false");
-    updateHeader();
+  });
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    document.body.classList.remove("search-open", "menu-open");
+    menuButton.setAttribute("aria-expanded", "false");
   }
 });
 
-document.querySelector("[data-selection-button]").addEventListener("click", () => {
-  notify("Персональный подбор подключим следующим этапом");
+document.querySelector(".selection-button").addEventListener("click", () => {
+  showToast("Подбор аромата откроется на следующем этапе");
 });
 
-window.addEventListener("scroll", updateHeader, { passive: true });
-
-render();
-updateHeader();
+renderProducts();
