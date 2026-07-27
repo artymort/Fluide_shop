@@ -548,13 +548,13 @@ em {
   flex: 1;
   place-items: end center;
   min-height: 0;
-  padding: 62px 25px 2px;
+  padding: 68px 28px 30px;
 }
 
 .world-image img {
-  width: 76%;
+  width: 70%;
   height: 100%;
-  max-height: 515px;
+  max-height: 460px;
   object-fit: contain;
   filter: drop-shadow(0 26px 22px rgba(67, 72, 101, 0.18));
   transition: transform 550ms cubic-bezier(0.2, 0.65, 0.2, 1);
