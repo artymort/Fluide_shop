@@ -340,10 +340,24 @@ em {
   font-size: clamp(45px, 4.35vw, 76px);
 }
 
-.campaign h1 em {
+.campaign-title > span,
+.campaign-title-last {
   display: block;
-  margin-top: 3px;
+}
+
+.campaign-title em {
+  display: inline;
+  font-size: 1.13em;
+  line-height: 1;
   letter-spacing: -0.035em;
+  vertical-align: -0.035em;
+}
+
+.campaign-title .campaign-title-last {
+  display: block;
+  margin-top: 0.02em;
+  line-height: 0.88;
+  vertical-align: initial;
 }
 
 .campaign-text {
