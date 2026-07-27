@@ -668,7 +668,7 @@ em {
 .product-rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(290px, calc((100% - 54px) / 4));
+  grid-auto-columns: calc((100% - 54px) / 4);
   gap: 18px;
   margin-top: 26px;
   overflow-x: auto;
@@ -705,8 +705,8 @@ em {
 }
 
 .product-media img {
-  width: 76%;
-  height: 84%;
+  width: 68%;
+  height: 72%;
   object-fit: contain;
   filter: drop-shadow(0 24px 18px rgba(67, 72, 101, 0.17));
   transition: transform 600ms cubic-bezier(0.2, 0.65, 0.2, 1);
@@ -769,14 +769,15 @@ em {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   opacity: 0;
+  visibility: hidden;
   transform: translateY(12px);
   cursor: pointer;
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
 }
 
-.product-card:hover .quick-add,
-.quick-add:focus-visible {
+.product-card:hover .quick-add {
   opacity: 1;
+  visibility: visible;
   transform: translateY(0);
 }
 
@@ -1106,7 +1107,7 @@ em {
   }
 
   .product-rail {
-    grid-auto-columns: minmax(280px, calc((100% - 36px) / 3));
+    grid-auto-columns: calc((100% - 36px) / 3);
   }
 
   .editorial {
@@ -1299,7 +1300,7 @@ em {
   }
 
   .product-rail {
-    grid-auto-columns: minmax(270px, 67vw);
+    grid-auto-columns: 67vw;
   }
 
   .editorial {
@@ -1429,6 +1430,7 @@ em {
 
   .quick-add {
     opacity: 1;
+    visibility: visible;
     transform: none;
   }
 
