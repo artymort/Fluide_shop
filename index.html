@@ -3,89 +3,84 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="FLUIDE Atelier — парфюмерия, которая становится частью вашего образа." />
-    <meta name="theme-color" content="#f4f0e6" />
+    <meta name="description" content="FLUIDE Atelier — современное парфюмерное ателье." />
+    <meta name="theme-color" content="#303449" />
     <title>FLUIDE Atelier</title>
     <link rel="preload" href="assets/fonts/MazzardH-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="assets/media/hero-campaign-v3.png" as="image" />
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js" defer></script>
   </head>
   <body>
     <header class="header" data-header>
-      <div class="shell header__inner">
+      <div class="wide header__inner">
         <a class="logo" href="#top" aria-label="FLUIDE Atelier — на главную">
-          <img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier" />
+          <img src="assets/brand/logo-white.svg" alt="FLUIDE Atelier" data-logo />
         </a>
 
         <nav class="nav" aria-label="Основная навигация" data-nav>
-          <a href="#catalog">Каталог</a>
-          <a href="#selection">Подбор аромата</a>
-          <a href="#about">О бренде</a>
+          <a href="#catalog">Ароматы</a>
+          <a href="#selection">Подбор</a>
+          <a href="#footer">О бренде</a>
         </nav>
 
         <div class="header__actions">
-          <button class="header-icon search-button" type="button" aria-label="Поиск">
+          <button class="icon-button search-button" type="button" aria-label="Поиск">
             <i class="search-icon" aria-hidden="true"></i>
           </button>
-          <button class="header-icon" type="button" aria-label="Избранное">
-            <span aria-hidden="true">♡</span>
-          </button>
-          <button class="header-icon cart-button" type="button" aria-label="Корзина">
+          <button class="icon-button" type="button" aria-label="Избранное"><span aria-hidden="true">♡</span></button>
+          <button class="icon-button cart-button" type="button" aria-label="Корзина">
             <i class="bag-icon" aria-hidden="true"></i>
             <b data-cart-count>0</b>
           </button>
           <button class="menu-button" type="button" aria-label="Открыть меню" aria-expanded="false" data-menu-button>
-            <span></span>
-            <span></span>
+            <span></span><span></span>
           </button>
         </div>
       </div>
     </header>
 
     <main id="top">
-      <section class="hero shell">
-        <div class="hero__copy">
-          <p class="label">FLUIDE · Парфюмерное ателье</p>
-          <h1>Аромат как<br /><em>личная подпись.</em></h1>
-          <p class="hero__lead">
-            Найдите композицию, которая не дополняет образ, а становится его невидимой частью.
+      <section class="hero wide">
+        <img class="hero__image" src="assets/media/hero-campaign-v3.png" alt="" aria-hidden="true" />
+        <div class="hero__shade"></div>
+        <div class="hero__content">
+          <p class="overline overline--light">FLUIDE · Parfumerie Atelier</p>
+          <h1>Искусство<br />оставаться<br /><em>в памяти.</em></h1>
+          <p class="hero__text">
+            Ароматы, которые становятся частью характера — тихо, точно и надолго.
           </p>
-          <div class="hero__buttons">
-            <a class="button button--dark" href="#catalog">Открыть каталог</a>
-            <a class="arrow-link" href="#selection">Подобрать аромат <span aria-hidden="true">↗</span></a>
+          <div class="hero__actions">
+            <a class="button button--ivory" href="#catalog">Открыть коллекцию</a>
+            <a class="line-link line-link--light" href="#selection">Найти свой аромат <span>↗</span></a>
           </div>
         </div>
-
-        <div class="hero__visual">
-          <span class="hero__index">100</span>
-          <div class="hero__halo"></div>
-          <img src="assets/products/blooming.jpg" alt="FLUIDE 100 Blooming" />
-          <div class="hero__caption">
-            <span>Цветочный · свежий</span>
-            <strong>Blooming</strong>
-          </div>
+        <div class="hero__signature">
+          <span>01</span>
+          <em>Olfactory wardrobe</em>
         </div>
       </section>
 
-      <div class="directions shell" aria-label="Основные направления каталога">
-        <span>Выберите направление</span>
-        <div>
-          <a href="#catalog" data-direction="female">Для неё <sup>01</sup></a>
-          <a href="#catalog" data-direction="male">Для него <sup>02</sup></a>
-          <a href="#catalog" data-direction="unisex">Унисекс <sup>03</sup></a>
-        </div>
-      </div>
+      <nav class="departments wide" aria-label="Разделы каталога">
+        <span>Коллекции</span>
+        <a href="#catalog" data-direction="female">Для неё</a>
+        <a href="#catalog" data-direction="male">Для него</a>
+        <a href="#catalog" data-direction="unisex">Унисекс</a>
+        <a href="#selection">Подбор по настроению <span>↗</span></a>
+      </nav>
 
-      <section class="catalog shell section" id="catalog">
-        <div class="section-head">
+      <section class="catalog wide section" id="catalog">
+        <div class="section-heading">
           <div>
-            <p class="label">Избранные композиции</p>
-            <h2>Сейчас в <em>фокусе</em></h2>
+            <p class="overline">Коллекция ароматов</p>
+            <h2>Выберите то,<br />что звучит <em>вашим.</em></h2>
           </div>
-          <a class="arrow-link" href="#catalog-grid">Смотреть все <span aria-hidden="true">↗</span></a>
+          <p>
+            От прозрачных цитрусовых композиций до глубоких древесных и амбровых направлений.
+          </p>
         </div>
 
-        <div class="catalog-tools">
+        <div class="catalog__bar">
           <div class="filters" role="group" aria-label="Фильтр ароматов">
             <button class="filter is-active" type="button" data-filter="all">Все</button>
             <button class="filter" type="button" data-filter="female">Для неё</button>
@@ -95,60 +90,44 @@
           <label class="catalog-search">
             <i class="search-icon" aria-hidden="true"></i>
             <span class="sr-only">Поиск по каталогу</span>
-            <input type="search" placeholder="Найти аромат или ноту" data-search />
+            <input type="search" placeholder="Название или нота" data-search />
           </label>
         </div>
 
-        <div class="product-grid" id="catalog-grid" data-product-grid></div>
+        <div class="product-grid" data-product-grid></div>
       </section>
 
-      <section class="selection shell section" id="selection">
-        <div class="selection__image">
-          <span class="selection__word">find</span>
-          <img src="assets/products/ganymede.jpg" alt="" aria-hidden="true" />
-          <p>Интуитивный подбор<br />по нотам и настроению</p>
-        </div>
-        <div class="selection__copy">
-          <p class="label">Персональный подбор</p>
-          <h2>Не ищите аромат<br />по названию.<br /><em>Ищите по ощущению.</em></h2>
+      <section class="selection wide" id="selection">
+        <div class="selection__content">
+          <p class="overline overline--light">Персональный подбор</p>
+          <h2>Ваш аромат<br />не обязательно<br /><em>искать долго.</em></h2>
           <p>
-            Несколько простых вопросов помогут сузить выбор до композиций, которые совпадают с вашим характером,
-            ритмом и любимыми нотами.
+            Расскажите, какие ноты и ощущения вам близки. Мы сузим коллекцию до нескольких точных совпадений.
           </p>
-          <button class="button button--dark" type="button" data-selection-button>
-            Начать подбор <span aria-hidden="true">→</span>
+          <button class="button button--ivory" type="button" data-selection-button>
+            Начать подбор <span>→</span>
           </button>
         </div>
-      </section>
-
-      <section class="about shell section" id="about">
-        <div class="about__title">
-          <p class="label">FLUIDE Atelier</p>
-          <h2>Парфюмерия<br />без лишнего <em>шума.</em></h2>
-        </div>
-        <div class="about__text">
-          <p>
-            Мы собираем понятный и выразительный гардероб ароматов — от лёгких цитрусовых до глубоких древесных
-            композиций.
-          </p>
-          <p>
-            В центре всегда остаётесь вы: ваше настроение, память и способ чувствовать мир.
-          </p>
-          <a class="arrow-link" href="#top">Узнать о бренде <span aria-hidden="true">↗</span></a>
+        <div class="selection__notes" aria-hidden="true">
+          <span class="note note--one">бергамот</span>
+          <span class="note note--two">жасмин</span>
+          <span class="note note--three">ветивер</span>
+          <span class="note note--four">амбра</span>
+          <div class="selection__monogram">F</div>
         </div>
       </section>
     </main>
 
-    <footer class="footer">
-      <div class="shell footer__inner">
-        <div class="footer__brand">
+    <footer class="footer" id="footer">
+      <div class="wide footer__inner">
+        <div class="footer__top">
           <img src="assets/brand/logo-white.svg" alt="FLUIDE Atelier" />
-          <em>Искусство быть собой.</em>
+          <em>Создано, чтобы остаться.</em>
         </div>
-        <div class="footer__nav">
+        <div class="footer__links">
           <a href="#catalog">Каталог</a>
           <a href="#selection">Подбор аромата</a>
-          <a href="#about">О бренде</a>
+          <a href="#top">Доставка</a>
           <a href="#top">Контакты</a>
         </div>
         <div class="footer__bottom">

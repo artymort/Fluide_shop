@@ -9,15 +9,6 @@ const products = [
     notes: "Пион · дамасская роза · белый мускус",
   },
   {
-    id: "044",
-    title: "Bright Crystal",
-    gender: "female",
-    category: "Люкс",
-    price: 1990,
-    image: "assets/products/bright-crystal.jpg",
-    notes: "Юдзу · пион · лотос · амбра",
-  },
-  {
     id: "049",
     title: "Dark Opium",
     gender: "female",
@@ -45,6 +36,15 @@ const products = [
     notes: "Шафран · жасмин · амбра · кедр",
   },
   {
+    id: "044",
+    title: "Bright Crystal",
+    gender: "female",
+    category: "Люкс",
+    price: 1990,
+    image: "assets/products/bright-crystal.jpg",
+    notes: "Юдзу · пион · лотос · амбра",
+  },
+  {
     id: "026",
     title: "Ganymede",
     gender: "unisex",
@@ -61,13 +61,10 @@ const genderNames = {
   unisex: "Унисекс",
 };
 
-const state = {
-  filter: "all",
-  query: "",
-  cart: 0,
-};
+const state = { filter: "all", query: "", cart: 0 };
 
 const header = document.querySelector("[data-header]");
+const logo = document.querySelector("[data-logo]");
 const grid = document.querySelector("[data-product-grid]");
 const searchInput = document.querySelector("[data-search]");
 const cartCount = document.querySelector("[data-cart-count]");
@@ -77,7 +74,7 @@ const menuButton = document.querySelector("[data-menu-button]");
 
 const formatPrice = (value) => `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
 
-function productCard(product) {
+function card(product) {
   return `
     <article class="product-card">
       <div class="product-card__visual">
@@ -100,24 +97,22 @@ function productCard(product) {
 
 function visibleProducts() {
   const query = state.query.trim().toLowerCase();
-
   return products.filter((product) => {
-    const matchesFilter = state.filter === "all" || product.gender === state.filter;
-    const matchesSearch =
+    const byGender = state.filter === "all" || product.gender === state.filter;
+    const byQuery =
       !query ||
-      [product.id, product.title, product.notes, product.category]
+      [product.id, product.title, product.category, product.notes]
         .join(" ")
         .toLowerCase()
         .includes(query);
-
-    return matchesFilter && matchesSearch;
+    return byGender && byQuery;
   });
 }
 
-function renderProducts() {
+function render() {
   const visible = visibleProducts();
   grid.innerHTML = visible.length
-    ? visible.map(productCard).join("")
+    ? visible.map(card).join("")
     : '<p class="catalog-empty">Ничего не найдено. Попробуйте другую ноту или категорию.</p>';
 }
 
@@ -126,14 +121,22 @@ function setFilter(filter) {
   document.querySelectorAll("[data-filter]").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.filter === filter);
   });
-  renderProducts();
+  render();
 }
 
-function showToast(message) {
+function notify(message) {
   toast.textContent = message;
   toast.classList.add("is-visible");
-  window.clearTimeout(showToast.timer);
-  showToast.timer = window.setTimeout(() => toast.classList.remove("is-visible"), 2200);
+  window.clearTimeout(notify.timer);
+  notify.timer = window.setTimeout(() => toast.classList.remove("is-visible"), 2200);
+}
+
+function updateHeader() {
+  const scrolled = window.scrollY > 90;
+  header.classList.toggle("is-scrolled", scrolled);
+  logo.src = scrolled || document.body.classList.contains("menu-open")
+    ? "assets/brand/logo-blue.svg"
+    : "assets/brand/logo-white.svg";
 }
 
 document.querySelectorAll("[data-filter]").forEach((button) => {
@@ -146,7 +149,7 @@ document.querySelectorAll("[data-direction]").forEach((link) => {
 
 searchInput.addEventListener("input", (event) => {
   state.query = event.target.value;
-  renderProducts();
+  render();
 });
 
 document.querySelector(".search-button").addEventListener("click", () => {
@@ -168,7 +171,7 @@ grid.addEventListener("click", (event) => {
     const product = products.find((item) => item.id === add.dataset.add);
     state.cart += 1;
     cartCount.textContent = state.cart;
-    showToast(`${product.title} добавлен в корзину`);
+    notify(`${product.title} добавлен в корзину`);
   }
 });
 
@@ -176,6 +179,7 @@ menuButton.addEventListener("click", () => {
   const open = document.body.classList.toggle("menu-open");
   nav.classList.toggle("is-open", open);
   menuButton.setAttribute("aria-expanded", String(open));
+  updateHeader();
 });
 
 nav.addEventListener("click", (event) => {
@@ -183,17 +187,15 @@ nav.addEventListener("click", (event) => {
     document.body.classList.remove("menu-open");
     nav.classList.remove("is-open");
     menuButton.setAttribute("aria-expanded", "false");
+    updateHeader();
   }
 });
 
 document.querySelector("[data-selection-button]").addEventListener("click", () => {
-  showToast("Подбор аромата подключим отдельным шагом");
+  notify("Персональный подбор подключим следующим этапом");
 });
 
-window.addEventListener(
-  "scroll",
-  () => header.classList.toggle("is-scrolled", window.scrollY > 10),
-  { passive: true },
-);
+window.addEventListener("scroll", updateHeader, { passive: true });
 
-renderProducts();
+render();
+updateHeader();
