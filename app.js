@@ -1,63 +1,63 @@
 const products = [
   {
-    id: 19,
-    name: "FLUIDE 019 Cherry",
-    label: "Для неё",
-    type: "Люкс",
+    id: "matsukita",
+    number: "01",
+    name: "Matsukita",
+    category: "Парфюм · 30 мл",
+    description: "№ 533 · Eau de parfum",
     price: 1990,
-    notes: "Кислая вишня · малина · ваниль · сандал",
-    image: "assets/product-line/fragrance-cherry.png",
-    color: "#e9ded0"
+    image: "assets/product-line/fragrance-matsukita.png",
+    color: "#e9e0d5"
   },
   {
-    id: 6,
-    name: "FLUIDE 006 Hayati",
-    label: "Унисекс",
-    type: "Селектив",
-    price: 3490,
-    notes: "Малина · сливки · ваниль · белый мускус",
-    image: "assets/product-line/fragrance-hayati.png",
-    color: "#e7c9c1"
+    id: "devils-intrigue",
+    number: "02",
+    name: "Devils Intrigue",
+    category: "Спрей для волос · 200 мл",
+    description: "Парфюмированный уход FLUIDE",
+    price: 650,
+    image: "assets/product-line/hair-spray-devils-intrigue.png",
+    color: "#e6ddd2"
   },
   {
-    id: 7,
-    name: "FLUIDE 007 Musk Kashmir",
-    label: "Унисекс",
-    type: "Селектив",
-    price: 3490,
-    notes: "Белый мускус · белый перец · сандал · гардения",
-    image: "assets/product-line/fragrance-musk-kashmir.png",
-    color: "#dce4e9"
+    id: "cashmere",
+    number: "03",
+    name: "Cashmere",
+    category: "Аромадиффузор · 100 мл",
+    description: "Мягкий аромат для пространства",
+    price: 1350,
+    image: "assets/product-line/diffuser-cashmere.png",
+    color: "#e1e5e4"
   },
   {
-    id: 50,
-    name: "FLUIDE 050 Black Pepper",
-    label: "Унисекс",
-    type: "Селектив",
-    price: 3490,
-    notes: "Чёрный перец · амбра · нероли",
-    image: "assets/product-line/fragrance-black-pepper.png",
-    color: "#dddcd3"
+    id: "matsukita-solid",
+    number: "04",
+    name: "Matsukita Solid",
+    category: "Твёрдый парфюм · 15 мл",
+    description: "Компактный ароматический ритуал",
+    price: 990,
+    image: "assets/product-line/solid-perfume-matsukita.png",
+    color: "#e7d8d1"
   },
   {
-    id: 185,
-    name: "FLUIDE 185 White",
-    label: "Для него",
-    type: "Люкс",
-    price: 1990,
-    notes: "Грейпфрут · розмарин · кедр · ветивер",
-    image: "assets/product-line/fragrance-white.png",
-    color: "#e7e8e4"
+    id: "sea-salt",
+    number: "05",
+    name: "Sea Salt",
+    category: "Парфюм для дома · 300 мл",
+    description: "Свежесть моря для вашего дома",
+    price: 550,
+    image: "assets/product-line/home-perfume-sea-salt.png",
+    color: "#dce4e7"
   },
   {
-    id: 526,
-    name: "FLUIDE 526 Vanilla Powder",
-    label: "Унисекс",
-    type: "Селектив",
-    price: 3490,
-    notes: "Кокосовая пудра · ваниль · мускус · пало санто",
-    image: "assets/product-line/fragrance-vanilla-powder.png",
-    color: "#ece4d7"
+    id: "ballerina",
+    number: "06",
+    name: "Ballerina",
+    category: "Аромасвеча · 100 мл",
+    description: "Тёплый свет и тонкий аромат",
+    price: 890,
+    image: "assets/product-line/candle-ballerina.png",
+    color: "#e8e1d6"
   }
 ];
 
@@ -85,63 +85,62 @@ function productTemplate(product) {
   return `
     <article class="fragrance-card" data-id="${product.id}">
       <div class="fragrance-visual" style="--product-color: ${product.color}">
-        <span class="product-kind">${product.type}</span>
-        <button class="wish-button" type="button" aria-label="Добавить ${product.name} в избранное">♡</button>
-        <img src="${product.image}" alt="${product.name}" loading="lazy">
-        <button class="quick-buy" type="button">Добавить в корзину</button>
+        <span class="fragrance-index">${product.number}</span>
+        <img src="${product.image}" alt="${product.name} FLUIDE" loading="lazy">
       </div>
       <div class="fragrance-info">
+        <p class="fragrance-category">${product.category}</p>
         <h3>${product.name}</h3>
-        <p>${product.notes}</p>
+        <p>${product.description}</p>
         <div class="fragrance-meta">
-          <span>${product.label} · 30 мл</span>
           <span>${formatPrice(product.price)}</span>
+          <button class="quick-buy" type="button" aria-label="Добавить ${product.name} в корзину">+</button>
         </div>
       </div>
     </article>
   `;
 }
 
+function preventOrphans(root = document.body) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent || parent.closest("script, style, textarea")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((node) => {
+    node.nodeValue = node.nodeValue.replace(/(^|\s)([А-Яа-яЁёA-Za-z])\s+(?=\S)/g, "$1$2\u00a0");
+  });
+}
+
 function renderProducts() {
   const query = searchQuery.trim().toLowerCase();
   const matches = products.filter((product) => {
-    const searchable = `${product.name} ${product.label} ${product.type} ${product.notes}`.toLowerCase();
+    const searchable = `${product.name} ${product.category} ${product.description}`.toLowerCase();
     return searchable.includes(query);
   });
   const visibleProducts = query || showAll ? matches : matches.slice(0, 4);
 
-  fragranceGrid.innerHTML = visibleProducts.map(productTemplate).join("");
-  fragranceGrid.classList.toggle("is-empty", visibleProducts.length === 0);
-
-  if (!visibleProducts.length) {
-    fragranceGrid.innerHTML = '<p class="no-results">Ничего не найдено. Попробуйте другую ноту или название.</p>';
-  }
+  fragranceGrid.innerHTML = visibleProducts.length
+    ? visibleProducts.map(productTemplate).join("")
+    : '<p class="no-results">Ничего не найдено. Попробуйте другую категорию или название.</p>';
 
   showAllButton.hidden = Boolean(query);
   showAllButton.textContent = showAll ? "Скрыть" : "Смотреть все";
   bindProductActions();
+  preventOrphans(fragranceGrid);
 }
 
 function productFor(button) {
   const card = button.closest(".fragrance-card");
-  return products.find((product) => product.id === Number(card.dataset.id));
+  return products.find((product) => product.id === card.dataset.id);
 }
 
 function bindProductActions() {
-  document.querySelectorAll(".wish-button").forEach((button) => {
-    button.addEventListener("click", () => {
-      const active = button.classList.toggle("active");
-      const product = productFor(button);
-      button.textContent = active ? "♥" : "♡";
-      button.setAttribute("aria-label", active
-        ? `Удалить ${product.name} из избранного`
-        : `Добавить ${product.name} в избранное`);
-      showToast(active
-        ? `${product.name} добавлен в избранное`
-        : `${product.name} удалён из избранного`);
-    });
-  });
-
   document.querySelectorAll(".quick-buy").forEach((button) => {
     button.addEventListener("click", () => {
       const product = productFor(button);
@@ -208,3 +207,4 @@ document.addEventListener("keydown", (event) => {
 });
 
 renderProducts();
+preventOrphans();
