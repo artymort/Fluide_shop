@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Полный каталог ароматов FLUIDE Atelier с подбором по нотам, сезону и настроению.">
+  <title>Каталог ароматов — FLUIDE Atelier</title>
+  <link rel="stylesheet" href="catalog-page.css">
+</head>
+<body>
+  <header class="catalog-header" id="top">
+    <div class="header-inner shell">
+      <button class="icon-button menu-toggle" type="button" aria-controls="mobile-nav" aria-expanded="false" aria-label="Открыть меню">
+        <span class="menu-lines"></span>
+      </button>
+
+      <nav class="desktop-nav" aria-label="Основная навигация">
+        <a href="index.html#top">Главная</a>
+        <a href="index.html#about">О нас</a>
+        <a class="is-active" href="catalog.html" aria-current="page">Каталог</a>
+        <a href="index.html#contacts">Контакты</a>
+      </nav>
+
+      <a class="brand-logo" href="index.html#top" aria-label="FLUIDE Atelier — на главную">
+        <img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier">
+      </a>
+
+      <div class="header-actions">
+        <button class="header-icon focus-search" type="button" aria-label="Перейти к поиску">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+        </button>
+        <button class="header-icon favorites-button" type="button" aria-label="Показать избранное">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 5.8c-1.5-1.8-4.4-1.7-5.9 0L12 8.7 9.3 5.8c-1.5-1.7-4.4-1.8-5.9 0-1.8 2.1-1.4 5.2.5 7.1L12 21l8.1-8.1c1.9-1.9 2.3-5 .5-7.1Z"></path></svg>
+        </button>
+        <button class="header-icon cart-button" type="button" aria-label="Открыть корзину">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 13H6L5 8Z"></path><path d="M9 9V6a3 3 0 0 1 6 0v3"></path></svg>
+          <b class="cart-count">0</b>
+        </button>
+      </div>
+    </div>
+
+    <nav class="mobile-nav" id="mobile-nav" aria-label="Мобильная навигация">
+      <a href="index.html#top">Главная</a>
+      <a href="index.html#about">О нас</a>
+      <a href="catalog.html" aria-current="page">Каталог</a>
+      <a href="index.html#contacts">Контакты</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="catalog-intro shell">
+      <p class="eyebrow">Парфюмерная коллекция FLUIDE</p>
+      <div class="catalog-intro-grid">
+        <h1>Найдите аромат,<br>который останется <span>с вами.</span></h1>
+        <div class="catalog-intro-copy">
+          <p>Выбирайте по нотам, сезону или случаю. В каталоге собраны композиции для неё, для него и унисекс.</p>
+          <span class="total-fragrances">99 ароматов</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="catalog-shell shell" aria-labelledby="catalog-heading">
+      <div class="catalog-toolbar">
+        <label class="catalog-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+          <span class="visually-hidden">Поиск по каталогу</span>
+          <input id="catalog-search" type="search" placeholder="Название, номер или нота" autocomplete="off">
+        </label>
+        <button class="filter-toggle" type="button" aria-controls="filter-panel" aria-expanded="false">
+          Фильтры <span class="filter-count" hidden>0</span>
+        </button>
+        <label class="sort-control">
+          <span>Сортировка</span>
+          <select id="catalog-sort">
+            <option value="featured">По умолчанию</option>
+            <option value="number">По номеру</option>
+            <option value="name">По названию</option>
+            <option value="price-asc">Сначала дешевле</option>
+            <option value="price-desc">Сначала дороже</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="active-filters" aria-live="polite"></div>
+
+      <div class="catalog-layout">
+        <aside class="filter-panel" id="filter-panel" aria-label="Фильтры каталога">
+          <div class="filter-panel-head">
+            <div><p class="eyebrow">Точный выбор</p><h2>Фильтры</h2></div>
+            <button class="filter-close" type="button" aria-label="Закрыть фильтры">×</button>
+          </div>
+
+          <fieldset class="filter-group filter-gender">
+            <legend>Кому подбираем</legend>
+            <label><input type="radio" name="gender" value="" checked><span>Все</span></label>
+            <label><input type="radio" name="gender" value="женский"><span>Для неё</span></label>
+            <label><input type="radio" name="gender" value="мужской"><span>Для него</span></label>
+            <label><input type="radio" name="gender" value="унисекс"><span>Унисекс</span></label>
+          </fieldset>
+
+          <details class="filter-group" open>
+            <summary>Категория <span>⌄</span></summary>
+            <div class="filter-options">
+              <label><input type="checkbox" name="category" value="Люкс"><span>Люкс</span></label>
+              <label><input type="checkbox" name="category" value="Суперлюкс"><span>Суперлюкс</span></label>
+              <label><input type="checkbox" name="category" value="Селектив"><span>Селектив</span></label>
+            </div>
+          </details>
+
+          <details class="filter-group" open>
+            <summary>Ноты <span>⌄</span></summary>
+            <div class="filter-options">
+              <label><input type="checkbox" name="family" value="Цветочные"><span>Цветочные</span></label>
+              <label><input type="checkbox" name="family" value="Фруктовые"><span>Фруктовые</span></label>
+              <label><input type="checkbox" name="family" value="Цитрусовые"><span>Цитрусовые</span></label>
+              <label><input type="checkbox" name="family" value="Древесные"><span>Древесные</span></label>
+              <label><input type="checkbox" name="family" value="Сладкие"><span>Сладкие</span></label>
+              <label><input type="checkbox" name="family" value="Свежие"><span>Свежие</span></label>
+              <label><input type="checkbox" name="family" value="Пряные и восточные"><span>Пряные и восточные</span></label>
+            </div>
+          </details>
+
+          <details class="filter-group">
+            <summary>Случай <span>⌄</span></summary>
+            <div class="filter-options">
+              <label><input type="checkbox" name="occasion" value="everyday"><span>На каждый день</span></label>
+              <label><input type="checkbox" name="occasion" value="evening"><span>Вечер</span></label>
+              <label><input type="checkbox" name="occasion" value="date"><span>Свидание</span></label>
+              <label><input type="checkbox" name="occasion" value="gym"><span>Спорт</span></label>
+              <label><input type="checkbox" name="occasion" value="walk"><span>Прогулка</span></label>
+            </div>
+          </details>
+
+          <details class="filter-group">
+            <summary>Время года <span>⌄</span></summary>
+            <div class="filter-options">
+              <label><input type="checkbox" name="season" value="spring"><span>Весна</span></label>
+              <label><input type="checkbox" name="season" value="summer"><span>Лето</span></label>
+              <label><input type="checkbox" name="season" value="autumn"><span>Осень</span></label>
+              <label><input type="checkbox" name="season" value="winter"><span>Зима</span></label>
+            </div>
+          </details>
+
+          <div class="filter-panel-actions">
+            <button class="reset-filters" type="button">Сбросить всё</button>
+            <button class="apply-filters" type="button">Показать ароматы</button>
+          </div>
+        </aside>
+
+        <section class="catalog-results" aria-live="polite">
+          <div class="results-heading">
+            <div><p class="eyebrow">Каталог</p><h2 id="catalog-heading">Все ароматы</h2></div>
+            <p class="result-count">Загрузка коллекции…</p>
+          </div>
+          <div class="fragrance-grid"></div>
+          <div class="catalog-empty" hidden>
+            <h3>Ничего не найдено</h3>
+            <p>Попробуйте изменить фильтры или очистить строку поиска.</p>
+            <button class="reset-filters button-outline" type="button">Сбросить фильтры</button>
+          </div>
+          <button class="load-more" type="button" hidden>Показать ещё</button>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="catalog-footer" id="contacts">
+    <div class="shell footer-grid">
+      <div><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"><p>Ароматы, которые становятся частью вашего пространства.</p></div>
+      <nav aria-label="Разделы сайта"><strong>Разделы</strong><a href="index.html#top">Главная</a><a href="index.html#about">О бренде</a><a href="catalog.html">Каталог</a></nav>
+      <div><strong>Контакты</strong><a href="mailto:hello@fluideatelier.ru">hello@fluideatelier.ru</a><p>Екатеринбург</p></div>
+    </div>
+  </footer>
+
+  <div class="drawer-backdrop"></div>
+
+  <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина">
+    <div class="drawer-head"><div><p class="eyebrow">Ваш выбор</p><h2>Корзина</h2></div><button class="drawer-close" type="button" aria-label="Закрыть корзину">×</button></div>
+    <div class="cart-items"></div>
+    <div class="cart-footer"><div><span>Итого</span><strong class="cart-total">0 ₽</strong></div><button type="button">Оформить заказ</button></div>
+  </aside>
+
+  <div class="toast" role="status" aria-live="polite"></div>
+
+  <script src="catalog-page.js"></script>
+</body>
+</html>

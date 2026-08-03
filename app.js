@@ -98,16 +98,17 @@ function saveCart(){localStorage.setItem("fluide-cart",JSON.stringify(cart))}
 function saveFavorites(){localStorage.setItem("fluide-favorites",JSON.stringify(favorites))}
 
 function addToCart(id){
-  const item = cart.find(row => row.id === id);
-  if(item)item.quantity += 1; else cart.push({id,quantity:1});
-  saveCart(); renderCart();
   const product = products.find(row => row.id === id);
+  const item = cart.find(row => row.id === id);
+  const snapshot = product ? {name:product.name,price:product.price,image:product.image,category:product.categoryLabel} : undefined;
+  if(item){item.quantity += 1;if(!item.product&&snapshot)item.product=snapshot}else cart.push({id,quantity:1,product:snapshot});
+  saveCart(); renderCart();
   showToast(`${product ? product.name : "Набор"} добавлен в корзину`);
 }
 
 function renderCart(){
-  const detailed = cart.map(item => ({...item,product:products.find(product => product.id === item.id)})).filter(item => item.product);
-  const quantity = detailed.reduce((sum,item) => sum + item.quantity,0);
+  const detailed = cart.map(item => ({...item,product:products.find(product => product.id === item.id) || item.product})).filter(item => item.product);
+  const quantity = cart.reduce((sum,item) => sum + item.quantity,0);
   const total = detailed.reduce((sum,item) => sum + item.product.price * item.quantity,0);
   cartCount.textContent = quantity;
   cartTotal.textContent = formatPrice(total);

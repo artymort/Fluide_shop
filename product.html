@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Аромат FLUIDE Atelier: описание, ноты и характеристики.">
+  <title>Аромат FLUIDE Atelier</title>
+  <link rel="stylesheet" href="catalog-page.css">
+  <link rel="stylesheet" href="product-page.css">
+</head>
+<body>
+  <header class="catalog-header" id="top">
+    <div class="header-inner shell">
+      <button class="icon-button menu-toggle" type="button" aria-controls="mobile-nav" aria-expanded="false" aria-label="Открыть меню"><span class="menu-lines"></span></button>
+      <nav class="desktop-nav" aria-label="Основная навигация">
+        <a href="index.html#top">Главная</a>
+        <a href="index.html#about">О нас</a>
+        <a class="is-active" href="catalog.html">Каталог</a>
+        <a href="index.html#contacts">Контакты</a>
+      </nav>
+      <a class="brand-logo" href="index.html#top" aria-label="FLUIDE Atelier — на главную"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a>
+      <div class="header-actions">
+        <a class="header-icon" href="catalog.html" aria-label="Перейти к поиску в каталоге"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg></a>
+        <button class="header-icon product-favorite" type="button" aria-label="Добавить в избранное"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 5.8c-1.5-1.8-4.4-1.7-5.9 0L12 8.7 9.3 5.8c-1.5-1.7-4.4-1.8-5.9 0-1.8 2.1-1.4 5.2.5 7.1L12 21l8.1-8.1c1.9-1.9 2.3-5 .5-7.1Z"></path></svg></button>
+        <button class="header-icon cart-button" type="button" aria-label="Открыть корзину"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 13H6L5 8Z"></path><path d="M9 9V6a3 3 0 0 1 6 0v3"></path></svg><b class="cart-count">0</b></button>
+      </div>
+    </div>
+    <nav class="mobile-nav" id="mobile-nav" aria-label="Мобильная навигация">
+      <a href="index.html#top">Главная</a><a href="index.html#about">О нас</a><a href="catalog.html">Каталог</a><a href="index.html#contacts">Контакты</a>
+    </nav>
+  </header>
+
+  <main class="product-main">
+    <div class="shell product-breadcrumbs"><a href="catalog.html">Каталог ароматов</a><span>→</span><span class="breadcrumb-current">Загрузка…</span></div>
+    <div class="product-page shell" aria-live="polite">
+      <section class="product-loading"><span></span><p>Загружаем аромат…</p></section>
+    </div>
+    <section class="related-section shell" hidden>
+      <div class="related-head"><div><p class="eyebrow">В одной тональности</p><h2>Вам также может понравиться</h2></div><a href="catalog.html">Смотреть каталог →</a></div>
+      <div class="related-grid"></div>
+    </section>
+  </main>
+
+  <footer class="catalog-footer" id="contacts">
+    <div class="shell footer-grid">
+      <div><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"><p>Ароматы, которые становятся частью вашего пространства.</p></div>
+      <nav aria-label="Разделы сайта"><strong>Разделы</strong><a href="index.html#top">Главная</a><a href="index.html#about">О бренде</a><a href="catalog.html">Каталог</a></nav>
+      <div><strong>Контакты</strong><a href="mailto:hello@fluideatelier.ru">hello@fluideatelier.ru</a><p>Екатеринбург</p></div>
+    </div>
+  </footer>
+
+  <div class="drawer-backdrop"></div>
+  <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина">
+    <div class="drawer-head"><div><p class="eyebrow">Ваш выбор</p><h2>Корзина</h2></div><button class="drawer-close" type="button" aria-label="Закрыть корзину">×</button></div>
+    <div class="cart-items"></div>
+    <div class="cart-footer"><div><span>Итого</span><strong class="cart-total">0 ₽</strong></div><button type="button">Оформить заказ</button></div>
+  </aside>
+  <div class="toast" role="status" aria-live="polite"></div>
+  <script src="product-page.js"></script>
+</body>
+</html>
