@@ -145,15 +145,13 @@ function cardTemplate(fragrance){
   return `<article class="fragrance-card" data-id="${escapeHtml(fragrance.id)}">
     <div class="fragrance-media-shell">
       <a class="fragrance-media" style="--card-bg:${cardColor(fragrance)}" href="product.html?id=${encodeURIComponent(fragrance.id)}" aria-label="Открыть страницу аромата ${escapeHtml(title)}">
-        <span class="fragrance-badge">${escapeHtml(fragrance.category)}</span>
         ${productVisual(fragrance)}
       </a>
       <button class="favorite-toggle ${active?"is-active":""}" type="button" data-favorite="${escapeHtml(fragrance.id)}" aria-label="${active?"Удалить из избранного":"Добавить в избранное"}">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 5.8c-1.5-1.8-4.4-1.7-5.9 0L12 8.7 9.3 5.8c-1.5-1.7-4.4-1.8-5.9 0-1.8 2.1-1.4 5.2.5 7.1L12 21l8.1-8.1c1.9-1.9 2.3-5 .5-7.1Z"></path></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.5h9v15l-4.5-3-4.5 3v-15Z"></path></svg>
       </button>
     </div>
     <div class="fragrance-info">
-      <div class="fragrance-kicker"><span>№ ${escapeHtml(fragrance.id)} · ${escapeHtml(GENDER_LABELS[fragrance.gender]||fragrance.gender)}</span><span>${escapeHtml(fragrance.concentration||"Eau de parfum")}</span></div>
       <div class="fragrance-title-row"><h3>FLUIDE ${escapeHtml(title)}</h3><strong>${formatPrice(getPrice(fragrance))}</strong></div>
       <p class="fragrance-original">Вдохновлён: ${escapeHtml(fragrance.original)}</p>
       <p class="fragrance-notes">${escapeHtml(noteSummary(fragrance))}</p>

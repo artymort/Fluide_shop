@@ -27,13 +27,13 @@
 
       <div class="header-actions">
         <button class="header-icon focus-search" type="button" aria-label="Перейти к поиску">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"></circle><path d="m15 15 4.5 4.5"></path></svg><span>Поиск</span>
         </button>
         <button class="header-icon favorites-button" type="button" aria-label="Показать избранное">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 5.8c-1.5-1.8-4.4-1.7-5.9 0L12 8.7 9.3 5.8c-1.5-1.7-4.4-1.8-5.9 0-1.8 2.1-1.4 5.2.5 7.1L12 21l8.1-8.1c1.9-1.9 2.3-5 .5-7.1Z"></path></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.5h9v15l-4.5-3-4.5 3v-15Z"></path></svg><span>Избранное</span>
         </button>
         <button class="header-icon cart-button" type="button" aria-label="Открыть корзину">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 13H6L5 8Z"></path><path d="M9 9V6a3 3 0 0 1 6 0v3"></path></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 8.5h11l.8 11H5.7l.8-11Z"></path><path d="M9 9V7a3 3 0 0 1 6 0v2"></path></svg><span>Корзина</span>
           <b class="cart-count">0</b>
         </button>
       </div>
@@ -49,7 +49,6 @@
 
   <main>
     <section class="catalog-intro shell">
-      <p class="eyebrow">Парфюмерная коллекция FLUIDE</p>
       <div class="catalog-intro-grid">
         <h1>Найдите аромат,<br>который останется <span>с вами.</span></h1>
         <div class="catalog-intro-copy">
@@ -86,7 +85,7 @@
       <div class="catalog-layout">
         <aside class="filter-panel" id="filter-panel" aria-label="Фильтры каталога">
           <div class="filter-panel-head">
-            <div><p class="eyebrow">Точный выбор</p><h2>Фильтры</h2></div>
+            <div><h2>Фильтры</h2></div>
             <button class="filter-close" type="button" aria-label="Закрыть фильтры">×</button>
           </div>
 
@@ -149,7 +148,7 @@
 
         <section class="catalog-results" aria-live="polite">
           <div class="results-heading">
-            <div><p class="eyebrow">Каталог</p><h2 id="catalog-heading">Все ароматы</h2></div>
+            <div><h2 id="catalog-heading">Все ароматы</h2></div>
             <p class="result-count">Загрузка коллекции…</p>
           </div>
           <div class="fragrance-grid"></div>
@@ -175,7 +174,7 @@
   <div class="drawer-backdrop"></div>
 
   <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина">
-    <div class="drawer-head"><div><p class="eyebrow">Ваш выбор</p><h2>Корзина</h2></div><button class="drawer-close" type="button" aria-label="Закрыть корзину">×</button></div>
+    <div class="drawer-head"><div><h2>Корзина</h2></div><button class="drawer-close" type="button" aria-label="Закрыть корзину">×</button></div>
     <div class="cart-items"></div>
     <div class="cart-footer"><div><span>Итого</span><strong class="cart-total">0 ₽</strong></div><button type="button">Оформить заказ</button></div>
   </aside>

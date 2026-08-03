@@ -58,13 +58,11 @@ function productCard(product){
   const isFavorite = favorites.includes(product.id);
   return `<article class="product-card" data-id="${product.id}">
     <div class="product-media" style="--card-bg:${product.color}" data-quick="${product.id}" tabindex="0" role="button" aria-label="Открыть карточку ${product.name}">
-      <span class="product-badge">${product.badge}</span>
-      <button class="favorite ${isFavorite ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="Добавить ${product.name} в избранное">${isFavorite ? "♥" : "♡"}</button>
+      <button class="favorite ${isFavorite ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="Добавить ${product.name} в избранное"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.5h9v15l-4.5-3-4.5 3v-15Z"></path></svg></button>
       <img src="${product.image}" alt="${product.name} FLUIDE" loading="lazy">
       <button class="product-buy" type="button" data-buy="${product.id}">Добавить в корзину</button>
     </div>
     <div class="product-copy">
-      <p class="product-kicker">${product.categoryLabel}</p>
       <div class="product-title-row"><h3>${product.name}</h3><strong>${formatPrice(product.price)}</strong></div>
       <p class="product-description">${product.description}</p>
     </div>
@@ -130,7 +128,7 @@ function closeLayers(){
 function openQuickView(id){
   const product = products.find(row => row.id === id); if(!product)return;
   quickContent.innerHTML = `<div class="quick-image" style="--quick-bg:${product.color}"><img src="${product.image}" alt="${product.name} FLUIDE"></div>
-    <div class="quick-copy"><p class="eyebrow">${product.categoryLabel}</p><h2>${product.name}</h2><p class="quick-desc">${product.description}. Аромат FLUIDE для личного ритуала и настроения.</p><div class="quick-price">${formatPrice(product.price)}</div><div class="quick-meta"><div><span>Объём</span><strong>${product.volume}</strong></div><div><span>Ноты</span><strong>${product.notes}</strong></div></div><button class="button button--dark quick-add" type="button" data-buy="${product.id}">Добавить в корзину</button></div>`;
+    <div class="quick-copy"><h2>${product.name}</h2><p class="quick-desc">${product.description}. Аромат FLUIDE для личного ритуала и настроения.</p><div class="quick-price">${formatPrice(product.price)}</div><div class="quick-meta"><div><span>Объём</span><strong>${product.volume}</strong></div><div><span>Ноты</span><strong>${product.notes}</strong></div></div><button class="button button--dark quick-add" type="button" data-buy="${product.id}">Добавить в корзину</button></div>`;
   openLayer(quickView);
 }
 

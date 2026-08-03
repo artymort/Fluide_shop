@@ -71,27 +71,23 @@ function renderProduct(){
 
   page.innerHTML=`<article class="product-layout">
     <section class="product-gallery" style="--product-bg:${colorFor(fragrance)}">
-      <span class="product-number">FLUIDE · № ${escapeHtml(fragrance.id)}</span>
       ${productVisual(fragrance)}
-      <span class="product-caption">Парфюмерная композиция · Екатеринбург</span>
     </section>
     <section class="product-details">
-      <p class="product-eyebrow"><span></span>${escapeHtml(fragrance.category)} · ${escapeHtml(GENDER_LABELS[fragrance.gender]||fragrance.gender)}</p>
       <h1>FLUIDE ${escapeHtml(title)}</h1>
       <p class="product-inspiration">Вдохновлён композицией ${escapeHtml(fragrance.original)}</p>
       <div class="product-price" data-product-price>${formatPrice(priceFor(fragrance))}</div>
       <div class="product-choice" role="radiogroup" aria-label="Выберите объём">
-        <div><span>Объём</span><strong>Парфюм-спрей</strong></div>
+        <p>Выберите объём</p>
         <div class="size-options">
-          <button class="size-option is-active" type="button" role="radio" aria-checked="true" data-size="30">30 мл</button>
-          <button class="size-option" type="button" role="radio" aria-checked="false" data-size="50">50 мл</button>
+          <button class="size-option is-active" type="button" role="radio" aria-checked="true" data-size="30"><strong>30 мл</strong><span>${formatPrice(priceFor(fragrance,"30"))}</span></button>
+          <button class="size-option" type="button" role="radio" aria-checked="false" data-size="50"><strong>50 мл</strong><span>${formatPrice(priceFor(fragrance,"50"))}</span></button>
         </div>
       </div>
       <div class="product-actions">
-        <button class="product-add" type="button">Добавить в корзину · <span>${formatPrice(priceFor(fragrance))}</span></button>
-        <button class="product-like ${favoriteActive?"is-active":""}" type="button" aria-label="${favoriteActive?"Удалить из избранного":"Добавить в избранное"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 5.8c-1.5-1.8-4.4-1.7-5.9 0L12 8.7 9.3 5.8c-1.5-1.7-4.4-1.8-5.9 0-1.8 2.1-1.4 5.2.5 7.1L12 21l8.1-8.1c1.9-1.9 2.3-5 .5-7.1Z"></path></svg></button>
+        <button class="product-add" type="button">Добавить в корзину</button>
+        <button class="product-like ${favoriteActive?"is-active":""}" type="button" aria-label="${favoriteActive?"Удалить из избранного":"Добавить в избранное"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.5h9v15l-4.5-3-4.5 3v-15Z"></path></svg></button>
       </div>
-      <div class="product-summary"><p>${groups.length?`Композиция раскрывается в направлениях: ${escapeHtml(groups.join(", ").toLocaleLowerCase("ru-RU"))}.`:"Аромат раскрывается постепенно и остаётся частью вашего пространства."}</p></div>
       <div class="product-facts">
         <div class="product-fact"><span>Концентрация</span><strong>${escapeHtml(fragrance.concentration||"—")}</strong></div>
         <div class="product-fact"><span>Масляная основа</span><strong>${escapeHtml(fragrance.oilPercent||"—")}%</strong></div>
@@ -113,9 +109,7 @@ function renderProduct(){
 function selectSize(size){
   selectedSize=size;
   page.querySelectorAll("[data-size]").forEach(button=>{const active=button.dataset.size===size;button.classList.toggle("is-active",active);button.setAttribute("aria-checked",String(active))});
-  const price=formatPrice(priceFor(fragrance,size));
-  page.querySelector("[data-product-price]").textContent=price;
-  page.querySelector(".product-add span").textContent=price;
+  page.querySelector("[data-product-price]").textContent=formatPrice(priceFor(fragrance,size));
 }
 
 function toggleFavorite(){
@@ -139,7 +133,7 @@ function addToCart(){
 function renderRelated(){
   const related=fragrances.filter(item=>item.id!==fragrance.id&&((item.families||[]).some(value=>(fragrance.families||[]).includes(value))||item.category===fragrance.category)).slice(0,4);
   if(!related.length)return;
-  relatedGrid.innerHTML=related.map(item=>`<article class="related-card"><a class="related-card-media" style="--related-bg:${colorFor(item)}" href="product.html?id=${encodeURIComponent(item.id)}">${productVisual(item,"related")}</a><div class="related-card-info"><p>№ ${escapeHtml(item.id)} · ${escapeHtml(item.category)}</p><div><h3>FLUIDE ${escapeHtml(prettyTitle(item.title))}</h3><strong>от ${formatPrice(priceFor(item,"30"))}</strong></div></div></article>`).join("");
+  relatedGrid.innerHTML=related.map(item=>`<article class="related-card"><a class="related-card-media" style="--related-bg:${colorFor(item)}" href="product.html?id=${encodeURIComponent(item.id)}">${productVisual(item,"related")}</a><div class="related-card-info"><div><h3>FLUIDE ${escapeHtml(prettyTitle(item.title))}</h3><strong>от ${formatPrice(priceFor(item,"30"))}</strong></div></div></article>`).join("");
   relatedSection.hidden=false;
 }
 
