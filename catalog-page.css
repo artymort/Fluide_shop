@@ -35,11 +35,11 @@ fieldset{border:0;padding:0;margin:0}
 .desktop-nav a:hover:after,.desktop-nav a.is-active:after{right:0}
 .brand-logo{width:155px;grid-column:2}
 .header-actions{grid-column:3;justify-self:end;display:flex;align-items:center;gap:18px}
-.header-icon{min-height:36px;display:flex;align-items:center;gap:7px;position:relative;font-size:12px}
+.header-icon{min-height:36px;display:flex;align-items:center;gap:7px;position:relative;font-size:13px;font-weight:500}
 .icon-button{width:36px;height:36px;display:grid;place-items:center;position:relative}
-.header-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
+.header-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .favorites-button.is-active{background:var(--rose);border-radius:999px;padding-inline:10px}
-.cart-count{position:static;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--rose);color:var(--ink);font-size:9px;display:grid;place-items:center;font-weight:500}
+.cart-count{position:static;min-width:17px;height:17px;padding:0 4px 1px;border-radius:999px;background:var(--rose);color:var(--ink);font-size:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:500;line-height:1;text-align:center}
 .menu-toggle{display:none}.menu-lines,.menu-lines:before,.menu-lines:after{display:block;width:19px;height:1px;background:var(--ink);content:"";position:absolute}.menu-lines:before{top:-6px}.menu-lines:after{top:6px}
 .mobile-nav{display:none}
 

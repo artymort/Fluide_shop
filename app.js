@@ -1,16 +1,16 @@
 const products = [
-  {id:"matsukita",name:"Matsukita",category:"perfume",categoryLabel:"Парфюм · 30 мл",description:"Мускус · розовый перец · кедр",badge:"Бестселлер",price:1990,image:"assets/product-line/fragrance-matsukita-card.png",color:"#f4f0e6",notes:"Мускус, розовый перец, кедр",volume:"30 мл",isNew:false},
-  {id:"cashmere",name:"Cashmere",category:"home",categoryLabel:"Диффузор · 100 мл",description:"Кашемир · сандал · белый мускус",badge:"Хит",price:1350,image:"assets/product-line/diffuser-cashmere.png",color:"#dce8ed",notes:"Кашемир, сандал, белый мускус",volume:"100 мл",isNew:false},
-  {id:"devils-intrigue",name:"Devils Intrigue",category:"care",categoryLabel:"Спрей для волос · 200 мл",description:"Пион · амбра · древесные ноты",badge:"Новинка",price:650,image:"assets/product-line/hair-spray-devils-intrigue.png",color:"#efd9d8",notes:"Пион, амбра, древесные ноты",volume:"200 мл",isNew:true},
-  {id:"auto",name:"Car Scent",category:"auto",categoryLabel:"Автопарфюм",description:"Чистый древесно-мускусный аромат",badge:"Новинка",price:300,image:"assets/product-line/car-fragrance.png",color:"#e7eadb",notes:"Кедр, мускус, свежий воздух",volume:"6 мл",isNew:true},
-  {id:"cherry",name:"Cherry",category:"perfume",categoryLabel:"Парфюм · 30 мл",description:"Кислая вишня · малина · сандал",badge:"Бестселлер",price:1990,image:"assets/product-line/fragrance-cherry.png",color:"#f0ddd5",notes:"Вишня, малина, ваниль, сандал",volume:"30 мл",isNew:false},
-  {id:"hayati",name:"Hayati",category:"perfume",categoryLabel:"Парфюм · 30 мл",description:"Малина · сливки · белый мускус",badge:"Селектив",price:3490,image:"assets/product-line/fragrance-hayati.png",color:"#edd6d8",notes:"Малина, сливки, ваниль, белый мускус",volume:"30 мл",isNew:false},
-  {id:"musk-kashmir",name:"Musk Kashmir",category:"perfume",categoryLabel:"Парфюм · 30 мл",description:"Белый мускус · сандал · гардения",badge:"Селектив",price:3490,image:"assets/product-line/fragrance-musk-kashmir.png",color:"#dfe7ef",notes:"Белый мускус, белый перец, сандал",volume:"30 мл",isNew:true},
-  {id:"sea-salt",name:"Sea Salt",category:"home",categoryLabel:"Парфюм для дома · 300 мл",description:"Морская соль · озон · белое дерево",badge:"Для дома",price:550,image:"assets/product-line/home-perfume-sea-salt.png",color:"#dce8ed",notes:"Морская соль, озон, белое дерево",volume:"300 мл",isNew:false},
-  {id:"matsukita-solid",name:"Matsukita Solid",category:"perfume",categoryLabel:"Твёрдый парфюм · 15 мл",description:"Компактный ароматический ритуал",badge:"Мини-формат",price:990,image:"assets/product-line/solid-perfume-matsukita.png",color:"#eadfe3",notes:"Мускус, розовый перец, кедр",volume:"15 мл",isNew:true},
-  {id:"ballerina",name:"Ballerina",category:"home",categoryLabel:"Аромасвеча · 100 мл",description:"Пудровые цветы · ваниль · кашемир",badge:"Атмосфера",price:890,image:"assets/product-line/candle-ballerina.png",color:"#eee6db",notes:"Пудровые цветы, ваниль, кашемир",volume:"100 мл",isNew:false},
-  {id:"black-pepper",name:"Black Pepper",category:"perfume",categoryLabel:"Парфюм · 30 мл",description:"Чёрный перец · амбра · нероли",badge:"Селектив",price:3490,image:"assets/product-line/fragrance-black-pepper.png",color:"#e5e5dc",notes:"Чёрный перец, амбра, нероли",volume:"30 мл",isNew:false},
-  {id:"white",name:"White",category:"perfume",categoryLabel:"Парфюм · 30 мл",description:"Грейпфрут · розмарин · ветивер",badge:"Люкс",price:1990,image:"assets/product-line/fragrance-white.png",color:"#e1e8e8",notes:"Грейпфрут, розмарин, кедр, ветивер",volume:"30 мл",isNew:false}
+  {id:"fragrance-001",name:"Amber Wood",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Кардамон · яблоко · лаванда",badge:"Селектив",price:3490,image:"images/fragrances/001.webp",color:"#dfe8f0",notes:"Кардамон, яблоко, лаванда",volume:"30 мл",isNew:false},
+  {id:"fragrance-002",name:"Lucky Wish",category:"women",categoryLabel:"Парфюм · 30 мл",description:"Ледяной лимон · танжерин · помело",badge:"Селектив",price:3490,image:"images/fragrances/002.webp",color:"#eadde2",notes:"Ледяной лимон, танжерин, помело",volume:"30 мл",isNew:true},
+  {id:"fragrance-006",name:"Hayati",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Малина · ягодные фрукты · ананас",badge:"Селектив",price:3490,image:"images/fragrances/006.webp",color:"#f2dfda",notes:"Малина, ягодные фрукты, ананас",volume:"30 мл",isNew:false},
+  {id:"fragrance-007",name:"Musk Kashmir",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Белый мускус · белый перец · сандал",badge:"Селектив",price:3490,image:"images/fragrances/007.webp",color:"#dfe8f0",notes:"Белый мускус, белый перец, сандал",volume:"30 мл",isNew:false},
+  {id:"fragrance-008",name:"Aurica",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Ананас · кедровая хвоя · мандарин",badge:"Селектив",price:3490,image:"images/fragrances/008.webp",color:"#eee7dc",notes:"Ананас, кедровая хвоя, мандарин",volume:"30 мл",isNew:true},
+  {id:"fragrance-016",name:"Aventus",category:"men",categoryLabel:"Парфюм · 30 мл",description:"Бергамот · чёрная смородина · яблоко",badge:"Селектив",price:3490,image:"images/fragrances/016.webp",color:"#dfe5da",notes:"Бергамот, чёрная смородина, яблоко",volume:"30 мл",isNew:false},
+  {id:"fragrance-021",name:"Escentric 02 Black",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Амброксан · Iso E Super · ирис",badge:"Селектив",price:3490,image:"images/fragrances/021.webp",color:"#e6e1ef",notes:"Амброксан, Iso E Super, ирис",volume:"30 мл",isNew:true},
+  {id:"fragrance-022",name:"Escentric 02",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Амброксан · Iso E Super · ирис",badge:"Селектив",price:3490,image:"images/fragrances/022.webp",color:"#f2dfda",notes:"Амброксан, Iso E Super, ирис",volume:"30 мл",isNew:false},
+  {id:"fragrance-023",name:"Games 1",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Бергамот · розовый перец · мандарин",badge:"Селектив",price:3490,image:"images/fragrances/023.webp",color:"#dfe8f0",notes:"Бергамот, розовый перец, мандарин",volume:"30 мл",isNew:false},
+  {id:"fragrance-024",name:"Fleur Narcotique",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Личи · бергамот · персик",badge:"Селектив",price:3490,image:"images/fragrances/024.webp",color:"#eadde2",notes:"Личи, бергамот, персик",volume:"30 мл",isNew:true},
+  {id:"fragrance-025",name:"Baccarat",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Шафран · жасмин · амбровое дерево",badge:"Селектив",price:3490,image:"images/fragrances/025.webp",color:"#eee7dc",notes:"Шафран, жасмин, амбровое дерево",volume:"30 мл",isNew:false},
+  {id:"fragrance-026",name:"Ganymede",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Шафран · мандарин · османтус",badge:"Селектив",price:3490,image:"images/fragrances/026.webp",color:"#dfe5da",notes:"Шафран, мандарин, османтус",volume:"30 мл",isNew:false}
 ];
 
 const grid = document.querySelector(".product-grid");
@@ -71,10 +71,11 @@ function productCard(product){
 
 function renderProducts(){
   const matches = visibleProducts();
-  const list = expanded || activeFilter !== "all" || searchQuery ? matches : matches.slice(0,8);
+  const visibleLimit = expanded ? 12 : 8;
+  const list = matches.slice(0,visibleLimit);
   grid.innerHTML = list.length ? list.map(productCard).join("") : `<div class="no-results">Ничего не найдено. Попробуйте изменить запрос или категорию.</div>`;
   productCount.textContent = `Показано ${list.length} из ${matches.length}`;
-  showMore.hidden = matches.length <= 8 || activeFilter !== "all" || Boolean(searchQuery);
+  showMore.hidden = matches.length <= 8;
   showMore.textContent = expanded ? "Свернуть" : "Показать ещё";
 }
 
@@ -165,7 +166,6 @@ document.querySelector(".favorite-open").addEventListener("click",()=>showToast(
 document.querySelector(".subscribe-form").addEventListener("submit",event=>{event.preventDefault();event.currentTarget.reset();showToast("Спасибо! Вы в списке FLUIDE")});
 document.querySelector(".checkout-button").addEventListener("click",()=>showToast(cart.length?"Оформление подключим на следующем этапе":"Сначала добавьте товары"));
 document.querySelector(".finder-start").addEventListener("click",()=>{setFilter("perfume");document.querySelector("#catalog").scrollIntoView({behavior:"smooth"});showToast("Начнём с парфюмерной коллекции")});
-document.querySelectorAll(".set-buy").forEach(button=>button.addEventListener("click",()=>{const ids=button.dataset.set==="home"?["cashmere","ballerina"]:["matsukita","devils-intrigue"];ids.forEach(addToCart)}));
 
 function preventOrphans(){
   document.querySelectorAll("h1,h2,h3,.hero-text,.section-intro,.category-meta p").forEach(element=>{
