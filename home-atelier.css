@@ -108,3 +108,38 @@ svg{stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 }
 
 @media(max-width:420px){.product{flex-basis:84%}.promo{height:430px}.finder-visual,.finder-visual>img{min-height:360px}.voice-grid>article,.voice-middle{grid-template-rows:330px auto}.voice-photo,.voice-middle .voice-photo{height:330px}.brand-photo{height:340px}}
+
+/* September polish: shorter opening, expanding product grid, distinct stories below. */
+@media(min-width:701px){.hero{height:clamp(560px,calc(100svh - 175px),830px)}}
+.hero-copy h1,.hero-copy h2{font-size:clamp(54px,5.2vw,86px)}
+.bestsellers .section-head h2,.gifts h2,.brand h2,.voices .section-head h2,.club h2,.finder h2{font-size:clamp(40px,3.65vw,54px)}
+.promo h2{font-size:clamp(30px,2.7vw,44px)}
+
+/* Products reveal downwards: 4, 8, 12, then collapse to 4. */
+.products{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;scroll-snap-type:none;border-left:0}
+.product{min-width:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.product:nth-child(4n+1){border-left:1px solid var(--line)}
+.product-footer{display:flex;align-items:center;justify-content:space-between;min-height:94px}.product-footer .more-row{margin-left:auto}
+
+/* The selection service is the second full-bleed statement after the hero. */
+.finder{width:100%;max-width:none;grid-template-columns:1fr 1fr;min-height:640px}
+.finder-copy{padding-left:max(clamp(30px,5vw,80px),calc((100vw - 1400px)/2));padding-right:clamp(50px,7vw,110px)}
+.finder-visual,.finder-visual>img{min-height:640px}
+
+/* Gifts stay a quiet white editorial spread; the company story becomes a blue panel. */
+.gifts{padding-top:100px;padding-bottom:125px}
+.brand{grid-template-columns:.86fr 1.14fr;gap:0;padding:0;background:var(--sky);align-items:stretch;margin-top:10px;margin-bottom:120px}
+.brand-photo{order:2;height:620px}.brand-photo>img{object-position:center 45%}
+.brand-copy{order:1;display:flex;flex-direction:column;justify-content:center;padding:clamp(48px,6vw,84px);color:var(--blue)}
+.brand-copy>p:not(.plain-label){color:#343a58;max-width:490px}.brand-copy .pill{border-color:#59617f;background:#fff}.brand-copy .pill:hover{background:var(--blue);color:#fff}.plain-label{color:#4f5879}
+
+@media(max-width:1000px){.finder{min-height:580px}.finder-visual,.finder-visual>img{min-height:580px}.brand-photo{height:560px}.brand-copy{padding:45px}}
+@media(max-width:700px){
+.hero-copy h1,.hero-copy h2{font-size:clamp(40px,11.2vw,50px)}
+.bestsellers .section-head h2,.gifts h2,.brand h2,.voices .section-head h2,.club h2,.finder h2{font-size:34px}
+.products{grid-template-columns:repeat(2,minmax(0,1fr))}.product{border-right:1px solid var(--line)}.product:nth-child(4n+1){border-left:0}.product:nth-child(2n+1){border-left:1px solid var(--line)}
+.product-footer{min-height:90px;display:flex;padding-top:12px}.product-footer .more-row{margin:0}.product-footer>.quiet-link{margin:0}
+.finder{grid-template-columns:1fr;min-height:0}.finder-copy{padding:48px 28px 54px}.finder-visual,.finder-visual>img{min-height:410px}
+.gifts{padding-top:70px;padding-bottom:88px}.brand{grid-template-columns:1fr;margin-bottom:88px}.brand-photo{order:1;height:410px}.brand-copy{order:2;padding:48px 28px 54px}
+}
+@media(max-width:420px){.product-image{height:260px}.product-image img{max-height:190px}.product-copy{padding-inline:30px}.brand-photo{height:350px}}

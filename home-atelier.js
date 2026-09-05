@@ -18,15 +18,16 @@ const escapeHtml=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const money=n=>new Intl.NumberFormat("ru-RU").format(n)+" ₽";
 const read=(key)=>{try{const value=JSON.parse(localStorage.getItem(key)||"[]");return Array.isArray(value)?value:[]}catch{return []}};
 const save=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch{toast("Не удалось сохранить данные в браузере.")}};
-let favorites=read("fluide-favorites"),cart=read("fluide-cart"),filter="all",visible=8,panelMode="",toastTimer;
+let favorites=read("fluide-favorites"),cart=read("fluide-cart"),filter="all",visible=4,panelMode="",toastTimer;
 const href=p=>"product.html?id="+encodeURIComponent(p.id.replace("fragrance-",""));
 function toast(message){$("#toast").textContent=message;$("#toast").classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("#toast").classList.remove("visible"),3000)}
 function renderProducts(){
  const list=products.filter(p=>filter==="all"||(filter==="new"?p.isNew:p.category===filter));
  $("#products").innerHTML=list.slice(0,visible).map(p=>`<article class="product"><h3 class="product-label"><a href="${href(p)}">${p.name}</a></h3><button class="favorite ${favorites.includes(p.id)?"selected":""}" data-favorite="${p.id}" aria-label="В избранное: ${p.name}" aria-pressed="${favorites.includes(p.id)}"><svg><use href="#i-heart"/></svg></button><a class="product-image" href="${href(p)}"><img src="${p.image}" alt="${p.name}" loading="lazy"></a><div class="product-copy"><p>Парфюм · 30 мл</p><span class="product-price">${money(p.price)}</span><button class="product-add" data-buy="${p.id}" aria-label="Добавить ${p.name} в корзину" title="Добавить в корзину">+</button></div></article>`).join("")||'<p class="no-products">В этой категории пока нет ароматов.</p>';
  $("#product-count").textContent=`${Math.min(visible,list.length)} из ${list.length} ароматов`;
- $("#show-more").hidden=visible>=list.length;
- requestAnimationFrame(updateProductTrack);
+ const more=$("#show-more"),expanded=visible>=list.length;
+ more.hidden=list.length<=4;
+ more.innerHTML=expanded?'Скрыть <span>−</span>':'Показать ещё <span>+</span>';
 }
 function updateCart(){save("fluide-cart",cart);$("#cart-count").textContent=cart.reduce((n,p)=>n+(Number(p.quantity)||1),0)||""}
 function addToCart(id){const p=products.find(p=>p.id===id);if(!p)return;const row=cart.find(x=>x.id===id);if(row)row.quantity++;else cart.push({id,quantity:1,product:{...p}});updateCart();toast(p.name+" — в корзине")}
@@ -46,8 +47,8 @@ function renderPanel(){
 }
 document.addEventListener("click",event=>{
  const b=event.target.closest("button,a");if(!b)return;
- if(b.hasAttribute("data-filter")){filter=b.dataset.filter;visible=8;$$("[data-filter]").forEach(x=>{x.classList.toggle("active",x===b);x.setAttribute("aria-pressed",x===b)});$(".filter-label").textContent=b.textContent==="Все"?"Все ароматы":b.textContent;$(".product-filter-menu").open=false;renderProducts();$("#products").scrollLeft=0}
- if(b.id==="show-more"){const previous=visible;visible+=4;renderProducts();requestAnimationFrame(()=>$("#products").scrollTo({left:$("#products .product").offsetWidth*previous,behavior:"smooth"}))}
+ if(b.hasAttribute("data-filter")){filter=b.dataset.filter;visible=4;$$("[data-filter]").forEach(x=>{x.classList.toggle("active",x===b);x.setAttribute("aria-pressed",x===b)});$(".filter-label").textContent=b.textContent==="Все"?"Все ароматы":b.textContent;$(".product-filter-menu").open=false;renderProducts()}
+ if(b.id==="show-more"){const list=products.filter(p=>filter==="all"||(filter==="new"?p.isNew:p.category===filter));visible=visible>=list.length?4:Math.min(visible+4,list.length);renderProducts();if(visible===4)$("#bestsellers").scrollIntoView({behavior:"smooth",block:"start"})}
  if(b.dataset.buy)addToCart(b.dataset.buy);
  if(b.dataset.favorite)toggleFavorite(b.dataset.favorite);
  if(b.dataset.open)openPanel(b.dataset.open);
@@ -95,8 +96,4 @@ $("[data-quiz]").onclick=()=>{answers=[];renderQuiz();$("#quiz").showModal()};
 $("#subscribe").addEventListener("submit",e=>{e.preventDefault();$("#subscribe-status").textContent="Подписка пока не подключена. Ваш email не отправлен и не сохранён."});
 try{$(".cookie").hidden=localStorage.getItem("fluide-cookie-consent")==="accepted"}catch{$(".cookie").hidden=false}
 $("[data-cookie-accept]").onclick=()=>{try{localStorage.setItem("fluide-cookie-consent","accepted")}catch{}$(".cookie").hidden=true};$("[data-cookie-settings]").onclick=()=>$(".cookie").hidden=false;
-function updateProductTrack(){const rail=$("#products"),max=rail.scrollWidth-rail.clientWidth,position=max?rail.scrollLeft/max:0;$("#product-progress").value=Math.round(position*100);$("#product-progress").disabled=max<2;$("[data-products-prev]").disabled=max<2||position<.01;$("[data-products-next]").disabled=max<2||position>.99}
-function moveProducts(direction){const rail=$("#products"),card=rail.querySelector(".product"),step=card?card.getBoundingClientRect().width:rail.clientWidth;rail.scrollBy({left:step*direction,behavior:"smooth"})}
-$("#products").addEventListener("scroll",updateProductTrack,{passive:true});window.addEventListener("resize",updateProductTrack);$("#product-progress").addEventListener("input",e=>{const rail=$("#products");rail.scrollLeft=(rail.scrollWidth-rail.clientWidth)*Number(e.target.value)/100});$("#products").addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key==="ArrowLeft"){e.preventDefault();$("#products").scrollBy({left:$("#products").clientWidth*(e.key==="ArrowRight"?1:-1),behavior:"smooth"})}});
-$("[data-products-prev]").onclick=()=>moveProducts(-1);$("[data-products-next]").onclick=()=>moveProducts(1);
 renderProducts();$("#cart-count").textContent=cart.reduce((n,p)=>n+(Number(p.quantity)||1),0)||"";pauseHero(paused);
