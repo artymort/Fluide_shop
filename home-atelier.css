@@ -111,9 +111,9 @@ svg{stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 
 /* September polish: shorter opening, expanding product grid, distinct stories below. */
 @media(min-width:701px){.hero{height:clamp(560px,calc(100svh - 175px),830px)}}
-.hero-copy h1,.hero-copy h2{font-size:clamp(54px,5.2vw,86px)}
-.bestsellers .section-head h2,.gifts h2,.brand h2,.voices .section-head h2,.club h2,.finder h2{font-size:clamp(40px,3.65vw,54px)}
-.promo h2{font-size:clamp(30px,2.7vw,44px)}
+.hero-copy h1,.hero-copy h2{font-size:clamp(50px,4.6vw,76px)}
+.bestsellers .section-head h2,.gifts h2,.brand h2,.voices .section-head h2,.club h2,.finder h2{font-size:clamp(36px,3vw,48px)}
+.promo h2{font-size:clamp(28px,2.35vw,38px)}
 
 /* Products reveal downwards: 4, 8, 12, then collapse to 4. */
 .products{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;scroll-snap-type:none;border-left:0}
