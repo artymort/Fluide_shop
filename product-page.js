@@ -86,7 +86,7 @@ function renderProduct(){
       </div>
       <div class="product-actions">
         <button class="product-add" type="button">Добавить в корзину</button>
-        <button class="product-like ${favoriteActive?"is-active":""}" type="button" aria-label="${favoriteActive?"Удалить из избранного":"Добавить в избранное"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.5h9v15l-4.5-3-4.5 3v-15Z"></path></svg></button>
+        <button class="product-like ${favoriteActive?"is-active":""}" type="button" aria-label="${favoriteActive?"Удалить из избранного":"Добавить в избранное"}"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg></button>
       </div>
       <div class="product-facts">
         <div class="product-fact"><span>Концентрация</span><strong>${escapeHtml(fragrance.concentration||"—")}</strong></div>
@@ -142,7 +142,7 @@ function renderCart(){
   const detailed=cart.map(item=>({item,product:item.product||HOME_PRODUCT_SNAPSHOTS[item.id]||null})).filter(row=>row.product);
   cartCount.textContent=cart.reduce((sum,item)=>sum+(Number(item.quantity)||0),0);
   cartTotal.textContent=formatPrice(detailed.reduce((sum,row)=>sum+row.product.price*row.item.quantity,0));
-  cartItems.innerHTML=detailed.length?detailed.map(({item,product})=>`<div class="cart-item"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${item.quantity} × ${formatPrice(product.price)}</p></div><button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар">×</button></div>`).join(""):`<div class="cart-empty"><div><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small></div></div>`;
+  cartItems.innerHTML=detailed.length?detailed.map(({item,product})=>`<div class="cart-item"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${item.quantity} × ${formatPrice(product.price)}</p></div><button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join(""):`<div class="cart-empty"><div><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small></div></div>`;
 }
 function openCart(){cartDrawer.classList.add("is-open");cartDrawer.setAttribute("aria-hidden","false");backdrop.classList.add("is-open");document.body.classList.add("is-locked")}
 function closeCart(){cartDrawer.classList.remove("is-open");cartDrawer.setAttribute("aria-hidden","true");backdrop.classList.remove("is-open");document.body.classList.remove("is-locked")}

@@ -32,7 +32,7 @@ function renderProducts(){
  $("#products").innerHTML=list.slice(0,visible).map(p=>{const cardName=`FLUIDE ${Number(p.id.replace("fragrance-",""))} ${p.name}`;return `<article class="product">
    <div class="product-visual">
     <span class="product-badge">${p.isNew?"Новинка":p.badge}</span>
-    <button class="favorite ${favorites.includes(p.id)?"selected":""}" data-favorite="${p.id}" aria-label="В избранное: ${p.name}" aria-pressed="${favorites.includes(p.id)}"><svg><use href="#i-heart"/></svg></button>
+    <button class="favorite ${favorites.includes(p.id)?"selected":""}" data-favorite="${p.id}" aria-label="В избранное: ${p.name}" aria-pressed="${favorites.includes(p.id)}"><svg><use href="assets/icons/lucide.svg#heart"/></svg></button>
     <a class="product-image" href="${href(p)}"><img src="${p.image}" alt="${cardName}" loading="lazy"></a>
    </div>
    <div class="product-copy">
@@ -45,7 +45,7 @@ function renderProducts(){
  $("#product-count").textContent=`${Math.min(visible,list.length)} из ${list.length} ароматов`;
  const more=$("#show-more"),expanded=visible>=list.length;
  more.hidden=list.length<=4;
- more.innerHTML=expanded?'Скрыть <span>−</span>':'Показать еще <span>+</span>';
+ more.innerHTML=expanded?'Скрыть <svg aria-hidden="true"><use href="assets/icons/lucide.svg#minus"/></svg>':'Показать еще <svg aria-hidden="true"><use href="assets/icons/lucide.svg#plus"/></svg>';
 }
 function updateCart(){save("fluide-cart",cart);$("#cart-count").textContent=cart.reduce((n,p)=>n+(Number(p.quantity)||1),0)||""}
 function openSizeSelector(id){selectedProductId=id;openPanel("volume","Выберите объем")}
@@ -59,7 +59,7 @@ function renderPanel(){
  if(panelMode==="search"){body.innerHTML='<label for="home-search">Название или любимые ноты</label><input id="home-search" type="search" placeholder="Например, мускус"><div id="search-results"></div>';$("#home-search").addEventListener("input",()=>{const q=$("#home-search").value.trim().toLowerCase();$("#search-results").innerHTML=products.filter(p=>(p.name+" "+p.notes).toLowerCase().includes(q)).map(resultRow).join("")||'<p>В подборке не найдено. Посмотрите полный каталог.</p><a class="pill outline" href="catalog.html">Перейти в каталог ↗</a>'});$("#home-search").dispatchEvent(new Event("input"));}
  if(panelMode==="favorites"){const list=products.filter(p=>favorites.includes(p.id));body.innerHTML=list.length?list.map(p=>`<div class="favorite-row">${resultRow(p)}<button class="buy" data-favorite="${p.id}">Убрать из избранного</button></div>`).join(""):'<p>Сохраняйте ароматы с помощью сердечка на карточке.</p>';if(favorites.some(id=>!products.some(p=>p.id===id)))body.innerHTML+='<p>Остальные сохраненные ароматы доступны в каталоге.</p><a class="pill outline" href="catalog.html">Открыть каталог</a>';}
  if(panelMode==="cart"){
- let total=0;body.innerHTML=cart.map((row,i)=>{const p=row.product||products.find(p=>p.id===row.id);if(!p)return "";total+=(Number(p.price)||0)*row.quantity;return `<div class="cart-row"><img src="${escapeHtml(p.image)}" alt=""><div><h3>${escapeHtml(p.name)}</h3><p>${money(Number(p.price)||0)}</p><button data-quantity="${i}" data-delta="-1" aria-label="Уменьшить количество">−</button> <span>${row.quantity}</span> <button data-quantity="${i}" data-delta="1" aria-label="Увеличить количество">+</button></div><button data-remove="${i}" aria-label="Удалить ${escapeHtml(p.name)}">×</button></div>`}).join("")||(cart.length?'':'<p>Здесь будут ваши ароматы.</p>');
+ let total=0;body.innerHTML=cart.map((row,i)=>{const p=row.product||products.find(p=>p.id===row.id);if(!p)return "";total+=(Number(p.price)||0)*row.quantity;return `<div class="cart-row"><img src="${escapeHtml(p.image)}" alt=""><div><h3>${escapeHtml(p.name)}</h3><p>${money(Number(p.price)||0)}</p><button data-quantity="${i}" data-delta="-1" aria-label="Уменьшить количество"><svg><use href="assets/icons/lucide.svg#minus"/></svg></button> <span>${row.quantity}</span> <button data-quantity="${i}" data-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"/></svg></button></div><button data-remove="${i}" aria-label="Удалить ${escapeHtml(p.name)}"><svg><use href="assets/icons/lucide.svg#trash-2"/></svg></button></div>`}).join("")||(cart.length?'':'<p>Здесь будут ваши ароматы.</p>');
  if(cart.length)body.innerHTML+=`<div class="cart-total"><span>Итого</span><span>${money(total)}</span></div><p>Товары сохранены в корзине. Онлайн-оформление заказа пока не подключено.</p>`;
  body.innerHTML+='<a class="pill outline" href="catalog.html">Продолжить выбор ↗</a>';
  }
