@@ -4,7 +4,7 @@ const products = [
   {id:"fragrance-006",name:"Hayati",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Малина · ягодные фрукты · ананас",badge:"Селектив",price:3490,image:"images/fragrances/006.webp",color:"#f2dfda",notes:"Малина, ягодные фрукты, ананас",volume:"30 мл",isNew:false},
   {id:"fragrance-007",name:"Musk Kashmir",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Белый мускус · белый перец · сандал",badge:"Селектив",price:3490,image:"images/fragrances/007.webp",color:"#dfe8f0",notes:"Белый мускус, белый перец, сандал",volume:"30 мл",isNew:false},
   {id:"fragrance-008",name:"Aurica",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Ананас · кедровая хвоя · мандарин",badge:"Селектив",price:3490,image:"images/fragrances/008.webp",color:"#eee7dc",notes:"Ананас, кедровая хвоя, мандарин",volume:"30 мл",isNew:true},
-  {id:"fragrance-016",name:"Aventus",category:"men",categoryLabel:"Парфюм · 30 мл",description:"Бергамот · чёрная смородина · яблоко",badge:"Селектив",price:3490,image:"images/fragrances/016.webp",color:"#dfe5da",notes:"Бергамот, чёрная смородина, яблоко",volume:"30 мл",isNew:false},
+  {id:"fragrance-016",name:"Aventus",category:"men",categoryLabel:"Парфюм · 30 мл",description:"Бергамот · черная смородина · яблоко",badge:"Селектив",price:3490,image:"images/fragrances/016.webp",color:"#dfe5da",notes:"Бергамот, черная смородина, яблоко",volume:"30 мл",isNew:false},
   {id:"fragrance-021",name:"Escentric 02 Black",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Амброксан · Iso E Super · ирис",badge:"Селектив",price:3490,image:"images/fragrances/021.webp",color:"#e6e1ef",notes:"Амброксан, Iso E Super, ирис",volume:"30 мл",isNew:true},
   {id:"fragrance-022",name:"Escentric 02",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Амброксан · Iso E Super · ирис",badge:"Селектив",price:3490,image:"images/fragrances/022.webp",color:"#f2dfda",notes:"Амброксан, Iso E Super, ирис",volume:"30 мл",isNew:false},
   {id:"fragrance-023",name:"Games 1",category:"unisex",categoryLabel:"Парфюм · 30 мл",description:"Бергамот · розовый перец · мандарин",badge:"Селектив",price:3490,image:"images/fragrances/023.webp",color:"#dfe8f0",notes:"Бергамот, розовый перец, мандарин",volume:"30 мл",isNew:false},
@@ -76,7 +76,7 @@ function renderProducts(){
   grid.innerHTML = list.length ? list.map(productCard).join("") : `<div class="no-results">Ничего не найдено. Попробуйте изменить запрос или категорию.</div>`;
   productCount.textContent = `Показано ${list.length} из ${matches.length}`;
   showMore.hidden = matches.length <= 4;
-  showMore.textContent = expanded ? "Свернуть" : "Показать ещё";
+  showMore.textContent = expanded ? "Свернуть" : "Показать еще";
   grid.scrollLeft = 0;
 }
 
@@ -130,7 +130,7 @@ function closeLayers(){
 function openQuickView(id){
   const product = products.find(row => row.id === id); if(!product)return;
   quickContent.innerHTML = `<div class="quick-image" style="--quick-bg:${product.color}"><img src="${product.image}" alt="${product.name} FLUIDE"></div>
-    <div class="quick-copy"><h2>${product.name}</h2><p class="quick-desc">${product.description}. Аромат FLUIDE для личного ритуала и настроения.</p><div class="quick-price">${formatPrice(product.price)}</div><div class="quick-meta"><div><span>Объём</span><strong>${product.volume}</strong></div><div><span>Ноты</span><strong>${product.notes}</strong></div></div><button class="button button--dark quick-add" type="button" data-buy="${product.id}">Добавить в корзину</button></div>`;
+    <div class="quick-copy"><h2>${product.name}</h2><p class="quick-desc">${product.description}. Аромат FLUIDE для личного ритуала и настроения.</p><div class="quick-price">${formatPrice(product.price)}</div><div class="quick-meta"><div><span>Объем</span><strong>${product.volume}</strong></div><div><span>Ноты</span><strong>${product.notes}</strong></div></div><button class="button button--dark quick-add" type="button" data-buy="${product.id}">Добавить в корзину</button></div>`;
   openLayer(quickView);
 }
 
@@ -175,7 +175,7 @@ searchForm.addEventListener("submit",event=>{event.preventDefault();searchQuery=
 document.querySelector(".favorite-open").addEventListener("click",()=>showToast(favorites.length?`В избранном: ${favorites.length}`:"В избранном пока пусто"));
 document.querySelector(".subscribe-form").addEventListener("submit",event=>{event.preventDefault();event.currentTarget.reset();showToast("Спасибо! Вы в списке FLUIDE")});
 document.querySelector(".checkout-button").addEventListener("click",()=>showToast(cart.length?"Оформление подключим на следующем этапе":"Сначала добавьте товары"));
-document.querySelector(".finder-start").addEventListener("click",()=>{setFilter("all");document.querySelector("#catalog").scrollIntoView({behavior:"smooth"});showToast("Начнём с парфюмерной коллекции")});
+document.querySelector(".finder-start").addEventListener("click",()=>{setFilter("all");document.querySelector("#catalog").scrollIntoView({behavior:"smooth"});showToast("Начнем с парфюмерной коллекции")});
 
 function preventOrphans(){
   document.querySelectorAll("h1,h2,h3,.hero-text,.section-intro,.category-meta p").forEach(element=>{
@@ -232,12 +232,12 @@ document.querySelector(".announcement-prev")?.addEventListener("click",()=>showA
 document.querySelector(".announcement-next")?.addEventListener("click",()=>showAnnouncement(announcementIndex+1));
 
 const storyData = [
-  {title:"Cherry 33",text:"Сочная вишня, тёплое дерево и мягкий шлейф новой композиции.",image:"assets/media/category-perfume-studio-v1.png",href:"catalog.html",label:"Смотреть аромат"},
+  {title:"Cherry 33",text:"Сочная вишня, теплое дерево и мягкий шлейф новой композиции.",image:"assets/media/category-perfume-studio-v1.png",href:"catalog.html",label:"Смотреть аромат"},
   {title:"Наборы 2+1",text:"Соберите три композиции и меняйте аромат вместе с настроением.",image:"assets/product-line/fragrance-hayati.png",href:"catalog.html",label:"Собрать набор",color:"#9fb6de"},
   {title:"Подарки FLUIDE",text:"Готовые наборы, Discovery Set и сертификаты для личного подарка.",image:"assets/product-line/solid-perfume-matsukita.png",href:"#gifts",label:"Выбрать подарок",color:"#eab6a8"},
-  {title:"Мисты",text:"Лёгкий аромат для волос и тела — знакомое звучание в новом формате.",image:"assets/media/category-care-studio-v1.png",href:"catalog.html",label:"Перейти к мистам"},
+  {title:"Мисты",text:"Легкий аромат для волос и тела — знакомое звучание в новом формате.",image:"assets/media/category-care-studio-v1.png",href:"catalog.html",label:"Перейти к мистам"},
   {title:"Ароматы для дома",text:"Диффузоры, свечи и спреи, которые собирают пространство вокруг вас.",image:"assets/media/category-home-studio-v1.png",href:"catalog.html",label:"Смотреть коллекцию"},
-  {title:"Мастер-классы",text:"Встречаемся во Владимире, знакомимся с нотами и создаём аромат вместе.",image:"IMG_7434.PNG",href:"about.html",label:"Узнать подробнее"}
+  {title:"Мастер-классы",text:"Встречаемся во Владимире, знакомимся с нотами и создаем аромат вместе.",image:"IMG_7434.PNG",href:"about.html",label:"Узнать подробнее"}
 ];
 const storyViewer = document.querySelector(".story-viewer");
 const storyContent = document.querySelector(".story-content");

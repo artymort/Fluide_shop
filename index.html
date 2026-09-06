@@ -6,8 +6,8 @@
 <meta name="description" content="FLUIDE — парфюмерный бренд из Владимира. Парфюм, ароматы для дома, подарки и персональный подбор.">
 <link rel="preload" as="image" href="assets/media/hero-fluide-product-studio-blue-desktop-v1.png" media="(min-width: 701px)">
 <link rel="preload" as="image" href="assets/media/hero-woman-product-family-blue-mobile-v1.png" media="(max-width: 700px)">
-<link rel="stylesheet" href="home-atelier.css?v=responsive-hero-v1">
-<script src="home-atelier.js?v=be793e8" defer></script>
+<link rel="stylesheet" href="home-atelier.css?v=finder-blue-v2">
+<script src="home-atelier.js?v=yo-e-v1" defer></script>
 </head>
 <body>
 <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -26,11 +26,8 @@
 <div class="header-tools"><button class="icon-btn" data-open="search" aria-label="Поиск"><svg><use href="#i-search"/></svg></button><button class="icon-btn" data-open="favorites" aria-label="Избранное"><svg><use href="#i-heart"/></svg></button><button class="icon-btn bag-button" data-open="cart" aria-label="Корзина"><svg><use href="#i-bag"/></svg><span id="cart-count">0</span></button><button class="icon-btn menu-button" data-open="menu" aria-label="Открыть меню"><span></span><span></span></button></div>
 </header>
 <main id="main">
-<section class="hero" aria-label="Коллекции и предложения FLUIDE" aria-roledescription="карусель">
-<article class="hero-slide active"><picture class="hero-media"><source media="(max-width: 700px)" srcset="assets/media/hero-woman-product-family-blue-mobile-v1.png"><img src="assets/media/hero-fluide-product-studio-blue-desktop-v1.png" alt="Спрей для волос Devils Intrigue, аромат Matsukita и спрей для дома Citrus Rush FLUIDE" fetchpriority="high"></picture><div class="hero-copy"><h1>Чувствовать больше.<br>Быть собой.</h1><p>Ароматы, которые становятся частью вас.</p><a class="pill light" href="catalog.html">Найти свой аромат</a></div></article>
-<article class="hero-slide" hidden><picture class="hero-media"><img src="assets/media/hero-cherry-right-v2.png" alt="Композиция ароматов с флаконом Cherry"></picture><div class="hero-copy"><h2>Вишня.<br>И ничего<br>случайного.</h2><p>Cherry 33 — сочное начало, тёплое продолжение.</p><a class="pill light" href="catalog.html?search=Cherry">Открыть Cherry 33</a></div></article>
-<article class="hero-slide hero-home" hidden><picture class="hero-media"><img src="assets/media/hero-home-blue-interior-v4.png" alt="Диффузор Cashmere в современном голубом интерьере"></picture><div class="hero-copy"><h2>У каждого дома<br>свой аромат.</h2><p>Небольшая деталь, которая меняет атмосферу.</p><a class="pill light" href="catalog.html?category=home">Для дома</a></div></article>
-<div class="hero-controls"><button data-hero-prev aria-label="Предыдущий слайд"><svg><use href="#i-arrow"/></svg></button><div class="hero-dots"><button class="active" data-slide="0" aria-label="Слайд 1" aria-current="true"></button><button data-slide="1" aria-label="Слайд 2"></button><button data-slide="2" aria-label="Слайд 3"></button></div><button data-hero-next aria-label="Следующий слайд"><svg><use href="#i-arrow"/></svg></button><button data-hero-pause aria-label="Остановить слайдер">Ⅱ</button></div>
+<section class="hero" aria-label="Главный баннер FLUIDE">
+<article class="hero-slide active"><picture class="hero-media"><source media="(max-width: 700px)" srcset="assets/media/hero-woman-product-family-blue-mobile-v1.png"><img src="assets/media/hero-fluide-product-studio-blue-desktop-v1.png" alt="Спрей для волос Devils Intrigue, аромат Matsukita и спрей для дома Citrus Rush FLUIDE" fetchpriority="high"></picture><div class="hero-copy"><h1>Чувствовать больше<br>Быть собой</h1><p>Ароматы, которые становятся частью вас</p><a class="pill light" href="catalog.html">Найти свой аромат</a></div></article>
 </section>
 <section class="stories" aria-label="Истории FLUIDE">
 <button data-story="0"><span><img src="assets/product-line/fragrance-cherry.png" alt=""></span>Cherry 33</button>
@@ -42,22 +39,23 @@
 </section>
 <section class="bestsellers section" id="bestsellers">
 <div class="section-head"><h2>Бестселлеры</h2><details class="product-filter-menu"><summary><span class="filter-label">Все ароматы</span></summary>
-<div class="filters" aria-label="Фильтр ароматов"><button data-filter="all" class="active" aria-pressed="true">Все</button><button data-filter="women" aria-pressed="false">Для неё</button><button data-filter="men" aria-pressed="false">Для него</button><button data-filter="unisex" aria-pressed="false">Унисекс</button><button data-filter="new" aria-pressed="false">Новинки</button></div></details></div>
+<div class="filters" aria-label="Фильтр ароматов"><button data-filter="all" class="active" aria-pressed="true">Все</button><button data-filter="women" aria-pressed="false">Для нее</button><button data-filter="men" aria-pressed="false">Для него</button><button data-filter="unisex" aria-pressed="false">Унисекс</button><button data-filter="new" aria-pressed="false">Новинки</button></div></details></div>
 <div id="products" class="products" tabindex="0" role="region" aria-label="Витрина ароматов — прокрутите, чтобы посмотреть все"></div>
 <div class="product-footer"><a href="catalog.html" class="quiet-link">Весь каталог</a>
-<div class="more-row"><button class="buy" id="show-more">Показать ещё <span>+</span></button><span id="product-count" aria-live="polite"></span></div></div>
+<div class="more-row"><button class="buy" id="show-more">Показать еще <span>+</span></button><span id="product-count" aria-live="polite"></span></div></div>
 </section>
-<section id="offers" class="promotions" aria-label="Специальные предложения">
-<a class="promo promo-portrait" href="catalog.html"><img src="assets/media/fluide-editorial-hero-v1.jpg" alt="Личный выбор аромата — Cherry у лица" loading="lazy"><div><h2>Ваш набор</h2><span class="pill light">Собрать сет</span></div></a>
-<a class="promo promo-silk" href="catalog.html"><img src="assets/media/cherry-silk-editorial-v1.png" alt="Флакон Cherry на шёлке с вишней и листьями" loading="lazy"><div><h2>Два плюс один</h2><span class="pill light">Выбрать ароматы</span></div></a>
-<a class="promo promo-hands" href="#gifts"><img src="assets/editorial/perfume-making.jpg" alt="Прикосновение к миру ароматов" loading="lazy"><div><h2>Дарить чувства</h2><span class="pill light">Выбрать подарок</span></div></a>
+<section id="offers" class="promotions" aria-label="Предложения и акции">
+<div class="promotions-head"><h2>Предложения и акции</h2></div>
+<a class="promo promo-portrait" href="catalog.html"><img src="assets/media/offer-value-sets-v1.png?v=2" alt="Выгодный набор продукции FLUIDE" loading="lazy"><div><h2>Выгодные сеты</h2><p>Готовые сочетания продукции FLUIDE.</p><span class="pill light">Смотреть сеты</span></div></a>
+<a class="promo promo-silk" href="catalog.html"><img src="assets/media/offer-2plus1-matsukita-v1.png?v=3" alt="Три флакона Matsukita по акции 2+1" loading="lazy"><div><h2>Акция 2+1</h2><p>Выберите три аромата — платите за два.</p><span class="pill light">Выбрать ароматы</span></div></a>
+<a class="promo promo-hands" href="about.html"><img src="assets/editorial/perfume-making.jpg" alt="Парфюмерный мастер-класс FLUIDE" loading="lazy"><div><h2>Мастер-классы</h2><p>Создайте собственный аромат во Владимире.</p><span class="pill light">Узнать подробнее</span></div></a>
 </section>
 <section class="finder section" id="finder">
-<div class="finder-copy"><span class="finder-label">Персональный подбор</span><h2>Найдём ваш аромат.</h2><p>Ответьте на несколько вопросов о нотах,<br>и настроении — мы соберём персональную подборку.</p><button class="pill light" data-quiz>Начать подбор</button></div>
-<div class="finder-visual"><img src="assets/media/fluide-editorial-stilllife-v1.jpg" alt="Парфюмерная композиция с вишней и нотами" loading="lazy"><div class="finder-notes" aria-hidden="true"><span>вишня</span><span>мускус</span><span>ветивер</span><span>сандал</span></div></div>
+<div class="finder-copy"><h2>Персональный подбор</h2><p>Ответьте на несколько вопросов о нотах,<br>и настроении — мы соберем персональную подборку.</p><button class="pill light" data-quiz>Начать подбор</button></div>
+<div class="finder-visual"><img src="assets/media/finder-selection-blue-4k-v1.png" alt="Коллекция ароматов для персонального подбора FLUIDE" loading="lazy"></div>
 </section>
 <section class="gifts section" id="gifts"><div class="gift-art" aria-label="Подарочный сертификат FLUIDE"><div class="gift-envelope"></div><div class="gift-card"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"><span>Для ваших<br>новых ощущений.</span><small>Подарочный сертификат</small></div></div><div class="gift-copy"><h2>Красиво дарить.<br>Приятно выбирать.</h2><p>Сертификат оставляет выбор за близким человеком. Набор ароматов превращает этот выбор в маленькое открытие.</p><div class="gift-options"><button data-gift="Электронный сертификат">Электронный сертификат <span>↗</span></button><button data-gift="Физический сертификат">Сертификат в конверте <span>↗</span></button><a href="catalog.html">Подарочные наборы <span>↗</span></a></div></div></section>
-<section class="brand section" id="brand"><div class="brand-photo"><img src="IMG_7435.PNG" alt="Пространство FLUIDE Atelier во Владимире" loading="lazy"></div><div class="brand-copy"><p class="plain-label">О FLUIDE Atelier</p><h2>Ближе,<br>чем кажется.</h2><p>Мы — парфюмерный бренд из Владимира. Создаём ароматы для человека и пространства и помогаем найти тот, с которым хорошо именно вам.</p><p>Приходите знакомиться, пробовать новое и открывать мир ароматов на наших мастер-классах.</p><a class="pill outline" href="about.html">Подробнее о компании <span>↗</span></a></div></section>
+<section class="brand section" id="brand"><div class="brand-photo"><img src="IMG_7435.PNG" alt="Пространство FLUIDE Atelier во Владимире" loading="lazy"></div><div class="brand-copy"><p class="plain-label">О FLUIDE Atelier</p><h2>Ближе,<br>чем кажется.</h2><p>Мы — парфюмерный бренд из Владимира. Создаем ароматы для человека и пространства и помогаем найти тот, с которым хорошо именно вам.</p><p>Приходите знакомиться, пробовать новое и открывать мир ароматов на наших мастер-классах.</p><a class="pill outline" href="about.html">Подробнее о компании <span>↗</span></a></div></section>
 <section class="voices section" id="voices"><div class="section-head"><h2>О FLUIDE говорят</h2><span>Люди, встречи и любовь к ароматам.</span></div><div class="voice-grid">
 <article><div class="voice-photo"><img src="assets/editorial/expert-perfume.jpg" alt="Знакомство с парфюмом" loading="lazy"></div><div class="voice-text"><span>Личный взгляд</span><h3>Аромат как часть образа</h3><p>Разговор о нотах, впечатлениях и собственном выборе.</p></div></article>
 <article class="voice-middle"><div class="voice-photo"><img src="assets/editorial/perfume-workshop.jpg" alt="Парфюмерные материалы и ручная работа" loading="lazy"></div><div class="voice-text"><span>За кулисами</span><h3>От идеи до флакона</h3><p>Материалы и детали, из которых рождается композиция.</p></div></article>

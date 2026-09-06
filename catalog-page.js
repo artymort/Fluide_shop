@@ -2,8 +2,8 @@ let PRICE_BY_CATEGORY = {"Люкс":1990,"Суперлюкс":2490,"Селект
 const CARD_COLORS = ["#f2dfda","#dfe8f0","#eee7dc","#eadde2","#dfe5da","#e6e1ef"];
 const OCCASION_LABELS = {everyday:"На каждый день",evening:"Вечер",date:"Свидание",gym:"Спорт",walk:"Прогулка"};
 const SEASON_LABELS = {spring:"Весна",summer:"Лето",autumn:"Осень",winter:"Зима"};
-const GENDER_LABELS = {женский:"Для неё",мужской:"Для него",унисекс:"Унисекс"};
-const FILTER_LABELS = {...OCCASION_LABELS,...SEASON_LABELS,женский:"Для неё",мужской:"Для него",унисекс:"Унисекс"};
+const GENDER_LABELS = {женский:"Для нее",мужской:"Для него",унисекс:"Унисекс"};
+const FILTER_LABELS = {...OCCASION_LABELS,...SEASON_LABELS,женский:"Для нее",мужской:"Для него",унисекс:"Унисекс"};
 const HOME_PRODUCT_SNAPSHOTS = {
   matsukita:{name:"Matsukita",price:1990,image:"assets/product-line/fragrance-matsukita-card.png"},
   cashmere:{name:"Cashmere",price:1350,image:"assets/product-line/diffuser-cashmere.png"},
@@ -50,7 +50,7 @@ let favorites = JSON.parse(localStorage.getItem("fluide-favorites") || "[]");
 let cart = JSON.parse(localStorage.getItem("fluide-cart") || "[]");
 
 const escapeHtml = value => String(value ?? "").replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
-const normalize = value => String(value ?? "").toLocaleLowerCase("ru-RU").replace(/ё/g,"е").trim();
+const normalize = value => String(value ?? "").toLocaleLowerCase("ru-RU").replace(/\u0451/g,"е").trim();
 const formatPrice = value => `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
 const productId = fragrance => `fragrance-${fragrance.id}`;
 
@@ -58,7 +58,7 @@ function prettyTitle(value){
   return String(value || "")
     .replace(/^\d+\s+/,"")
     .toLocaleLowerCase("ru-RU")
-    .replace(/(^|[\s-])([a-zа-яё])/giu,(match,space,letter)=>`${space}${letter.toLocaleUpperCase("ru-RU")}`);
+    .replace(/(^|[\s-])([a-zа-я\u0451])/giu,(match,space,letter)=>`${space}${letter.toLocaleUpperCase("ru-RU")}`);
 }
 
 function getPrice(fragrance){return PRICE_BY_CATEGORY[fragrance.category] || 1990}
@@ -153,7 +153,7 @@ function cardTemplate(fragrance){
     </div>
     <div class="fragrance-info">
       <div class="fragrance-title-row"><h3>FLUIDE ${escapeHtml(title)}</h3><strong>${formatPrice(getPrice(fragrance))}</strong></div>
-      <p class="fragrance-original">Вдохновлён: ${escapeHtml(fragrance.original)}</p>
+      <p class="fragrance-original">Вдохновлен: ${escapeHtml(fragrance.original)}</p>
       <p class="fragrance-notes">${escapeHtml(noteSummary(fragrance))}</p>
       <div class="card-actions"><a class="details-button" href="product.html?id=${encodeURIComponent(fragrance.id)}">Подробнее</a><button class="add-button" type="button" data-add="${escapeHtml(fragrance.id)}">В корзину</button></div>
     </div>

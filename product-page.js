@@ -5,7 +5,7 @@ let PRICE_BY_SIZE={
 const CARD_COLORS=["#f2dfda","#dfe8f0","#eee7dc","#eadde2","#dfe5da","#e6e1ef"];
 const OCCASION_LABELS={everyday:"На каждый день",evening:"Вечер",date:"Свидание",gym:"Спорт",walk:"Прогулка"};
 const SEASON_LABELS={spring:"Весна",summer:"Лето",autumn:"Осень",winter:"Зима"};
-const GENDER_LABELS={женский:"Для неё",мужской:"Для него",унисекс:"Унисекс"};
+const GENDER_LABELS={женский:"Для нее",мужской:"Для него",унисекс:"Унисекс"};
 const HOME_PRODUCT_SNAPSHOTS={
   matsukita:{name:"Matsukita",price:1990,image:"assets/product-line/fragrance-matsukita-card.png"},cashmere:{name:"Cashmere",price:1350,image:"assets/product-line/diffuser-cashmere.png"},
   "devils-intrigue":{name:"Devils Intrigue",price:650,image:"assets/product-line/hair-spray-devils-intrigue.png"},auto:{name:"Car Scent",price:300,image:"assets/product-line/car-fragrance.png"},
@@ -40,7 +40,7 @@ let cart=JSON.parse(localStorage.getItem("fluide-cart")||"[]");
 
 const escapeHtml=value=>String(value??"").replace(/[&<>'"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
 const formatPrice=value=>`${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
-const prettyTitle=value=>String(value||"").replace(/^\d+\s+/,"").toLocaleLowerCase("ru-RU").replace(/(^|[\s-])([a-zа-яё])/giu,(match,space,letter)=>`${space}${letter.toLocaleUpperCase("ru-RU")}`);
+const prettyTitle=value=>String(value||"").replace(/^\d+\s+/,"").toLocaleLowerCase("ru-RU").replace(/(^|[\s-])([a-zа-я\u0451])/giu,(match,space,letter)=>`${space}${letter.toLocaleUpperCase("ru-RU")}`);
 const priceFor=(item,size=selectedSize)=>PRICE_BY_SIZE[size]?.[item.category]||PRICE_BY_SIZE["30"][item.category]||1990;
 const colorFor=item=>CARD_COLORS[(Number.parseInt(item.id,10)||0)%CARD_COLORS.length];
 const allNotes=item=>[...(item.notes?.top||[]),...(item.notes?.middle||[]),...(item.notes?.base||[]),...(item.notes?.main||[])];
@@ -75,10 +75,10 @@ function renderProduct(){
     </section>
     <section class="product-details">
       <h1>FLUIDE ${escapeHtml(title)}</h1>
-      <p class="product-inspiration">Вдохновлён композицией ${escapeHtml(fragrance.original)}</p>
+      <p class="product-inspiration">Вдохновлен композицией ${escapeHtml(fragrance.original)}</p>
       <div class="product-price" data-product-price>${formatPrice(priceFor(fragrance))}</div>
-      <div class="product-choice" role="radiogroup" aria-label="Выберите объём">
-        <p>Выберите объём</p>
+      <div class="product-choice" role="radiogroup" aria-label="Выберите объем">
+        <p>Выберите объем</p>
         <div class="size-options">
           <button class="size-option is-active" type="button" role="radio" aria-checked="true" data-size="30"><strong>30 мл</strong><span>${formatPrice(priceFor(fragrance,"30"))}</span></button>
           <button class="size-option" type="button" role="radio" aria-checked="false" data-size="50"><strong>50 мл</strong><span>${formatPrice(priceFor(fragrance,"50"))}</span></button>
