@@ -56,27 +56,28 @@ function visibleProducts(){
 
 function productCard(product){
   const isFavorite = favorites.includes(product.id);
+  const pageId = product.id.replace("fragrance-","");
   return `<article class="product-card" data-id="${product.id}">
-    <div class="product-media" style="--card-bg:${product.color}" data-quick="${product.id}" tabindex="0" role="button" aria-label="Открыть карточку ${product.name}">
+    <div class="product-media" style="--card-bg:${product.color}">
       <button class="favorite ${isFavorite ? "is-active" : ""}" type="button" data-favorite="${product.id}" aria-label="Добавить ${product.name} в избранное"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 4.5h9v15l-4.5-3-4.5 3v-15Z"></path></svg></button>
-      <img src="${product.image}" alt="${product.name} FLUIDE" loading="lazy">
+      <a class="product-card-link" href="product.html?id=${encodeURIComponent(pageId)}" aria-label="Открыть страницу аромата ${product.name}"><img src="${product.image}" alt="${product.name} FLUIDE" loading="lazy"></a>
       <button class="product-buy" type="button" data-buy="${product.id}">Добавить в корзину</button>
     </div>
     <div class="product-copy">
-      <div class="product-title-row"><h3>${product.name}</h3><strong>${formatPrice(product.price)}</strong></div>
+      <div class="product-title-row"><h3><a href="product.html?id=${encodeURIComponent(pageId)}">${product.name}</a></h3><strong>${formatPrice(product.price)}</strong></div>
       <p class="product-description">${product.description}</p>
     </div>
   </article>`;
 }
-
 function renderProducts(){
   const matches = visibleProducts();
-  const visibleLimit = expanded ? 12 : 8;
+  const visibleLimit = expanded ? 12 : 4;
   const list = matches.slice(0,visibleLimit);
   grid.innerHTML = list.length ? list.map(productCard).join("") : `<div class="no-results">Ничего не найдено. Попробуйте изменить запрос или категорию.</div>`;
   productCount.textContent = `Показано ${list.length} из ${matches.length}`;
-  showMore.hidden = matches.length <= 8;
+  showMore.hidden = matches.length <= 4;
   showMore.textContent = expanded ? "Свернуть" : "Показать ещё";
+  grid.scrollLeft = 0;
 }
 
 function setFilter(filter){
@@ -140,6 +141,15 @@ filterLinks.forEach(link => link.addEventListener("click",() => {
 }));
 showMore.addEventListener("click",() => {expanded = !expanded;renderProducts()});
 
+function scrollProducts(direction){
+  if(!grid)return;
+  const card = grid.querySelector(".product-card");
+  const distance = card ? card.getBoundingClientRect().width + 14 : grid.clientWidth * .8;
+  grid.scrollBy({left:direction * distance,behavior:"smooth"});
+}
+document.querySelector(".product-scroll-prev")?.addEventListener("click",()=>scrollProducts(-1));
+document.querySelector(".product-scroll-next")?.addEventListener("click",()=>scrollProducts(1));
+
 grid.addEventListener("click",event => {
   const favoriteButton = event.target.closest("[data-favorite]");
   const buyButton = event.target.closest("[data-buy]");
@@ -165,7 +175,7 @@ searchForm.addEventListener("submit",event=>{event.preventDefault();searchQuery=
 document.querySelector(".favorite-open").addEventListener("click",()=>showToast(favorites.length?`В избранном: ${favorites.length}`:"В избранном пока пусто"));
 document.querySelector(".subscribe-form").addEventListener("submit",event=>{event.preventDefault();event.currentTarget.reset();showToast("Спасибо! Вы в списке FLUIDE")});
 document.querySelector(".checkout-button").addEventListener("click",()=>showToast(cart.length?"Оформление подключим на следующем этапе":"Сначала добавьте товары"));
-document.querySelector(".finder-start").addEventListener("click",()=>{setFilter("perfume");document.querySelector("#catalog").scrollIntoView({behavior:"smooth"});showToast("Начнём с парфюмерной коллекции")});
+document.querySelector(".finder-start").addEventListener("click",()=>{setFilter("all");document.querySelector("#catalog").scrollIntoView({behavior:"smooth"});showToast("Начнём с парфюмерной коллекции")});
 
 function preventOrphans(){
   document.querySelectorAll("h1,h2,h3,.hero-text,.section-intro,.category-meta p").forEach(element=>{
@@ -174,3 +184,104 @@ function preventOrphans(){
 }
 
 renderProducts();renderCart();preventOrphans();
+
+const heroSlides = [...document.querySelectorAll("[data-hero-slide]")];
+const heroDots = [...document.querySelectorAll("[data-hero-dot]")];
+let heroIndex = 0;
+let heroTimer;
+
+function showHeroSlide(index){
+  if(!heroSlides.length)return;
+  heroIndex = (index + heroSlides.length) % heroSlides.length;
+  heroSlides.forEach((slide,i)=>{
+    const active = i === heroIndex;
+    slide.classList.toggle("is-active",active);
+    slide.setAttribute("aria-hidden",String(!active));
+  });
+  heroDots.forEach((dot,i)=>{
+    const active = i === heroIndex;
+    dot.classList.toggle("is-active",active);
+    dot.setAttribute("aria-selected",String(active));
+  });
+}
+function startHeroTimer(){
+  clearInterval(heroTimer);
+  heroTimer = setInterval(()=>showHeroSlide(heroIndex+1),7500);
+}
+document.querySelector(".hero-prev")?.addEventListener("click",()=>{showHeroSlide(heroIndex-1);startHeroTimer()});
+document.querySelector(".hero-next")?.addEventListener("click",()=>{showHeroSlide(heroIndex+1);startHeroTimer()});
+heroDots.forEach(dot=>dot.addEventListener("click",()=>{showHeroSlide(Number(dot.dataset.heroDot));startHeroTimer()}));
+document.querySelector(".campaign-hero")?.addEventListener("mouseenter",()=>clearInterval(heroTimer));
+document.querySelector(".campaign-hero")?.addEventListener("mouseleave",startHeroTimer);
+showHeroSlide(0);
+startHeroTimer();
+
+const announcements = [
+  {title:"Доставка по России",text:"Бесплатно при заказе от 5 000 ₽"},
+  {title:"Наборы 2+1",text:"Соберите три аромата под настроение"},
+  {title:"Подарочные сертификаты",text:"Когда хочется оставить выбор за близким"}
+];
+let announcementIndex = 0;
+const announcementText = document.querySelector(".announcement p");
+function showAnnouncement(index){
+  announcementIndex = (index + announcements.length) % announcements.length;
+  const item = announcements[announcementIndex];
+  if(announcementText)announcementText.innerHTML = `<strong>${item.title}</strong><span>${item.text}</span>`;
+}
+document.querySelector(".announcement-prev")?.addEventListener("click",()=>showAnnouncement(announcementIndex-1));
+document.querySelector(".announcement-next")?.addEventListener("click",()=>showAnnouncement(announcementIndex+1));
+
+const storyData = [
+  {title:"Cherry 33",text:"Сочная вишня, тёплое дерево и мягкий шлейф новой композиции.",image:"assets/media/category-perfume-studio-v1.png",href:"catalog.html",label:"Смотреть аромат"},
+  {title:"Наборы 2+1",text:"Соберите три композиции и меняйте аромат вместе с настроением.",image:"assets/product-line/fragrance-hayati.png",href:"catalog.html",label:"Собрать набор",color:"#9fb6de"},
+  {title:"Подарки FLUIDE",text:"Готовые наборы, Discovery Set и сертификаты для личного подарка.",image:"assets/product-line/solid-perfume-matsukita.png",href:"#gifts",label:"Выбрать подарок",color:"#eab6a8"},
+  {title:"Мисты",text:"Лёгкий аромат для волос и тела — знакомое звучание в новом формате.",image:"assets/media/category-care-studio-v1.png",href:"catalog.html",label:"Перейти к мистам"},
+  {title:"Ароматы для дома",text:"Диффузоры, свечи и спреи, которые собирают пространство вокруг вас.",image:"assets/media/category-home-studio-v1.png",href:"catalog.html",label:"Смотреть коллекцию"},
+  {title:"Мастер-классы",text:"Встречаемся во Владимире, знакомимся с нотами и создаём аромат вместе.",image:"IMG_7434.PNG",href:"about.html",label:"Узнать подробнее"}
+];
+const storyViewer = document.querySelector(".story-viewer");
+const storyContent = document.querySelector(".story-content");
+const storyProgress = document.querySelector(".story-progress");
+let storyIndex = 0;
+let storyTimer;
+
+function renderStory(){
+  const story = storyData[storyIndex];
+  if(!story || !storyContent)return;
+  const background = story.color ? ` style="background:${story.color}"` : "";
+  storyContent.innerHTML = `<article class="story-panel"${background}><img src="${story.image}" alt=""><h2>${story.title}</h2><p>${story.text}</p><a class="button button--light" href="${story.href}">${story.label}</a></article>`;
+  storyProgress.innerHTML = storyData.map((_,i)=>`<span class="${i<storyIndex?"is-past":i===storyIndex?"is-active":""}"></span>`).join("");
+  clearTimeout(storyTimer);
+  storyTimer = setTimeout(()=>storyIndex===storyData.length-1?closeStories():showStory(storyIndex+1),6000);
+}
+function showStory(index){
+  storyIndex = (index + storyData.length) % storyData.length;
+  storyViewer.classList.add("is-open");
+  storyViewer.setAttribute("aria-hidden","false");
+  document.body.classList.add("is-locked");
+  renderStory();
+}
+function closeStories(){
+  clearTimeout(storyTimer);
+  storyViewer.classList.remove("is-open");
+  storyViewer.setAttribute("aria-hidden","true");
+  document.body.classList.remove("is-locked");
+}
+document.querySelectorAll("[data-story]").forEach(button=>button.addEventListener("click",()=>showStory(Number(button.dataset.story))));
+document.querySelector(".story-close")?.addEventListener("click",closeStories);
+document.querySelector(".story-control--prev")?.addEventListener("click",()=>showStory(storyIndex-1));
+document.querySelector(".story-control--next")?.addEventListener("click",()=>showStory(storyIndex+1));
+storyViewer?.addEventListener("click",event=>{if(event.target===storyViewer)closeStories()});
+document.addEventListener("keydown",event=>{
+  if(!storyViewer?.classList.contains("is-open"))return;
+  if(event.key==="Escape")closeStories();
+  if(event.key==="ArrowLeft")showStory(storyIndex-1);
+  if(event.key==="ArrowRight")showStory(storyIndex+1);
+});
+
+const cookieNote = document.querySelector(".cookie-note");
+if(localStorage.getItem("fluide-cookie-accepted")==="1" && cookieNote)cookieNote.hidden=true;
+document.querySelector(".cookie-accept")?.addEventListener("click",()=>{
+  localStorage.setItem("fluide-cookie-accepted","1");
+  if(cookieNote)cookieNote.hidden=true;
+});

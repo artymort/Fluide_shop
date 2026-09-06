@@ -1,3 +1,5 @@
+@font-face{font-family:Onest;src:url("assets/fonts/Onest-Cyrillic-Variable.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:Onest;src:url("assets/fonts/Onest-Latin-Variable.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
 @font-face{font-family:Mazzard;src:url("assets/fonts/MazzardH-Light.woff2") format("woff2");font-weight:300;font-style:normal;font-display:swap}
 @font-face{font-family:Mazzard;src:url("assets/fonts/MazzardH-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
 @font-face{font-family:Mazzard;src:url("assets/fonts/MazzardH-Medium.woff2") format("woff2");font-weight:500 700;font-style:normal;font-display:swap}
@@ -20,7 +22,7 @@
 
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:Mazzard,Arial,sans-serif;font-weight:400;line-height:1.35}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Onest,Arial,sans-serif;font-weight:400;line-height:1.35}
 body.is-locked{overflow:hidden}
 button,input{font:inherit;color:inherit}
 button,a{-webkit-tap-highlight-color:transparent}
