@@ -19,7 +19,7 @@ let PRICE_BY_SIZE={
 };
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const escapeHtml=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const money=n=>new Intl.NumberFormat("ru-RU").format(n)+" ₽";
+const money=n=>`${new Intl.NumberFormat("ru-RU").format(n)}&nbsp;<span class="price-ruble">₽</span>`;
 const read=(key)=>{try{const value=JSON.parse(localStorage.getItem(key)||"[]");return Array.isArray(value)?value:[]}catch{return []}};
 const save=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch{toast("Не удалось сохранить данные в браузере.")}};
 let favorites=read("fluide-favorites"),cart=read("fluide-cart"),filter="all",visible=4,panelMode="",selectedProductId="",toastTimer;

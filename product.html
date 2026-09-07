@@ -5,35 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Аромат FLUIDE Atelier: описание, ноты и характеристики.">
   <title>Аромат FLUIDE Atelier</title>
-  <link rel="stylesheet" href="catalog-page.css?v=lucide-v1">
-  <link rel="stylesheet" href="product-page.css?v=lucide-v1">
+  <link rel="stylesheet" href="catalog-page.css?v=product-redesign-v6">
+  <link rel="stylesheet" href="product-page.css?v=product-redesign-v31">
+  <link rel="stylesheet" href="product-page-final.css?v=product-redesign-v38">
 </head>
 <body>
+  <a class="skip" href="#product-main">К содержимому</a>
+
+  <div class="service">
+    <button type="button" data-service="-1" aria-label="Предыдущее объявление"><svg><use href="assets/icons/lucide.svg#arrow-left"></use></svg></button>
+    <span id="service-message">Доставка по России · бесплатно от 5 000 ₽</span>
+    <button type="button" data-service="1" aria-label="Следующее объявление"><svg><use href="assets/icons/lucide.svg#arrow-right"></use></svg></button>
+  </div>
+
   <header class="catalog-header" id="top">
     <div class="header-inner shell">
-      <button class="icon-button menu-toggle" type="button" aria-controls="mobile-nav" aria-expanded="false" aria-label="Открыть меню"><svg><use href="assets/icons/lucide.svg#menu"></use></svg></button>
+      <a class="brand-logo" href="index.html#top" aria-label="FLUIDE Atelier — на главную"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a>
       <nav class="desktop-nav" aria-label="Основная навигация">
-        <a href="index.html#top">Главная</a>
-        <a href="about.html">О нас</a>
-        <a class="is-active" href="catalog.html">Каталог</a>
+        <a class="is-active" href="catalog.html" aria-current="page">Каталог</a>
+        <a href="index.html#offers">Предложения</a>
+        <a href="index.html#brand">О нас</a>
         <a href="index.html#contacts">Контакты</a>
       </nav>
-      <a class="brand-logo" href="index.html#top" aria-label="FLUIDE Atelier — на главную"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a>
       <div class="header-actions">
-        <a class="header-icon" href="catalog.html" aria-label="Перейти к поиску в каталоге"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#search"></use></svg><span>Поиск</span></a>
-        <button class="header-icon product-favorite" type="button" aria-label="Добавить в избранное"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg><span>Избранное</span></button>
-        <button class="header-icon cart-button" type="button" aria-label="Открыть корзину"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#handbag"></use></svg><span>Корзина</span><b class="cart-count">0</b></button>
+        <a class="header-icon" href="catalog.html#catalog-search" aria-label="Перейти к поиску в каталоге"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#search"></use></svg></a>
+        <button class="header-icon product-favorite" type="button" aria-label="Добавить в избранное"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg></button>
+        <button class="header-icon cart-button" type="button" aria-label="Открыть корзину"><svg aria-hidden="true"><use href="assets/icons/lucide.svg?v=cart-v1#shopping-cart"></use></svg><span class="cart-count">0</span></button>
+        <button class="menu-toggle" type="button" aria-controls="mobile-nav" aria-expanded="false" aria-label="Открыть меню"><svg><use href="assets/icons/lucide.svg#menu"></use></svg></button>
       </div>
     </div>
     <nav class="mobile-nav" id="mobile-nav" aria-label="Мобильная навигация">
-      <a href="index.html#top">Главная</a><a href="about.html">О нас</a><a href="catalog.html">Каталог</a><a href="index.html#contacts">Контакты</a>
+      <a href="catalog.html" aria-current="page">Каталог</a><a href="index.html#offers">Предложения</a><a href="index.html#brand">О нас</a><a href="index.html#contacts">Контакты</a>
     </nav>
   </header>
 
-  <main class="product-main">
-    <div class="shell product-breadcrumbs"><a href="catalog.html">Каталог ароматов</a><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg><span class="breadcrumb-current">Загрузка…</span></div>
+  <main class="product-main" id="product-main">
+    <div class="shell product-breadcrumbs"><a href="catalog.html"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg>Каталог ароматов</a><span class="breadcrumb-separator">/</span><span class="breadcrumb-current">Загрузка...</span></div>
     <div class="product-page shell" aria-live="polite">
-      <section class="product-loading"><span></span><p>Загружаем аромат…</p></section>
+      <section class="product-loading"><span></span><p>Загружаем аромат...</p></section>
     </div>
     <section class="related-section shell" hidden>
       <div class="related-head"><div><h2>Вам также может понравиться</h2></div><a href="catalog.html">Смотреть каталог <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a></div>
@@ -41,21 +50,23 @@
     </section>
   </main>
 
-  <footer class="catalog-footer" id="contacts">
-    <div class="shell footer-grid">
-      <div><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"><p>Ароматы, которые становятся частью вашего пространства.</p></div>
-      <nav aria-label="Разделы сайта"><strong>Разделы</strong><a href="index.html#top">Главная</a><a href="about.html">О бренде</a><a href="catalog.html">Каталог</a></nav>
-      <div><strong>Контакты</strong><a href="mailto:hello@fluideatelier.ru">hello@fluideatelier.ru</a><p>Владимир</p></div>
-    </div>
+  <footer class="catalog-footer shell" id="contacts">
+    <a href="index.html#top" class="footer-logo"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a>
+    <div><h3>Коллекции</h3><a href="catalog.html">Парфюм</a><a href="catalog.html?category=home">Для дома</a><a href="index.html#gifts">Подарки</a></div>
+    <div><h3>О бренде</h3><a href="about.html">О компании</a><a href="about.html">Пространство во Владимире</a><a href="about.html">Мастер-классы</a></div>
+    <div><h3>Покупателям</h3><button type="button" data-info="delivery">Доставка и оплата</button><button type="button" data-info="contacts">Связаться с нами</button><button type="button" data-info="privacy">Персональные данные</button></div>
+    <div class="footer-bottom"><span>© FLUIDE Atelier, 2026</span><span>Сделано с чувством.</span><button type="button" data-cookie-settings>Настройки cookie</button></div>
   </footer>
 
   <div class="drawer-backdrop"></div>
   <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина">
-    <div class="drawer-head"><div><h2>Корзина</h2></div><button class="drawer-close" type="button" aria-label="Закрыть корзину"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div>
+    <div class="drawer-head"><h2>Корзина</h2><button class="drawer-close" type="button" aria-label="Закрыть корзину"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div>
     <div class="cart-items"></div>
     <div class="cart-footer"><div><span>Итого</span><strong class="cart-total">0 ₽</strong></div><button type="button">Оформить заказ</button></div>
   </aside>
+  <dialog class="info-dialog" id="info-dialog"><div class="dialog-head"><h2 class="info-title"></h2><button class="info-close" type="button" aria-label="Закрыть"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="info-content"></div></dialog>
+  <div class="cookie" hidden><p>Используем cookie для корзины<br>и удобной работы сайта.</p><button type="button" data-cookie-accept>Хорошо</button></div>
   <div class="toast" role="status" aria-live="polite"></div>
-  <script src="product-page.js?v=lucide-v1"></script>
+  <script src="product-page.js?v=product-redesign-v36"></script>
 </body>
 </html>

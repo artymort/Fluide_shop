@@ -15,6 +15,8 @@
   --content:min(1400px,calc(100vw - clamp(48px,10vw,160px)));
 }
 
+.price-ruble{font-family:inherit;font-size:1em;font-style:inherit;font-weight:500;letter-spacing:inherit;line-height:inherit;vertical-align:baseline;-webkit-text-stroke:.15px currentColor}
+
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:110px}
 body{margin:0;background:#fff;color:var(--ink);font:400 15px/1.5 Onest,Arial,sans-serif}

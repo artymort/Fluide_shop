@@ -65,6 +65,7 @@ let cart = JSON.parse(localStorage.getItem("fluide-cart") || "[]");
 const escapeHtml = value => String(value ?? "").replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
 const normalize = value => String(value ?? "").toLocaleLowerCase("ru-RU").replace(/\u0451/g,"е").trim();
 const formatPrice = value => `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
+const formatPriceMarkup = value => `${new Intl.NumberFormat("ru-RU").format(value)}&nbsp;<span class="price-ruble">₽</span>`;
 const productId = fragrance => `fragrance-${fragrance.id}`;
 
 function prettyTitle(value){
@@ -169,7 +170,7 @@ function cardTemplate(fragrance){
       <div class="fragrance-title-row"><h3><a href="product.html?id=${encodeURIComponent(fragrance.id)}">${escapeHtml(cardName)}</a></h3></div>
       <p class="fragrance-original">По мотивам ${escapeHtml(fragrance.original)}</p>
       <p class="fragrance-notes">${escapeHtml(noteSummary(fragrance))}</p>
-      <div class="card-actions"><strong class="card-price">от ${formatPrice(getPrice(fragrance))}</strong><button class="add-button" type="button" data-add="${escapeHtml(fragrance.id)}" aria-label="Выбрать объем ${escapeHtml(title)}">Выбрать</button></div>
+      <div class="card-actions"><strong class="card-price">от ${formatPriceMarkup(getPrice(fragrance))}</strong><button class="add-button" type="button" data-add="${escapeHtml(fragrance.id)}" aria-label="Выбрать объем ${escapeHtml(title)}">Выбрать</button></div>
     </div>
   </article>`;
 }
@@ -256,7 +257,7 @@ function openVolumeSelector(id){
   selectedFragranceId=id;
   const title=prettyTitle(fragrance.title);
   const cardName=`FLUIDE ${Number(fragrance.id)} ${title}`;
-  volumeContent.innerHTML=`<div class="volume-product"><img src="${escapeHtml(fragrance.image||"assets/brand/logo-blue.svg")}" alt="${escapeHtml(cardName)}"><div><h3>${escapeHtml(cardName)}</h3><p>По мотивам ${escapeHtml(fragrance.original)}</p></div></div><p class="volume-label">Доступные объемы</p><div class="volume-options">${variantsFor(fragrance).map(variant=>`<button class="volume-option" type="button" data-volume="${variant.size}"><span><strong>${variant.volume}</strong><small>В наличии</small></span><b>${formatPrice(variant.price)}</b></button>`).join("")}</div>`;
+  volumeContent.innerHTML=`<div class="volume-product"><img src="${escapeHtml(fragrance.image||"assets/brand/logo-blue.svg")}" alt="${escapeHtml(cardName)}"><div><h3>${escapeHtml(cardName)}</h3><p>По мотивам ${escapeHtml(fragrance.original)}</p></div></div><p class="volume-label">Доступные объемы</p><div class="volume-options">${variantsFor(fragrance).map(variant=>`<button class="volume-option" type="button" data-volume="${variant.size}"><span><strong>${variant.volume}</strong><small>В наличии</small></span><b>${formatPriceMarkup(variant.price)}</b></button>`).join("")}</div>`;
   volumeDialog.showModal();
 }
 
@@ -277,8 +278,8 @@ function renderCart(){
   const quantity=cart.reduce((sum,item)=>sum+(Number(item.quantity)||0),0);
   const total=detailed.reduce((sum,row)=>sum+row.product.price*row.item.quantity,0);
   cartCount.textContent=quantity;
-  cartTotal.textContent=formatPrice(total);
-  cartItems.innerHTML=detailed.length?detailed.map(({item,product})=>`<div class="cart-item"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${item.quantity} × ${formatPrice(product.price)}</p></div><button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join(""):`<div class="cart-empty"><div><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small></div></div>`;
+  cartTotal.innerHTML=formatPriceMarkup(total);
+  cartItems.innerHTML=detailed.length?detailed.map(({item,product})=>`<div class="cart-item"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${item.quantity} × ${formatPriceMarkup(product.price)}</p></div><button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join(""):`<div class="cart-empty"><div><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small></div></div>`;
 }
 
 function openCart(){
