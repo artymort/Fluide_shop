@@ -25,6 +25,7 @@ const cartClose=document.querySelector(".drawer-close");
 const cartItems=document.querySelector(".cart-items");
 const cartCount=document.querySelector(".cart-count");
 const cartTotal=document.querySelector(".cart-total");
+const cartFooter=document.querySelector(".cart-footer");
 const backdrop=document.querySelector(".drawer-backdrop");
 const headerFavorite=document.querySelector(".product-favorite");
 const menuToggle=document.querySelector(".menu-toggle");
@@ -287,9 +288,12 @@ function renderRelated(){
 function saveCart(){localStorage.setItem("fluide-cart",JSON.stringify(cart))}
 function renderCart(){
   const detailed=cart.map(item=>({item,product:item.product||HOME_PRODUCT_SNAPSHOTS[item.id]||null})).filter(row=>row.product);
-  cartCount.textContent=cart.reduce((sum,item)=>sum+(Number(item.quantity)||0),0);
+  const quantity=cart.reduce((sum,item)=>sum+(Number(item.quantity)||0),0);
+  cartCount.textContent=quantity||"";
+  cartCount.hidden=quantity===0;
+  cartFooter.hidden=detailed.length===0;
   cartTotal.innerHTML=formatPriceMarkup(detailed.reduce((sum,row)=>sum+row.product.price*row.item.quantity,0));
-  cartItems.innerHTML=detailed.length?detailed.map(({item,product})=>`<div class="cart-item"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${item.quantity} × ${formatPriceMarkup(product.price)}</p></div><button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join(""):`<div class="cart-empty"><div><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small></div></div>`;
+  cartItems.innerHTML=detailed.length?detailed.map(({item,product})=>`<div class="cart-item"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${item.quantity} × ${formatPriceMarkup(product.price)}</p></div><button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join(""):`<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
 }
 function openCart(){cartDrawer.classList.add("is-open");cartDrawer.setAttribute("aria-hidden","false");backdrop.classList.add("is-open");document.body.classList.add("is-locked")}
 function closeCart(){cartDrawer.classList.remove("is-open");cartDrawer.setAttribute("aria-hidden","true");backdrop.classList.remove("is-open");document.body.classList.remove("is-locked")}

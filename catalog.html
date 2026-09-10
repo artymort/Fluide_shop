@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Каталог ароматов FLUIDE Atelier с подбором по нотам, сезону и настроению.">
   <title>Каталог ароматов — FLUIDE Atelier</title>
-  <link rel="stylesheet" href="catalog-page.css?v=price-ruble-v6">
-  <script src="catalog-page.js?v=price-ruble-v6" defer></script>
+  <link rel="stylesheet" href="catalog-page.css?v=selection-v2">
+  <script src="selection-engine.js?v=selection-v1" defer></script>
+  <script src="catalog-page.js?v=selection-v4" defer></script>
 </head>
 <body>
   <a class="skip" href="#catalog-main">К содержимому</a>
@@ -23,18 +24,20 @@
       <nav class="desktop-nav" aria-label="Основная навигация">
         <a class="is-active" href="catalog.html" aria-current="page">Каталог</a>
         <a href="index.html#offers">Предложения</a>
+        <a href="selection.html">Подбор аромата</a>
         <a href="index.html#brand">О нас</a>
         <a href="index.html#contacts">Контакты</a>
       </nav>
       <div class="header-actions">
+        <button class="login-button" type="button" data-login aria-label="Войти или зарегистрироваться"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#user"></use></svg><span>Войти</span></button>
         <button class="header-icon focus-search" type="button" aria-label="Поиск"><svg><use href="assets/icons/lucide.svg#search"></use></svg></button>
         <button class="header-icon favorites-button" type="button" aria-label="Избранное"><svg><use href="assets/icons/lucide.svg#heart"></use></svg></button>
-        <button class="header-icon cart-button" type="button" aria-label="Корзина"><svg><use href="assets/icons/lucide.svg?v=cart-v1#shopping-cart"></use></svg><span class="cart-count">0</span></button>
+        <button class="header-icon cart-button" type="button" aria-label="Корзина"><svg><use href="assets/icons/lucide.svg?v=cart-v1#shopping-cart"></use></svg><span class="cart-count" hidden></span></button>
         <button class="menu-toggle" type="button" aria-controls="mobile-nav" aria-expanded="false" aria-label="Открыть меню"><svg><use href="assets/icons/lucide.svg#menu"></use></svg></button>
       </div>
     </div>
     <nav class="mobile-nav" id="mobile-nav" aria-label="Мобильная навигация">
-      <a href="catalog.html" aria-current="page">Каталог</a><a href="index.html#offers">Предложения</a><a href="index.html#brand">О нас</a><a href="index.html#contacts">Контакты</a>
+      <a href="catalog.html" aria-current="page">Каталог</a><a href="index.html#offers">Предложения</a><a href="selection.html">Подбор аромата</a><a href="index.html#brand">О нас</a><a href="index.html#contacts">Контакты</a>
     </nav>
   </header>
 
@@ -51,7 +54,6 @@
     <section class="catalog-shell shell" aria-labelledby="catalog-heading">
       <div class="catalog-toolbar">
         <label class="catalog-search"><svg><use href="assets/icons/lucide.svg#search"></use></svg><span class="catalog-search-caption">Поиск по каталогу</span><input id="catalog-search" type="search" placeholder="Название, номер или нота" autocomplete="off"></label>
-        <button class="filter-toggle" type="button" aria-controls="filter-panel" aria-expanded="false">Фильтры <span class="filter-count" hidden>0</span></button>
         <div class="sort-control">
           <span class="sort-label">Сортировка</span>
           <button class="sort-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
@@ -70,18 +72,24 @@
       <div class="active-filters" aria-live="polite"></div>
 
       <div class="catalog-layout">
-        <aside class="filter-panel" id="filter-panel" aria-label="Фильтры каталога">
+        <aside class="filter-panel" id="filter-panel" aria-label="Фильтры каталога" aria-hidden="true">
           <div class="filter-panel-head"><h2>Фильтры</h2><button class="filter-close" type="button" aria-label="Закрыть фильтры"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div>
+          <div class="filter-panel-scroll">
           <fieldset class="filter-group filter-gender"><legend>Кому подбираем</legend><label><input type="radio" name="gender" value="" checked><span>Все</span></label><label><input type="radio" name="gender" value="женский"><span>Для нее</span></label><label><input type="radio" name="gender" value="мужской"><span>Для него</span></label><label><input type="radio" name="gender" value="унисекс"><span>Унисекс</span></label></fieldset>
           <details class="filter-group" open><summary>Категория <svg aria-hidden="true"><use href="assets/icons/lucide.svg#chevron-down"></use></svg></summary><div class="filter-options"><label><input type="checkbox" name="category" value="Люкс"><span>Люкс</span></label><label><input type="checkbox" name="category" value="Суперлюкс"><span>Суперлюкс</span></label><label><input type="checkbox" name="category" value="Селектив"><span>Селектив</span></label></div></details>
           <details class="filter-group" open><summary>Ноты <svg aria-hidden="true"><use href="assets/icons/lucide.svg#chevron-down"></use></svg></summary><div class="filter-options"><label><input type="checkbox" name="family" value="Цветочные"><span>Цветочные</span></label><label><input type="checkbox" name="family" value="Фруктовые"><span>Фруктовые</span></label><label><input type="checkbox" name="family" value="Цитрусовые"><span>Цитрусовые</span></label><label><input type="checkbox" name="family" value="Древесные"><span>Древесные</span></label><label><input type="checkbox" name="family" value="Сладкие"><span>Сладкие</span></label><label><input type="checkbox" name="family" value="Свежие"><span>Свежие</span></label><label><input type="checkbox" name="family" value="Пряные и восточные"><span>Пряные и восточные</span></label></div></details>
           <details class="filter-group"><summary>Случай <svg aria-hidden="true"><use href="assets/icons/lucide.svg#chevron-down"></use></svg></summary><div class="filter-options"><label><input type="checkbox" name="occasion" value="everyday"><span>На каждый день</span></label><label><input type="checkbox" name="occasion" value="evening"><span>Вечер</span></label><label><input type="checkbox" name="occasion" value="date"><span>Свидание</span></label><label><input type="checkbox" name="occasion" value="gym"><span>Спорт</span></label><label><input type="checkbox" name="occasion" value="walk"><span>Прогулка</span></label></div></details>
           <details class="filter-group"><summary>Время года <svg aria-hidden="true"><use href="assets/icons/lucide.svg#chevron-down"></use></svg></summary><div class="filter-options"><label><input type="checkbox" name="season" value="spring"><span>Весна</span></label><label><input type="checkbox" name="season" value="summer"><span>Лето</span></label><label><input type="checkbox" name="season" value="autumn"><span>Осень</span></label><label><input type="checkbox" name="season" value="winter"><span>Зима</span></label></div></details>
+          </div>
           <div class="filter-panel-actions"><button class="reset-filters" type="button">Сбросить все</button><button class="apply-filters" type="button">Показать ароматы</button></div>
         </aside>
 
         <section class="catalog-results" aria-live="polite">
-          <div class="results-heading"><h2 id="catalog-heading">Все ароматы</h2><p class="result-count">Загрузка коллекции</p></div>
+          <div class="results-heading"><div class="results-heading-main"><button class="filter-toggle" type="button" aria-controls="filter-panel" aria-expanded="false"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#sliders-horizontal"></use></svg><span>Фильтры</span><span class="filter-count" hidden>0</span></button><h2 id="catalog-heading">Все ароматы</h2></div><p class="result-count">Загрузка коллекции</p></div>
+          <nav class="selection-result-actions" aria-label="Управление подбором" hidden>
+            <a class="selection-return-action" href="selection.html?step=4"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg><span>Вернуться к ответам</span></a>
+            <a class="selection-restart-action" href="selection.html?restart=1">Начать подбор заново</a>
+          </nav>
           <div class="fragrance-grid"></div>
           <div class="catalog-empty" hidden><h3>Ничего не найдено</h3><p>Попробуйте изменить фильтры или очистить строку поиска.</p><button class="reset-filters button-outline" type="button">Сбросить фильтры</button></div>
           <button class="load-more" type="button" hidden>Показать еще</button>
@@ -99,10 +107,14 @@
   </footer>
 
   <div class="drawer-backdrop"></div>
-  <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина"><div class="drawer-head"><h2>Корзина</h2><button class="drawer-close" type="button" aria-label="Закрыть корзину"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="cart-items"></div><div class="cart-footer"><div><span>Итого</span><strong class="cart-total">0 ₽</strong></div><button type="button">Оформить заказ</button></div></aside>
+  <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина"><div class="drawer-head"><h2>Корзина</h2><button class="drawer-close" type="button" aria-label="Закрыть корзину"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="cart-items"></div><div class="cart-footer" hidden><div><span>Итого</span><strong class="cart-total"></strong></div><button type="button">Оформить заказ</button></div></aside>
 
   <dialog class="volume-dialog" id="volume-dialog"><div class="dialog-head"><h2>Выберите объем</h2><button class="volume-close" type="button" aria-label="Закрыть выбор объема"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="volume-content"></div></dialog>
   <dialog class="info-dialog" id="info-dialog"><div class="dialog-head"><h2 class="info-title"></h2><button class="info-close" type="button" aria-label="Закрыть"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="info-content"></div></dialog>
+  <dialog class="account-dialog" id="account-dialog">
+    <div class="account-dialog-head"><h2>Личный кабинет</h2><button type="button" data-account-close aria-label="Закрыть"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div>
+    <div class="account-dialog-body" id="account-dialog-body"></div>
+  </dialog>
   <div class="cookie" hidden><p>Используем cookie для корзины<br>и удобной работы сайта.</p><button type="button" data-cookie-accept>Хорошо</button></div>
   <div class="toast" role="status" aria-live="polite"></div>
 </body>

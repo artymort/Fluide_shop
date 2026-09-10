@@ -289,6 +289,9 @@
   .product-page.shell,.product-breadcrumbs{width:calc(100% - 28px)}
 }
 
+/* Use restrained tracking while preserving Onest Variable's character. */
+h1,h2,h3{letter-spacing:-.02em!important}
+
 /* Keep these final: later cascade must preserve the approved carousel and tabs. */
 .product-gallery .product-thumbnails{display:grid;width:100%;grid-template-columns:28px minmax(0,1fr) 28px;gap:8px;align-items:center;margin-top:14px;overflow:visible}
 .product-gallery .product-thumbnails-viewport{min-width:0;overflow:hidden}

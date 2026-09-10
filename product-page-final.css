@@ -39,3 +39,7 @@
   .product-gallery .product-thumbnail{flex-basis:112px;width:112px;height:82px}
   .product-tab{font-size:14px}
 }
+
+/* Use the same neutral product-image surface across cards and product pages. */
+.product-gallery-stage,
+.product-gallery .product-thumbnail{background-color:#f3f3f3}

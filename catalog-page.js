@@ -22,6 +22,8 @@ const HOME_PRODUCT_SNAPSHOTS = {
 };
 
 const grid = document.querySelector(".fragrance-grid");
+const catalogHeading = document.querySelector("#catalog-heading");
+const selectionResultActions = document.querySelector(".selection-result-actions");
 const resultCount = document.querySelector(".result-count");
 const emptyState = document.querySelector(".catalog-empty");
 const loadMore = document.querySelector(".load-more");
@@ -43,6 +45,7 @@ const cartClose = document.querySelector(".drawer-close");
 const cartItems = document.querySelector(".cart-items");
 const cartCount = document.querySelector(".cart-count");
 const cartTotal = document.querySelector(".cart-total");
+const cartFooter = document.querySelector(".cart-footer");
 const favoritesButton = document.querySelector(".favorites-button");
 const menuToggle = document.querySelector(".menu-toggle");
 const mobileNav = document.querySelector(".mobile-nav");
@@ -53,10 +56,15 @@ const volumeContent = document.querySelector(".volume-content");
 const infoDialog = document.querySelector("#info-dialog");
 const infoTitle = document.querySelector(".info-title");
 const infoContent = document.querySelector(".info-content");
+const loginButton = document.querySelector("[data-login]");
+const accountDialog = document.querySelector("#account-dialog");
+const accountBody = document.querySelector("#account-dialog-body");
+const selectionEngine = window.FluideSelectionEngine;
 
 let fragrances = [];
 let visibleLimit = 12;
 let favoritesOnly = false;
+let selectionMode = new URLSearchParams(window.location.search).get("mode") === "selection";
 let toastTimer;
 let selectedFragranceId = "";
 let favorites = JSON.parse(localStorage.getItem("fluide-favorites") || "[]");
@@ -114,6 +122,45 @@ function matchesAny(itemValues,selected){
   return selected.some(value=>values.includes(value));
 }
 
+function setCheckedValues(name, values){
+  const selected = new Set(values);
+  document.querySelectorAll(`input[name="${name}"]`).forEach(input=>{input.checked=selected.has(input.value)});
+  if(selected.size){
+    document.querySelector(`input[name="${name}"]:checked`)?.closest("details")?.setAttribute("open","");
+  }
+}
+
+function initializeFiltersFromUrl(){
+  const params = new URLSearchParams(window.location.search);
+  const gender = params.get("gender");
+  if(gender){
+    const input=[...document.querySelectorAll('input[name="gender"]')].find(row=>row.value===gender);
+    if(input)input.checked=true;
+  }
+  ["category","family","occasion","season"].forEach(name=>setCheckedValues(name,params.getAll(name)));
+  searchInput.value=params.get("q")||"";
+  favoritesOnly=params.get("favorites")==="1";
+  const sort=params.get("sort");
+  if(sort&&[...sortSelect.options].some(option=>option.value===sort)){
+    sortSelect.value=sort;
+    sortValue.textContent=sortSelect.options[sortSelect.selectedIndex].textContent;
+    sortMenu.querySelectorAll('[role="option"]').forEach(option=>option.setAttribute("aria-selected",String(option.dataset.sortValue===sort)));
+  }
+}
+
+function syncSelectionUrl(){
+  if(!selectionMode)return;
+  const params=new URLSearchParams();
+  params.set("mode","selection");
+  const gender=getGender();
+  if(gender)params.set("gender",gender);
+  ["category","family","occasion","season"].forEach(name=>getChecked(name).forEach(value=>params.append(name,value)));
+  if(searchInput.value.trim())params.set("q",searchInput.value.trim());
+  if(favoritesOnly)params.set("favorites","1");
+  if(sortSelect.value!=="featured")params.set("sort",sortSelect.value);
+  history.replaceState(null,"",`${location.pathname}?${params.toString()}`);
+}
+
 function currentFiltered(){
   const query = normalize(searchInput.value);
   const gender = getGender();
@@ -122,28 +169,33 @@ function currentFiltered(){
   const occasions = getChecked("occasion");
   const seasons = getChecked("season");
 
-  const filtered = fragrances.filter(item=>{
+  const candidates = fragrances.filter(item=>{
     const searchText = normalize([
       item.id,item.name,item.title,item.original,item.group,item.category,item.gender,item.notesRaw,
       ...(item.families||[]),...(item.accords||[]).map(accord=>accord.name)
     ].join(" "));
     if(query && !searchText.includes(query))return false;
-    if(gender && item.gender !== gender)return false;
     if(!matchesAny(item.category,categories))return false;
-    if(!matchesAny(item.families,families))return false;
-    if(!matchesAny(item.occasion,occasions))return false;
-    if(!matchesAny(item.season,seasons))return false;
+    if(!selectionMode&&gender&&item.gender!==gender)return false;
+    if(!selectionMode&&!matchesAny(item.families,families))return false;
+    if(!selectionMode&&!matchesAny(item.occasion,occasions))return false;
+    if(!selectionMode&&!matchesAny(item.season,seasons))return false;
     if(favoritesOnly && !favorites.includes(productId(item)))return false;
     return true;
   });
 
-  const sorted = [...filtered];
+  let sorted;
+  if(selectionMode&&selectionEngine){
+    sorted=selectionEngine.rankRecommendations(candidates,{gender,families,occasions,seasons},6).items;
+  }else{
+    sorted=[...candidates];
+  }
   switch(sortSelect.value){
     case "number": sorted.sort((a,b)=>Number(a.id)-Number(b.id)); break;
     case "name": sorted.sort((a,b)=>prettyTitle(a.title).localeCompare(prettyTitle(b.title),"ru")); break;
     case "price-asc": sorted.sort((a,b)=>getPrice(a)-getPrice(b)||Number(a.id)-Number(b.id)); break;
     case "price-desc": sorted.sort((a,b)=>getPrice(b)-getPrice(a)||Number(a.id)-Number(b.id)); break;
-    default: sorted.sort((a,b)=>{
+    default: if(!selectionMode)sorted.sort((a,b)=>{
       const order={"Селектив":0,"Суперлюкс":1,"Люкс":2};
       return (order[a.category]??3)-(order[b.category]??3)||Number(a.id)-Number(b.id);
     });
@@ -177,14 +229,17 @@ function cardTemplate(fragrance){
 
 function renderProducts(){
   const filtered = currentFiltered();
-  const shown = filtered.slice(0,visibleLimit);
+  const shown = filtered.slice(0,selectionMode?6:visibleLimit);
+  catalogHeading.textContent=selectionMode?"Подобранные ароматы":"Все ароматы";
+  if(selectionResultActions)selectionResultActions.hidden=!selectionMode;
   grid.innerHTML = shown.map(cardTemplate).join("");
   resultCount.textContent = `${filtered.length} ${plural(filtered.length,"аромат","аромата","ароматов")}`;
   const totalFragrances = document.querySelector(".total-fragrances");
   if(totalFragrances)totalFragrances.textContent = `${fragrances.length} ${plural(fragrances.length,"аромат","аромата","ароматов")}`;
   emptyState.hidden = filtered.length !== 0;
   grid.hidden = filtered.length === 0;
-  loadMore.hidden = shown.length >= filtered.length;
+  loadMore.hidden = selectionMode || shown.length >= filtered.length;
+  document.querySelector(".apply-filters").textContent=`Показать ${filtered.length} ${plural(filtered.length,"аромат","аромата","ароматов")}`;
   renderActiveFilters();
 }
 
@@ -218,6 +273,8 @@ function resetFilters(){
   if(allGender)allGender.checked=true;
   searchInput.value="";
   favoritesOnly=false;
+  selectionMode=false;
+  history.replaceState(null,"",location.pathname);
   visibleLimit=12;
   renderProducts();
 }
@@ -230,6 +287,7 @@ function removeFilter(name,value){
     if(input)input.checked=false;
   }
   visibleLimit=12;
+  syncSelectionUrl();
   renderProducts();
 }
 
@@ -238,6 +296,44 @@ function showToast(message){
   toast.classList.add("is-visible");
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>toast.classList.remove("is-visible"),2200);
+}
+
+function renderAccountMain(){
+  accountBody.innerHTML=`<div class="auth-panel"><div class="auth-content">
+    <p class="auth-kicker">Добро пожаловать в FLUIDE</p>
+    <h3 class="auth-title">Войти или<br>зарегистрироваться</h3>
+    <p class="auth-subtitle">Сохраняйте избранное, историю заказов<br>и персональные рекомендации.</p>
+    <p class="auth-method-label">Войти с помощью</p>
+    <div class="auth-providers">
+      <button class="auth-provider" type="button" data-auth-provider="Яндекс ID"><span><img src="assets/icons/yandex-id.svg" alt=""></span><b>Яндекс ID</b></button>
+      <button class="auth-provider" type="button" data-auth-provider="VK ID"><span><img src="assets/icons/vk-id.svg?v=2" alt=""></span><b>VK ID</b></button>
+    </div>
+    <div class="auth-divider"><span>или</span></div>
+    <button class="auth-phone-button" type="button" data-auth-phone>По номеру телефона</button>
+  </div><p class="auth-legal">При входе и регистрации я даю <button type="button" data-auth-privacy>согласие на обработку своих персональных данных</button> в соответствии с политикой обработки персональных данных.</p></div>`;
+}
+
+function renderAccountPhone(){
+  accountBody.innerHTML=`<div class="auth-panel auth-panel--phone"><div class="auth-content">
+    <button class="auth-back" type="button" data-auth-back>← Вернуться</button>
+    <p class="auth-kicker">Вход по номеру телефона</p>
+    <h3 class="auth-title">Введите номер</h3>
+    <p class="auth-subtitle">Отправим код подтверждения.<br>Бэкенд подключим на следующем этапе.</p>
+    <form data-auth-form><label for="auth-phone">Номер телефона</label><input id="auth-phone" name="phone" type="tel" value="+7 " autocomplete="tel" inputmode="tel"><button class="auth-phone-button" type="submit">Получить код</button><p id="auth-phone-status" role="status"></p></form>
+  </div></div>`;
+  accountBody.querySelector("#auth-phone")?.focus();
+}
+
+function openAccount(){
+  closeFilter();
+  closeCart();
+  renderAccountMain();
+  accountDialog.showModal();
+  document.body.classList.add("is-locked");
+}
+
+function closeAccount(){
+  if(accountDialog.open)accountDialog.close();
 }
 
 function saveFavorites(){localStorage.setItem("fluide-favorites",JSON.stringify(favorites))}
@@ -277,9 +373,11 @@ function renderCart(){
   const detailed=cart.map(item=>({item,product:item.product||HOME_PRODUCT_SNAPSHOTS[item.id]||null})).filter(row=>row.product);
   const quantity=cart.reduce((sum,item)=>sum+(Number(item.quantity)||0),0);
   const total=detailed.reduce((sum,row)=>sum+row.product.price*row.item.quantity,0);
-  cartCount.textContent=quantity;
+  cartCount.textContent=quantity||"";
+  cartCount.hidden=quantity===0;
+  cartFooter.hidden=detailed.length===0;
   cartTotal.innerHTML=formatPriceMarkup(total);
-  cartItems.innerHTML=detailed.length?detailed.map(({item,product})=>`<div class="cart-item"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${item.quantity} × ${formatPriceMarkup(product.price)}</p></div><button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join(""):`<div class="cart-empty"><div><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small></div></div>`;
+  cartItems.innerHTML=detailed.length?detailed.map(({item,product})=>`<div class="cart-item"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${item.quantity} × ${formatPriceMarkup(product.price)}</p></div><button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join(""):`<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
 }
 
 function openCart(){
@@ -287,8 +385,8 @@ function openCart(){
   cartDrawer.classList.add("is-open");cartDrawer.setAttribute("aria-hidden","false");backdrop.classList.add("is-open");document.body.classList.add("is-locked");
 }
 function closeCart(){cartDrawer.classList.remove("is-open");cartDrawer.setAttribute("aria-hidden","true");backdrop.classList.remove("is-open");document.body.classList.remove("is-locked")}
-function openFilter(){filterPanel.classList.add("is-open");filterToggle.setAttribute("aria-expanded","true");backdrop.classList.add("is-filter-open");document.body.classList.add("is-locked")}
-function closeFilter(){filterPanel.classList.remove("is-open");filterToggle.setAttribute("aria-expanded","false");backdrop.classList.remove("is-filter-open");if(!cartDrawer.classList.contains("is-open"))document.body.classList.remove("is-locked")}
+function openFilter(){closeCart();filterPanel.classList.add("is-open");filterPanel.setAttribute("aria-hidden","false");filterToggle.setAttribute("aria-expanded","true");backdrop.classList.add("is-filter-open");document.body.classList.add("is-locked");filterClose.focus()}
+function closeFilter(){filterPanel.classList.remove("is-open");filterPanel.setAttribute("aria-hidden","true");filterToggle.setAttribute("aria-expanded","false");backdrop.classList.remove("is-filter-open");if(!cartDrawer.classList.contains("is-open"))document.body.classList.remove("is-locked")}
 
 function openInfo(type){
   const content={
@@ -302,10 +400,10 @@ function openInfo(type){
   infoDialog.showModal();
 }
 
-document.querySelectorAll(".filter-panel input").forEach(input=>input.addEventListener("change",()=>{visibleLimit=12;renderProducts()}));
+document.querySelectorAll(".filter-panel input").forEach(input=>input.addEventListener("change",()=>{visibleLimit=12;syncSelectionUrl();renderProducts()}));
 document.querySelectorAll(".reset-filters").forEach(button=>button.addEventListener("click",resetFilters));
 document.querySelector(".apply-filters").addEventListener("click",closeFilter);
-searchInput.addEventListener("input",()=>{visibleLimit=12;renderProducts()});
+searchInput.addEventListener("input",()=>{visibleLimit=12;syncSelectionUrl();renderProducts()});
 function closeSortMenu(){
   sortMenu.hidden=true;
   sortControl.classList.remove("is-open");
@@ -321,6 +419,7 @@ function openSortMenu(){
 sortSelect.addEventListener("change",()=>{
   visibleLimit=12;
   sortValue.textContent=sortSelect.options[sortSelect.selectedIndex].textContent;
+  syncSelectionUrl();
   renderProducts();
 });
 sortTrigger.addEventListener("click",()=>{
@@ -347,9 +446,25 @@ filterToggle.addEventListener("click",openFilter);
 filterClose.addEventListener("click",closeFilter);
 cartButton.addEventListener("click",openCart);
 cartClose.addEventListener("click",closeCart);
+loginButton.addEventListener("click",openAccount);
+document.querySelector("[data-account-close]").addEventListener("click",closeAccount);
+accountDialog.addEventListener("close",()=>{if(!cartDrawer.classList.contains("is-open")&&!filterPanel.classList.contains("is-open"))document.body.classList.remove("is-locked")});
+accountDialog.addEventListener("click",event=>{if(event.target===accountDialog)closeAccount()});
+accountBody.addEventListener("click",event=>{
+  const provider=event.target.closest("[data-auth-provider]");
+  if(provider){showToast(`${provider.dataset.authProvider}: подключим авторизацию на следующем этапе`);return}
+  if(event.target.closest("[data-auth-phone]")){renderAccountPhone();return}
+  if(event.target.closest("[data-auth-back]")){renderAccountMain();return}
+  if(event.target.closest("[data-auth-privacy]")){closeAccount();openInfo("privacy")}
+});
+accountBody.addEventListener("submit",event=>{
+  if(!event.target.matches("[data-auth-form]"))return;
+  event.preventDefault();
+  accountBody.querySelector("#auth-phone-status").textContent="Визуальная версия готова. Отправку кода подключим вместе с бэкендом.";
+});
 backdrop.addEventListener("click",()=>{closeFilter();closeCart()});
 document.querySelector(".focus-search").addEventListener("click",()=>{searchInput.focus();searchInput.scrollIntoView({behavior:"smooth",block:"center"})});
-favoritesButton.addEventListener("click",()=>{favoritesOnly=!favoritesOnly;visibleLimit=12;renderProducts()});
+favoritesButton.addEventListener("click",()=>{favoritesOnly=!favoritesOnly;visibleLimit=12;syncSelectionUrl();renderProducts()});
 menuToggle.addEventListener("click",()=>{const open=mobileNav.classList.toggle("is-open");menuToggle.setAttribute("aria-expanded",String(open))});
 mobileNav.querySelectorAll("a").forEach(link=>link.addEventListener("click",()=>{mobileNav.classList.remove("is-open");menuToggle.setAttribute("aria-expanded","false")}));
 activeFilters.addEventListener("click",event=>{const button=event.target.closest("[data-remove-filter]");if(button)removeFilter(button.dataset.removeFilter,button.dataset.removeValue)});
@@ -372,22 +487,42 @@ const serviceMessages=["Доставка по России · бесплатно
 let serviceIndex=0;
 document.querySelectorAll("[data-service]").forEach(button=>button.addEventListener("click",()=>{serviceIndex=(serviceIndex+Number(button.dataset.service)+serviceMessages.length)%serviceMessages.length;document.querySelector("#service-message").textContent=serviceMessages[serviceIndex]}));
 
-function syncHeaderHeight(){catalogHeader.classList.toggle("scrolled",scrollY>60)}
-window.addEventListener("scroll",syncHeaderHeight,{passive:true});
-syncHeaderHeight();
-
 const cookie=document.querySelector(".cookie");
 try{cookie.hidden=localStorage.getItem("fluide-cookie-consent")==="accepted"}catch{cookie.hidden=false}
 document.querySelector("[data-cookie-accept]").addEventListener("click",()=>{try{localStorage.setItem("fluide-cookie-consent","accepted")}catch{}cookie.hidden=true});
 document.querySelector("[data-cookie-settings]").addEventListener("click",()=>{cookie.hidden=false});
 
+async function fetchJsonWithRetry(url){
+  let lastError;
+  for(let attempt=0;attempt<2;attempt+=1){
+    try{
+      const response=await fetch(url,{cache:attempt===0?"no-cache":"reload"});
+      if(!response.ok)throw new Error(`${url}: HTTP ${response.status}`);
+      return await response.json();
+    }catch(error){
+      lastError=error;
+    }
+  }
+  throw lastError;
+}
+
 async function initCatalog(){
+  renderCart();
+  initializeFiltersFromUrl();
   try{
-    const [fragrancesResponse,pricesResponse]=await Promise.all([fetch("data/fragrances.json"),fetch("data/prices.json")]);
-    if(!fragrancesResponse.ok)throw new Error(`HTTP ${fragrancesResponse.status}`);
-    fragrances=await fragrancesResponse.json();
-    if(pricesResponse.ok){const prices=await pricesResponse.json();PRICE_BY_SIZE={"30":{...PRICE_BY_SIZE["30"],...(prices.perfume?.["30"]||{})},"50":{...PRICE_BY_SIZE["50"],...(prices.perfume?.["50"]||{})}}}
+    fragrances=await fetchJsonWithRetry("data/fragrances.json");
+    try{
+      const prices=await fetchJsonWithRetry("data/prices.json");
+      PRICE_BY_SIZE={"30":{...PRICE_BY_SIZE["30"],...(prices.perfume?.["30"]||{})},"50":{...PRICE_BY_SIZE["50"],...(prices.perfume?.["50"]||{})}};
+    }catch(priceError){
+      console.warn("Используются резервные цены каталога",priceError);
+    }
     fragrances=fragrances.filter(item=>item?.id);
+    const retryButton=emptyState.querySelector(".reset-filters");
+    emptyState.querySelector("h3").textContent="Ничего не найдено";
+    emptyState.querySelector("p").textContent="Попробуйте изменить фильтры или очистить строку поиска.";
+    retryButton.textContent="Сбросить фильтры";
+    retryButton.onclick=null;
     renderProducts();
     renderCart();
   }catch(error){
@@ -395,6 +530,9 @@ async function initCatalog(){
     emptyState.hidden=false;
     emptyState.querySelector("h3").textContent="Каталог временно недоступен";
     emptyState.querySelector("p").textContent="Обновите страницу или попробуйте немного позже.";
+    const retryButton=emptyState.querySelector(".reset-filters");
+    retryButton.textContent="Повторить загрузку";
+    retryButton.onclick=()=>initCatalog();
     console.error(error);
   }
 }

@@ -251,3 +251,6 @@ h1,h2,h3{font-weight:400!important}
 }
 
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* Use restrained tracking while preserving Onest Variable's character. */
+h1,h2,h3{letter-spacing:-.02em!important}

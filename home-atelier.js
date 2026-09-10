@@ -32,7 +32,7 @@ function renderProducts(){
  $("#products").innerHTML=list.slice(0,visible).map(p=>{const cardName=`FLUIDE ${Number(p.id.replace("fragrance-",""))} ${p.name}`;return `<article class="product">
    <div class="product-visual">
     <span class="product-badge">${p.isNew?"Новинка":p.badge}</span>
-    <button class="favorite ${favorites.includes(p.id)?"selected":""}" data-favorite="${p.id}" aria-label="В избранное: ${p.name}" aria-pressed="${favorites.includes(p.id)}"><svg><use href="assets/icons/lucide.svg#heart"/></svg></button>
+    <button class="favorite ${favorites.includes(p.id)?"selected":""}" data-favorite="${p.id}" aria-label="В избранное: ${p.name}" aria-pressed="${favorites.includes(p.id)}"><svg><use href="#heart"/></svg></button>
     <a class="product-image" href="${href(p)}"><img src="${p.image}" alt="${cardName}" loading="lazy"></a>
    </div>
    <div class="product-copy">
@@ -45,25 +45,42 @@ function renderProducts(){
  $("#product-count").textContent=`${Math.min(visible,list.length)} из ${list.length} ароматов`;
  const more=$("#show-more"),expanded=visible>=list.length;
  more.hidden=list.length<=4;
- more.innerHTML=expanded?'Скрыть <svg aria-hidden="true"><use href="assets/icons/lucide.svg#minus"/></svg>':'Показать еще <svg aria-hidden="true"><use href="assets/icons/lucide.svg#plus"/></svg>';
+ more.textContent=expanded?'Скрыть':'Показать еще';
 }
-function updateCart(){save("fluide-cart",cart);$("#cart-count").textContent=cart.reduce((n,p)=>n+(Number(p.quantity)||1),0)||""}
+function updateCart(){save("fluide-cart",cart);const quantity=cart.reduce((n,p)=>n+(Number(p.quantity)||1),0);const badge=$("#cart-count");badge.textContent=quantity||"";badge.hidden=quantity===0}
 function openSizeSelector(id){selectedProductId=id;openPanel("volume","Выберите объем")}
 function addToCart(id,size){const p=products.find(product=>product.id===id);if(!p)return;const variant=variantsFor(p).find(item=>item.size===size);if(!variant)return;const key=`${id}-${size}`;const snapshot={...p,name:`FLUIDE ${Number(p.id.replace("fragrance-",""))} ${p.name} · ${variant.volume}`,price:variant.price,volume:variant.volume,categoryLabel:`Парфюм · ${variant.volume}`};const row=cart.find(item=>item.id===key);if(row){row.quantity++;row.product=snapshot}else cart.push({id:key,quantity:1,product:snapshot});updateCart();toast(`${p.name}, ${variant.volume} — в корзине`)}
 function toggleFavorite(id){favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];save("fluide-favorites",favorites);renderProducts();if(panelMode==="favorites"&&$("#panel").open)renderPanel()}
 function resultRow(p){return `<a class="search-result" href="${href(p)}"><img src="${p.image}" alt=""><span>${escapeHtml(p.name)}</span><small>от ${money(minPrice(p))}</small></a>`}
-function openPanel(mode,title){panelMode=mode;$("#panel-title").textContent=title||({search:"Найти аромат",favorites:"Избранное",cart:"Ваша корзина",menu:"FLUIDE"}[mode]||mode);renderPanel();if(!$("#panel").open)$("#panel").showModal();if(mode==="search")$("#home-search").focus()}
+function openPanel(mode,title){panelMode=mode;$("#panel-title").textContent=title||({login:"Личный кабинет",search:"Найти аромат",favorites:"Избранное",cart:"Корзина",menu:"FLUIDE"}[mode]||mode);renderPanel();if(!$("#panel").open)$("#panel").showModal();if(mode==="search")$("#home-search").focus()}
 function renderPanel(){
  const body=$("#panel-body");
+ body.classList.toggle("cart-panel-body",panelMode==="cart");
+ if(panelMode==="login")body.innerHTML=`<div class="auth-panel">
+  <div class="auth-content">
+   <p class="auth-kicker">Добро пожаловать в FLUIDE</p>
+   <h3 class="auth-title">Войти или<br>зарегистрироваться</h3>
+   <p class="auth-subtitle">Сохраняйте избранное, историю заказов<br>и персональные рекомендации.</p>
+   <p class="auth-method-label">Войти с помощью</p>
+   <div class="auth-providers">
+    <button class="auth-provider" data-auth-provider="Яндекс ID" aria-label="Продолжить с Яндекс ID"><span><img src="assets/icons/yandex-id.svg" alt=""></span><b>Яндекс ID</b></button>
+    <button class="auth-provider" data-auth-provider="VK ID" aria-label="Продолжить с VK ID"><span><img src="assets/icons/vk-id.svg?v=2" alt=""></span><b>VK ID</b></button>
+   </div>
+   <div class="auth-divider"><span>или</span></div>
+   <button class="auth-phone-button" data-auth-phone>По номеру телефона</button>
+  </div>
+  <p class="auth-legal">Продолжая, вы соглашаетесь на обработку персональных данных в соответствии с <button data-info="privacy">политикой обработки персональных данных</button>.</p>
+ </div>`;
  if(panelMode==="volume"){const p=products.find(product=>product.id===selectedProductId);if(!p){body.innerHTML="<p>Аромат не найден.</p>";return}const cardName=`FLUIDE ${Number(p.id.replace("fragrance-",""))} ${p.name}`;body.innerHTML=`<div class="volume-picker"><div class="volume-product"><img src="${escapeHtml(p.image)}" alt="${escapeHtml(cardName)}"><div><h3>${escapeHtml(cardName)}</h3><p>${escapeHtml(p.inspiredBy)}</p></div></div><p class="volume-label">Доступные объемы</p><div class="volume-options">${variantsFor(p).map(variant=>`<button class="volume-option" data-volume="${variant.size}"><span><strong>${variant.volume}</strong><small>В наличии</small></span><b>${money(variant.price)}</b></button>`).join("")}</div></div>`;}
  if(panelMode==="search"){body.innerHTML='<label for="home-search">Название или любимые ноты</label><input id="home-search" type="search" placeholder="Например, мускус"><div id="search-results"></div>';$("#home-search").addEventListener("input",()=>{const q=$("#home-search").value.trim().toLowerCase();$("#search-results").innerHTML=products.filter(p=>(p.name+" "+p.notes).toLowerCase().includes(q)).map(resultRow).join("")||'<p>В подборке не найдено. Посмотрите полный каталог.</p><a class="pill outline" href="catalog.html">Перейти в каталог ↗</a>'});$("#home-search").dispatchEvent(new Event("input"));}
  if(panelMode==="favorites"){const list=products.filter(p=>favorites.includes(p.id));body.innerHTML=list.length?list.map(p=>`<div class="favorite-row">${resultRow(p)}<button class="buy" data-favorite="${p.id}">Убрать из избранного</button></div>`).join(""):'<p>Сохраняйте ароматы с помощью сердечка на карточке.</p>';if(favorites.some(id=>!products.some(p=>p.id===id)))body.innerHTML+='<p>Остальные сохраненные ароматы доступны в каталоге.</p><a class="pill outline" href="catalog.html">Открыть каталог</a>';}
  if(panelMode==="cart"){
- let total=0;body.innerHTML=cart.map((row,i)=>{const p=row.product||products.find(p=>p.id===row.id);if(!p)return "";total+=(Number(p.price)||0)*row.quantity;return `<div class="cart-row"><img src="${escapeHtml(p.image)}" alt=""><div><h3>${escapeHtml(p.name)}</h3><p>${money(Number(p.price)||0)}</p><button data-quantity="${i}" data-delta="-1" aria-label="Уменьшить количество"><svg><use href="assets/icons/lucide.svg#minus"/></svg></button> <span>${row.quantity}</span> <button data-quantity="${i}" data-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"/></svg></button></div><button data-remove="${i}" aria-label="Удалить ${escapeHtml(p.name)}"><svg><use href="assets/icons/lucide.svg#trash-2"/></svg></button></div>`}).join("")||(cart.length?'':'<p>Здесь будут ваши ароматы.</p>');
+ let total=0;body.innerHTML=cart.map((row,i)=>{const p=row.product||products.find(p=>p.id===row.id);if(!p)return "";total+=(Number(p.price)||0)*row.quantity;return `<div class="cart-row"><img src="${escapeHtml(p.image)}" alt=""><div><h3>${escapeHtml(p.name)}</h3><p>${money(Number(p.price)||0)}</p><button data-quantity="${i}" data-delta="-1" aria-label="Уменьшить количество"><svg><use href="#minus"/></svg></button> <span>${row.quantity}</span> <button data-quantity="${i}" data-delta="1" aria-label="Увеличить количество"><svg><use href="#plus"/></svg></button></div><button data-remove="${i}" aria-label="Удалить ${escapeHtml(p.name)}"><svg><use href="#trash-2"/></svg></button></div>`}).join("")||(cart.length?'':'<p>Здесь будут ваши ароматы.</p>');
  if(cart.length)body.innerHTML+=`<div class="cart-total"><span>Итого</span><span>${money(total)}</span></div><p>Товары сохранены в корзине. Онлайн-оформление заказа пока не подключено.</p>`;
- body.innerHTML+='<a class="pill outline" href="catalog.html">Продолжить выбор ↗</a>';
+ if(cart.length)body.innerHTML+='<a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="#move-right"/></svg></a>';
+ else body.innerHTML='<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="#move-right"/></svg></a></div></div>';
  }
- if(panelMode==="menu")body.innerHTML='<nav><a href="catalog.html">Каталог</a><a href="#offers" data-close>Предложения</a><a href="#finder" data-close>Подбор аромата</a><a href="about.html">О компании</a><a href="#contacts" data-close>Контакты</a></nav>';
+ if(panelMode==="menu")body.innerHTML='<nav><a href="catalog.html">Каталог</a><a href="#offers" data-close>Предложения</a><a href="selection.html">Подбор аромата</a><a href="about.html">О компании</a><a href="#contacts" data-close>Контакты</a></nav>';
 }
 document.addEventListener("click",event=>{
  const b=event.target.closest("button,a");if(!b)return;
@@ -73,12 +90,16 @@ document.addEventListener("click",event=>{
  if(b.dataset.volume){addToCart(selectedProductId,b.dataset.volume);$("#panel").close()}
  if(b.dataset.favorite)toggleFavorite(b.dataset.favorite);
  if(b.dataset.open)openPanel(b.dataset.open);
+ if(b.dataset.authProvider)toast(`Вход через ${b.dataset.authProvider} появится после подключения авторизации.`);
+ if(b.hasAttribute("data-auth-phone")){const body=$("#panel-body");body.innerHTML=`<div class="auth-panel auth-panel--phone"><div class="auth-content"><button class="auth-back" data-auth-back>← Назад</button><p class="auth-kicker">Вход по телефону</p><h3 class="auth-title">Введите номер<br>телефона</h3><p class="auth-subtitle">Отправим SMS с кодом подтверждения.<br>Номер используется только для входа.</p><form id="auth-phone-form"><label for="auth-phone">Номер телефона</label><input id="auth-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" value="+7 " placeholder="+7 999 000-00-00" required><button class="auth-phone-button" type="submit">Получить код</button><p id="auth-phone-status" role="status"></p></form></div><p class="auth-legal">Продолжая, вы соглашаетесь на обработку персональных данных в соответствии с <button data-info="privacy">политикой обработки персональных данных</button>.</p></div>`;$("#auth-phone").focus()}
+ if(b.hasAttribute("data-auth-back"))renderPanel();
  if(b.hasAttribute("data-close"))b.closest("dialog")?.close();
  if(b.hasAttribute("data-quantity")){const row=cart[Number(b.dataset.quantity)];row.quantity+=Number(b.dataset.delta);cart=cart.filter(x=>x.quantity>0);updateCart();renderPanel()}
  if(b.hasAttribute("data-remove")){cart.splice(Number(b.dataset.remove),1);updateCart();renderPanel()}
  if(b.dataset.info){openPanel("info",{delivery:"Доставка и оплата",contacts:"Связаться с FLUIDE",privacy:"Персональные данные"}[b.dataset.info]);$("#panel-body").innerHTML={delivery:'<p>Доставка по России. Условия, сроки и способы оплаты уточняются при оформлении заказа.</p><p>Онлайн-оформление пока не подключено.</p>',contacts:'<p>FLUIDE Atelier — парфюмерный бренд из Владимира.</p><p>Контакты и часы работы будут добавлены после подтверждения командой бренда.</p><a class="pill outline" href="about.html">О нашем пространстве ↗</a>',privacy:'<p>Корзина, избранное и выбор cookie сохраняются локально в вашем браузере. Email из формы на этой странице пока никуда не отправляется.</p><p>Полная политика обработки персональных данных будет добавлена перед запуском онлайн-заказов и подписки.</p>'}[b.dataset.info]}
  if(b.dataset.gift){openPanel("gift",b.dataset.gift);$("#panel-body").innerHTML='<p>Подарите возможность выбрать свой аромат.</p><p>Номиналы и покупка сертификата появятся после подключения оформления заказов.</p><a class="pill outline" href="catalog.html">Посмотреть ароматы ↗</a>'}
 });
+document.addEventListener("submit",event=>{if(event.target.id!=="auth-phone-form")return;event.preventDefault();const status=$("#auth-phone-status");status.textContent="Отправка кода будет доступна после подключения авторизации.";toast("Демо-режим: номер телефона никуда не отправлен.")});
 $$("dialog").forEach(dialog=>{dialog.addEventListener("click",e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close()}});dialog.addEventListener("close",()=>{document.body.style.overflow=$$("dialog[open]").length?"hidden":"";restartHero()});new MutationObserver(()=>{if(dialog.open)document.body.style.overflow="hidden"}).observe(dialog,{attributes:true,attributeFilter:["open"]})});
 let slide=0,paused=matchMedia("(prefers-reduced-motion: reduce)").matches,heroTimer;
 function showSlide(next){slide=(next+3)%3;$$(".hero-slide").forEach((s,i)=>{s.hidden=i!==slide;s.classList.toggle("active",i===slide)});$$("[data-slide]").forEach((b,i)=>{b.classList.toggle("active",i===slide);b.setAttribute("aria-current",i===slide)});restartHero()}
@@ -86,7 +107,7 @@ function restartHero(){clearTimeout(heroTimer)}
 function pauseHero(value){paused=value;$("[data-hero-pause]").textContent=paused?"▶":"Ⅱ";$("[data-hero-pause]").setAttribute("aria-label",paused?"Запустить слайдер":"Остановить слайдер");restartHero()}
 $(".hero").addEventListener("mouseenter",()=>clearTimeout(heroTimer));$(".hero").addEventListener("mouseleave",restartHero);$(".hero").addEventListener("focusin",()=>clearTimeout(heroTimer));$(".hero").addEventListener("focusout",restartHero);document.addEventListener("visibilitychange",restartHero);
 window.addEventListener("scroll",()=>$(".header").classList.toggle("scrolled",scrollY>60),{passive:true});
-const notices=["Доставка по России","Три любимых аромата по цене двух","Откройте свой аромат с FLUIDE"];let notice=0;
+const notices=["Доставка по России · бесплатно от 5 000 ₽","Три любимых аромата по цене двух","Откройте свой аромат с FLUIDE"];let notice=0;
 $$("[data-service]").forEach(b=>b.onclick=()=>{notice=(notice+Number(b.dataset.service)+notices.length)%notices.length;$("#service-message").textContent=notices[notice]});
 const stories=[
  ["Cherry 33","Спелая вишня, яркое начало и теплый след.","assets/media/fluide-editorial-stilllife-v1.jpg","catalog.html","Открыть коллекцию"],
@@ -104,16 +125,7 @@ $(".story-next").onclick=()=>showStory(storyIndex+1);$(".story-back").onclick=()
 $("#story").addEventListener("close",()=>{cancelAnimationFrame(storyFrame);restartHero()});
 $("#story-body").addEventListener("pointerdown",()=>storyPaused=true);window.addEventListener("pointerup",()=>storyPaused=false);
 $("#story").addEventListener("keydown",e=>{if(e.key==="ArrowRight")showStory(storyIndex+1);if(e.key==="ArrowLeft")showStory(storyIndex-1);if(e.code==="Space"){e.preventDefault();storyPaused=!storyPaused}});
-const questions=[
- {title:"Какие ноты вам ближе?",options:[["Свежие","Цитрусы, зелень, прохладный воздух","бергамот лимон грейпфрут"],["Мягкие","Чистота, мускус, нежные цветы","мускус ирис"],["Теплые","Дерево, пряности, амбра","кардамон сандал кедр"],["Сочные","Ягоды, фрукты, сладкие акценты","малина ананас яблоко"]]},
- {title:"Для какого настроения?",options:[["На каждый день","Легкий, спокойный спутник","ирис бергамот"],["Для особого момента","Выразительный, запоминающийся","кардамон ананас"],["По настроению","Люблю менять и пробовать","мускус яблоко"]]},
- {title:"Для кого выбираете?",options:[["Для нее","","women"],["Для него","","men"],["Без границ","","unisex"]]}
-];let answers=[];
-function renderQuiz(){const step=answers.length,body=$("#quiz-body");
- if(step<questions.length){const q=questions[step];body.innerHTML=`<span class="quiz-step">Вопрос ${step+1} из 3</span><h2>${q.title}</h2><div class="quiz-options">${q.options.map((o,i)=>`<button data-answer="${i}">${o[0]}<span>${o[1]}</span></button>`).join("")}</div>${step?'<button class="quiz-back" data-quiz-back>← Назад</button>':""}`;body.querySelectorAll("[data-answer]").forEach(b=>b.onclick=()=>{answers.push(Number(b.dataset.answer));renderQuiz()});body.querySelector("[data-quiz-back]")?.addEventListener("click",()=>{answers.pop();renderQuiz()})}
- else{const words=(questions[0].options[answers[0]][2]+" "+questions[1].options[answers[1]][2]).split(" "),gender=questions[2].options[answers[2]][2];const ranked=products.map(p=>({p,score:words.reduce((n,w)=>n+(p.notes.toLowerCase().includes(w)?2:0),0)+(p.category===gender?3:p.category==="unisex"?1:0)})).sort((a,b)=>b.score-a.score).slice(0,3);body.innerHTML='<span class="quiz-step">Ваша подборка</span><h2>Начните с этих ароматов.</h2><p>Подобрали по нотам и вашим ответам. Окончательный выбор лучше сделать после знакомства с ароматом на коже.</p>'+ranked.map(({p})=>resultRow(p)).join("")+'<button class="quiz-back" data-restart>Пройти заново ↺</button>';body.querySelector("[data-restart]").onclick=()=>{answers=[];renderQuiz()}}}
-$("[data-quiz]").onclick=()=>{answers=[];renderQuiz();$("#quiz").showModal()};
 $("#subscribe").addEventListener("submit",e=>{e.preventDefault();$("#subscribe-status").textContent="Подписка пока не подключена. Ваш email не отправлен и не сохранен."});
 try{$(".cookie").hidden=localStorage.getItem("fluide-cookie-consent")==="accepted"}catch{$(".cookie").hidden=false}
 $("[data-cookie-accept]").onclick=()=>{try{localStorage.setItem("fluide-cookie-consent","accepted")}catch{}$(".cookie").hidden=true};$("[data-cookie-settings]").onclick=()=>$(".cookie").hidden=false;
-renderProducts();$("#cart-count").textContent=cart.reduce((n,p)=>n+(Number(p.quantity)||1),0)||"";
+renderProducts();updateCart();
