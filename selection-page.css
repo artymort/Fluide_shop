@@ -53,6 +53,27 @@
   .selection-summary-copy{padding-inline:30px}
 }
 
+/* Compact desktop layout for laptops with a short browser viewport. */
+@media(min-width:961px) and (max-height:780px){
+  .selection-workspace{padding-top:32px;padding-bottom:36px}
+  .selection-form{flex:0 0 auto;padding-top:28px}
+  .selection-kicker{margin-bottom:8px}
+  .selection-question h1{font-size:42px;line-height:1.06}
+  .selection-help{margin-top:12px;font-size:14px}
+  .selection-options{gap:10px;margin-top:24px}
+  .selection-option{min-height:70px;padding:12px 16px}
+  .selection-option-title{font-size:16px}
+  .selection-option-caption{margin-top:2px;font-size:12px}
+  .selection-status{margin-top:14px}
+  .selection-controls{margin-top:22px;padding-top:0}
+  .selection-summary{margin:32px 0}
+  .selection-summary-copy{padding:22px 28px 26px}
+  .selection-summary-copy>p{margin-bottom:7px;font-size:13px}
+  .selection-summary-copy h2{font-size:28px}
+  .selection-answer-list{gap:6px;margin-top:14px}
+  .selection-answer-list span{min-height:26px;padding:4px 8px}
+}
+
 @media(max-width:960px){
   .selection-page .desktop-nav{display:none}
   .selection-page .menu-toggle{display:grid}

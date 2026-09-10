@@ -164,6 +164,10 @@ function updateStatus() {
     status.textContent = "Загружаем коллекцию…";
     return;
   }
+  if (!allSelectedLabels().length) {
+    status.textContent = "";
+    return;
+  }
   const result = selectionEngine.rankRecommendations(fragrances, criteria(), 6);
   const shown = Math.min(6, result.total);
   status.textContent = result.total
