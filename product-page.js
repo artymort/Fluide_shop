@@ -287,13 +287,14 @@ function renderRelated(){
 
 function saveCart(){localStorage.setItem("fluide-cart",JSON.stringify(cart))}
 function renderCart(){
-  const detailed=cart.map(item=>({item,product:item.product||HOME_PRODUCT_SNAPSHOTS[item.id]||null})).filter(row=>row.product);
+  const detailed=cart.map((item,index)=>({item,index,product:item.product||HOME_PRODUCT_SNAPSHOTS[item.id]||null})).filter(row=>row.product);
   const quantity=cart.reduce((sum,item)=>sum+(Number(item.quantity)||0),0);
   cartCount.textContent=quantity||"";
   cartCount.hidden=quantity===0;
-  cartFooter.hidden=detailed.length===0;
-  cartTotal.innerHTML=formatPriceMarkup(detailed.reduce((sum,row)=>sum+row.product.price*row.item.quantity,0));
-  cartItems.innerHTML=detailed.length?detailed.map(({item,product})=>`<div class="cart-item"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${item.quantity} × ${formatPriceMarkup(product.price)}</p></div><button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join(""):`<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
+  const total=detailed.reduce((sum,row)=>sum+row.product.price*row.item.quantity,0);
+  cartFooter.hidden=true;
+  cartTotal.innerHTML=formatPriceMarkup(total);
+  cartItems.innerHTML=detailed.length?`${detailed.map(({item,index,product})=>`<div class="cart-row"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${formatPriceMarkup(product.price)}</p><div class="cart-quantity"><button type="button" data-cart-index="${index}" data-cart-delta="-1" aria-label="Уменьшить количество"><svg><use href="assets/icons/lucide.svg#minus"></use></svg></button><span>${item.quantity}</span><button type="button" data-cart-index="${index}" data-cart-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"></use></svg></button></div></div><button type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить ${escapeHtml(product.name)}"><svg><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join("")}<div class="cart-total"><span>Итого</span><span>${formatPriceMarkup(total)}</span></div><p class="cart-note">Товары сохранены в корзине. Онлайн-оформление заказа пока не подключено.</p><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a>`:`<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
 }
 function openCart(){cartDrawer.classList.add("is-open");cartDrawer.setAttribute("aria-hidden","false");backdrop.classList.add("is-open");document.body.classList.add("is-locked")}
 function closeCart(){cartDrawer.classList.remove("is-open");cartDrawer.setAttribute("aria-hidden","true");backdrop.classList.remove("is-open");document.body.classList.remove("is-locked")}
@@ -313,7 +314,7 @@ function openInfo(type){
 }
 
 cartButton.addEventListener("click",openCart);cartClose.addEventListener("click",closeCart);backdrop.addEventListener("click",closeCart);
-cartItems.addEventListener("click",event=>{const button=event.target.closest("[data-remove-cart]");if(!button)return;cart=cart.filter(item=>item.id!==button.dataset.removeCart);saveCart();renderCart()});
+cartItems.addEventListener("click",event=>{const quantityButton=event.target.closest("[data-cart-index]");if(quantityButton){const row=cart[Number(quantityButton.dataset.cartIndex)];if(row){row.quantity=(Number(row.quantity)||0)+Number(quantityButton.dataset.cartDelta);cart=cart.filter(item=>item.quantity>0);saveCart();renderCart()}return}const button=event.target.closest("[data-remove-cart]");if(!button)return;cart=cart.filter(item=>item.id!==button.dataset.removeCart);saveCart();renderCart()});
 headerFavorite.addEventListener("click",()=>{if(fragrance)toggleFavorite()});
 menuToggle.addEventListener("click",()=>{const open=mobileNav.classList.toggle("is-open");menuToggle.setAttribute("aria-expanded",String(open))});
 mobileNav.querySelectorAll("a").forEach(link=>link.addEventListener("click",()=>{mobileNav.classList.remove("is-open");menuToggle.setAttribute("aria-expanded","false")}));

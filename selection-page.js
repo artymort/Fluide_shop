@@ -22,7 +22,7 @@ const steps = [
     help: "Выберите один вариант",
     type: "single",
     options: [
-      { value: "женский", label: "Для неё", caption: "Женские и унисекс ароматы" },
+      { value: "женский", label: "Для нее", caption: "Женские и унисекс ароматы" },
       { value: "мужской", label: "Для него", caption: "Мужские и унисекс ароматы" },
       { value: "унисекс", label: "Унисекс", caption: "Только универсальные ароматы" },
     ],
@@ -36,8 +36,8 @@ const steps = [
       { value: "everyday", label: "На каждый день", caption: "Спокойные и универсальные" },
       { value: "evening", label: "Вечер", caption: "Более выразительные" },
       { value: "date", label: "Свидание", caption: "Мягкие и запоминающиеся" },
-      { value: "gym", label: "Спорт", caption: "Чистые и лёгкие" },
-      { value: "walk", label: "Прогулка", caption: "Свежие и непринуждённые" },
+      { value: "gym", label: "Спорт", caption: "Чистые и легкие" },
+      { value: "walk", label: "Прогулка", caption: "Свежие и непринужденные" },
     ],
   },
   {
@@ -51,7 +51,7 @@ const steps = [
       { value: "Цитрусовые", label: "Цитрусовые", caption: "Бергамот, лимон, мандарин" },
       { value: "Древесные", label: "Древесные", caption: "Кедр, сандал, ветивер" },
       { value: "Сладкие", label: "Сладкие", caption: "Ваниль, пралине, какао" },
-      { value: "Свежие", label: "Свежие", caption: "Морские, зелёные, чайные" },
+      { value: "Свежие", label: "Свежие", caption: "Морские, зеленые, чайные" },
       { value: "Пряные и восточные", label: "Пряные и восточные", caption: "Перец, амбра, шафран" },
     ],
   },
@@ -62,8 +62,8 @@ const steps = [
     type: "multi",
     options: [
       { value: "spring", label: "Весна", caption: "Цветочные и чистые" },
-      { value: "summer", label: "Лето", caption: "Лёгкие и свежие" },
-      { value: "autumn", label: "Осень", caption: "Тёплые и мягкие" },
+      { value: "summer", label: "Лето", caption: "Легкие и свежие" },
+      { value: "autumn", label: "Осень", caption: "Теплые и мягкие" },
       { value: "winter", label: "Зима", caption: "Плотные и стойкие" },
     ],
   },
@@ -160,6 +160,10 @@ function renderSummary() {
 }
 
 function updateStatus() {
+  if (currentStep !== steps.length - 1) {
+    status.textContent = "";
+    return;
+  }
   if (!fragrances.length) {
     status.textContent = "Загружаем коллекцию…";
     return;
@@ -173,9 +177,7 @@ function updateStatus() {
   status.textContent = result.total
     ? `По текущим ответам подходит: ${shown} ${plural(shown, "аромат", "аромата", "ароматов")}`
     : "Пока точных совпадений нет — измените один из ответов или пропустите шаг.";
-  if (currentStep === steps.length - 1) {
-    nextLabel.textContent = result.total ? `Показать ${shown} ${plural(shown, "аромат", "аромата", "ароматов")}` : "Открыть каталог";
-  }
+  nextLabel.textContent = result.total ? `Показать ${shown} ${plural(shown, "аромат", "аромата", "ароматов")}` : "Открыть каталог";
 }
 
 function plural(number, one, few, many) {
@@ -218,7 +220,7 @@ function renderStep() {
 }
 
 function catalogUrl() {
-  const params = new URLSearchParams({ mode: "selection" });
+  const params = new URLSearchParams({ mode: "selection", view: "results" });
   if (answers.gender) params.set("gender", answers.gender);
   ["occasion", "family", "season"].forEach((key) => {
     answerValues(key).forEach((value) => params.append(key, value));
@@ -263,21 +265,21 @@ function saveCart() {
 }
 
 function renderCart() {
-  const detailed = cart.filter((row) => row && row.product);
+  const detailed = cart.map((row, index) => ({ row, index })).filter(({ row }) => row && row.product);
   const quantity = cart.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0);
-  const total = detailed.reduce((sum, row) => sum + Number(row.product.price || 0) * Number(row.quantity || 0), 0);
+  const total = detailed.reduce((sum, { row }) => sum + Number(row.product.price || 0) * Number(row.quantity || 0), 0);
   const badge = document.querySelector(".cart-count");
   const footer = document.querySelector(".cart-footer");
   const items = document.querySelector(".cart-items");
   badge.textContent = quantity || "";
   badge.hidden = quantity === 0;
-  footer.hidden = detailed.length === 0;
+  footer.hidden = true;
   document.querySelector(".cart-total").innerHTML = formatPriceMarkup(total);
-  items.innerHTML = detailed.length ? detailed.map((row) => `<div class="cart-item">
+  items.innerHTML = detailed.length ? `${detailed.map(({ row, index }) => `<div class="cart-row">
     <img src="${escapeHtml(row.product.image || "assets/brand/logo-blue.svg")}" alt="${escapeHtml(row.product.name)}">
-    <div><h3>${escapeHtml(row.product.name)}</h3><p>${Number(row.quantity) || 1} × ${formatPriceMarkup(Number(row.product.price) || 0)}</p></div>
-    <button class="cart-remove" type="button" data-remove-cart="${escapeHtml(row.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button>
-  </div>`).join("") : `<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
+    <div><h3>${escapeHtml(row.product.name)}</h3><p>${formatPriceMarkup(Number(row.product.price) || 0)}</p><div class="cart-quantity"><button type="button" data-cart-index="${index}" data-cart-delta="-1" aria-label="Уменьшить количество"><svg><use href="assets/icons/lucide.svg#minus"></use></svg></button><span>${Number(row.quantity) || 1}</span><button type="button" data-cart-index="${index}" data-cart-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"></use></svg></button></div></div>
+    <button type="button" data-remove-cart="${escapeHtml(row.id)}" aria-label="Удалить ${escapeHtml(row.product.name)}"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button>
+  </div>`).join("")}<div class="cart-total"><span>Итого</span><span>${formatPriceMarkup(total)}</span></div><p class="cart-note">Товары сохранены в корзине. Онлайн-оформление заказа пока не подключено.</p><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a>` : `<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
 }
 
 function openCart() {
@@ -315,6 +317,17 @@ document.querySelector(".cart-button").addEventListener("click", openCart);
 document.querySelector(".drawer-close").addEventListener("click", closeCart);
 document.querySelector(".drawer-backdrop").addEventListener("click", closeCart);
 document.querySelector(".cart-items").addEventListener("click", (event) => {
+  const quantityButton = event.target.closest("[data-cart-index]");
+  if (quantityButton) {
+    const row = cart[Number(quantityButton.dataset.cartIndex)];
+    if (row) {
+      row.quantity = (Number(row.quantity) || 0) + Number(quantityButton.dataset.cartDelta);
+      cart = cart.filter((item) => item.quantity > 0);
+      saveCart();
+      renderCart();
+    }
+    return;
+  }
   const button = event.target.closest("[data-remove-cart]");
   if (!button) return;
   cart = cart.filter((row) => row.id !== button.dataset.removeCart);
@@ -334,7 +347,7 @@ accountDialog.addEventListener("close", () => document.body.classList.remove("is
 document.querySelector("#account-dialog-body").addEventListener("click", (event) => {
   const provider = event.target.closest("[data-auth-provider]");
   if (provider) showToast(`${provider.dataset.authProvider}: авторизация будет подключена позже`);
-  if (event.target.closest("[data-auth-phone]")) showToast("Вход по телефону будет подключён позже");
+  if (event.target.closest("[data-auth-phone]")) showToast("Вход по телефону будет подключен позже");
 });
 
 const infoDialog = document.querySelector("#info-dialog");

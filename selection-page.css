@@ -1,5 +1,4 @@
 .selection-page{background:#fff}
-.selection-page .desktop-nav{gap:24px}
 .selection-page .catalog-header{box-shadow:none}
 .selection-main{border-bottom:1px solid var(--line)}
 .selection-shell{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(360px,.82fr);min-height:calc(100dvh - 108px)}
@@ -47,7 +46,6 @@
 .selection-page .catalog-footer{padding-top:72px}
 
 @media(max-width:1180px){
-  .selection-page .desktop-nav{gap:16px;font-size:13px}
   .selection-shell{grid-template-columns:minmax(0,1fr) 360px}
   .selection-workspace{padding-right:42px}
   .selection-summary-copy{padding-inline:30px}

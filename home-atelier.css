@@ -304,6 +304,9 @@ html{scrollbar-gutter:stable}
 .auth-method-label,.auth-provider b,.auth-divider,.auth-phone-button,.auth-back,.auth-panel--phone label,#auth-phone-status{font-size:14px!important;letter-spacing:normal}
 .auth-phone-button{text-transform:none}
 .auth-legal{font-size:11px!important}
+.auth-inline-status,#auth-code-status{min-height:20px;margin:14px 0 0!important;color:var(--muted);font-size:14px!important;line-height:1.4!important}
+.auth-code-input{font-size:24px!important;font-variant-numeric:tabular-nums;letter-spacing:.24em;text-align:center}
+.auth-phone-button:disabled{border-color:#c5c8d0!important;background:#c5c8d0!important;color:#fff!important;cursor:not-allowed}
 
 .panel .auth-title{font-size:34px;font-weight:500}
 @media(max-width:700px){.panel .auth-title{font-size:32px}}

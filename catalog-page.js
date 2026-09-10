@@ -65,6 +65,7 @@ let fragrances = [];
 let visibleLimit = 12;
 let favoritesOnly = false;
 let selectionMode = new URLSearchParams(window.location.search).get("mode") === "selection";
+let focusSelectionResultsOnLoad = selectionMode && new URLSearchParams(window.location.search).get("view") === "results";
 let toastTimer;
 let selectedFragranceId = "";
 let favorites = JSON.parse(localStorage.getItem("fluide-favorites") || "[]");
@@ -243,6 +244,18 @@ function renderProducts(){
   renderActiveFilters();
 }
 
+function focusLoadedSelectionResults(){
+  if(!focusSelectionResultsOnLoad)return;
+  focusSelectionResultsOnLoad=false;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const target=document.querySelector("#catalog-results");
+    if(!target)return;
+    const stickyOffset=document.querySelector(".service").offsetHeight+catalogHeader.offsetHeight+20;
+    const targetTop=window.scrollY+target.getBoundingClientRect().top-stickyOffset;
+    window.scrollTo({top:Math.max(0,targetTop),behavior:"auto"});
+  }));
+}
+
 function plural(number,one,few,many){
   const mod10=number%10,mod100=number%100;
   if(mod10===1&&mod100!==11)return one;
@@ -370,14 +383,14 @@ function addToCart(id,size){
 }
 
 function renderCart(){
-  const detailed=cart.map(item=>({item,product:item.product||HOME_PRODUCT_SNAPSHOTS[item.id]||null})).filter(row=>row.product);
+  const detailed=cart.map((item,index)=>({item,index,product:item.product||HOME_PRODUCT_SNAPSHOTS[item.id]||null})).filter(row=>row.product);
   const quantity=cart.reduce((sum,item)=>sum+(Number(item.quantity)||0),0);
   const total=detailed.reduce((sum,row)=>sum+row.product.price*row.item.quantity,0);
   cartCount.textContent=quantity||"";
   cartCount.hidden=quantity===0;
-  cartFooter.hidden=detailed.length===0;
+  cartFooter.hidden=true;
   cartTotal.innerHTML=formatPriceMarkup(total);
-  cartItems.innerHTML=detailed.length?detailed.map(({item,product})=>`<div class="cart-item"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${item.quantity} × ${formatPriceMarkup(product.price)}</p></div><button class="cart-remove" type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join(""):`<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
+  cartItems.innerHTML=detailed.length?`${detailed.map(({item,index,product})=>`<div class="cart-row"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${formatPriceMarkup(product.price)}</p><div class="cart-quantity"><button type="button" data-cart-index="${index}" data-cart-delta="-1" aria-label="Уменьшить количество"><svg><use href="assets/icons/lucide.svg#minus"></use></svg></button><span>${item.quantity}</span><button type="button" data-cart-index="${index}" data-cart-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"></use></svg></button></div></div><button type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить ${escapeHtml(product.name)}"><svg><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join("")}<div class="cart-total"><span>Итого</span><span>${formatPriceMarkup(total)}</span></div><p class="cart-note">Товары сохранены в корзине. Онлайн-оформление заказа пока не подключено.</p><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a>`:`<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
 }
 
 function openCart(){
@@ -479,7 +492,7 @@ volumeContent.addEventListener("click",event=>{const button=event.target.closest
 document.querySelector(".volume-close").addEventListener("click",()=>volumeDialog.close());
 document.querySelector(".info-close").addEventListener("click",()=>infoDialog.close());
 [volumeDialog,infoDialog].forEach(dialog=>dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close()}));
-cartItems.addEventListener("click",event=>{const button=event.target.closest("[data-remove-cart]");if(!button)return;cart=cart.filter(item=>item.id!==button.dataset.removeCart);saveCart();renderCart()});
+cartItems.addEventListener("click",event=>{const quantityButton=event.target.closest("[data-cart-index]");if(quantityButton){const row=cart[Number(quantityButton.dataset.cartIndex)];if(row){row.quantity=(Number(row.quantity)||0)+Number(quantityButton.dataset.cartDelta);cart=cart.filter(item=>item.quantity>0);saveCart();renderCart()}return}const button=event.target.closest("[data-remove-cart]");if(!button)return;cart=cart.filter(item=>item.id!==button.dataset.removeCart);saveCart();renderCart()});
 document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;closeFilter();closeCart()});
 document.querySelectorAll("[data-info]").forEach(button=>button.addEventListener("click",()=>openInfo(button.dataset.info)));
 
@@ -525,6 +538,7 @@ async function initCatalog(){
     retryButton.onclick=null;
     renderProducts();
     renderCart();
+    focusLoadedSelectionResults();
   }catch(error){
     resultCount.textContent="Не удалось загрузить каталог";
     emptyState.hidden=false;

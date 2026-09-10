@@ -209,6 +209,10 @@ fieldset{border:0;padding:0;margin:0}
 .auth-panel--phone input:focus{border-color:var(--ink)}
 .auth-panel--phone .auth-phone-button{background:var(--ink);color:#fff}
 #auth-phone-status{margin:14px 0 0;color:var(--muted);font-size:14px}
+.auth-inline-status,#auth-code-status{min-height:20px;margin:14px 0 0;color:var(--muted);font-size:14px;line-height:1.4}
+.auth-code-input{font-size:24px!important;font-variant-numeric:tabular-nums;letter-spacing:.24em;text-align:center}
+.auth-phone-button:disabled{border-color:#c5c8d0;background:#c5c8d0;color:#fff;cursor:not-allowed}
+.auth-phone-button:disabled:hover{border-color:#c5c8d0;background:#c5c8d0;color:#fff}
 @keyframes account-dialog-in{from{transform:translateX(100%)}to{transform:translateX(0)}}
 
 @media(max-width:1280px){
@@ -304,6 +308,23 @@ h1,h2,h3{letter-spacing:-.02em!important}
 
 /* Unified product surfaces, cart state and volume typography. */
 .cart-count{right:0;top:0;min-width:16px;height:16px;padding:0 4px;font-size:9px;font-weight:600}
+.cart-drawer{width:min(480px,100%);padding:30px}
+.drawer-head{padding-bottom:25px}
+.drawer-head h2{font-size:30px}
+.cart-items{min-height:0;padding-top:0;overflow:auto}
+.cart-row{display:grid;grid-template-columns:65px minmax(0,1fr) 28px;gap:18px;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.cart-row img{width:65px;height:85px;object-fit:contain}
+.cart-row h3{font-size:14px;font-weight:500;line-height:1.35}
+.cart-row p{margin:5px 0;color:var(--muted);font-size:14px}
+.cart-row>button{display:grid;width:28px;height:36px;place-items:center}
+.cart-row>button svg,.cart-quantity button svg{width:16px;height:16px}
+.cart-quantity{display:flex;align-items:center;gap:10px}
+.cart-quantity button{display:grid;width:18px;height:24px;place-items:center}
+.cart-quantity span{font-size:14px}
+.cart-total{display:flex;justify-content:space-between;padding:24px 0;font-size:14px}
+.cart-note{margin:0 0 24px;color:var(--ink);font-size:14px;line-height:1.55}
+.cart-items>.cart-continue{display:flex;width:100%;margin-top:0}
+.cart-footer{display:none!important}
 .cart-empty-content{display:flex;align-items:center;flex-direction:column}
 .cart-empty p,.cart-empty small{display:block;margin:0;color:var(--muted);font-size:14px;font-weight:400;line-height:1.5}
 .cart-empty small{margin-top:5px}
@@ -316,4 +337,5 @@ h1,h2,h3{letter-spacing:-.02em!important}
 
 @media(max-width:700px){
   .cart-count{right:0;top:0}
+  .cart-drawer{padding:28px 22px}
 }

@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Личный кабинет FLUIDE Atelier: избранное, подбор ароматов, корзина и профиль.">
+  <title>Личный кабинет — FLUIDE Atelier</title>
+  <link rel="stylesheet" href="catalog-page.css?v=cart-unified-v1">
+  <link rel="stylesheet" href="account-page.css?v=account-v1">
+  <script src="auth-session.js?v=account-v1" defer></script>
+  <script src="account-page.js?v=cart-unified-v1" defer></script>
+</head>
+<body class="account-page">
+  <a class="skip" href="#account-main">К личному кабинету</a>
+
+  <div class="service">
+    <button type="button" data-service="-1" aria-label="Предыдущее объявление"><svg><use href="assets/icons/lucide.svg#arrow-left"></use></svg></button>
+    <span id="service-message">Доставка по России · бесплатно от 5 000 ₽</span>
+    <button type="button" data-service="1" aria-label="Следующее объявление"><svg><use href="assets/icons/lucide.svg#arrow-right"></use></svg></button>
+  </div>
+
+  <header class="catalog-header" id="top">
+    <div class="header-inner shell">
+      <a class="brand-logo" href="index.html#top" aria-label="FLUIDE Atelier — на главную"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a>
+      <nav class="desktop-nav" aria-label="Основная навигация">
+        <a href="catalog.html">Каталог</a>
+        <a href="index.html#offers">Предложения</a>
+        <a href="selection.html">Подбор аромата</a>
+        <a href="index.html#brand">О нас</a>
+        <a href="index.html#contacts">Контакты</a>
+      </nav>
+      <div class="header-actions">
+        <a class="login-button is-authenticated" href="account.html" aria-current="page"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#user"></use></svg><span>Кабинет</span></a>
+        <a class="header-icon" href="catalog.html#catalog-search" aria-label="Поиск"><svg><use href="assets/icons/lucide.svg#search"></use></svg></a>
+        <a class="header-icon" href="account.html#favorites" aria-label="Избранное"><svg><use href="assets/icons/lucide.svg#heart"></use></svg></a>
+        <button class="header-icon cart-button" type="button" aria-label="Открыть корзину"><svg><use href="assets/icons/lucide.svg#shopping-cart"></use></svg><span class="cart-count" hidden></span></button>
+        <button class="menu-toggle" type="button" aria-controls="mobile-nav" aria-expanded="false" aria-label="Открыть меню"><svg><use href="assets/icons/lucide.svg#menu"></use></svg></button>
+      </div>
+    </div>
+    <nav class="mobile-nav" id="mobile-nav" aria-label="Мобильная навигация">
+      <a href="catalog.html">Каталог</a><a href="index.html#offers">Предложения</a><a href="selection.html">Подбор аромата</a><a href="account.html" aria-current="page">Личный кабинет</a><a href="index.html#contacts">Контакты</a>
+    </nav>
+  </header>
+
+  <main id="account-main">
+    <section class="account-hero">
+      <div class="account-hero-inner shell">
+        <div>
+          <h1>Личный кабинет</h1>
+        </div>
+        <div class="account-local-note"><span>FLUIDE ID</span><strong>Ваш локальный профиль</strong><p>Данные сохраняются только в этом браузере</p></div>
+      </div>
+    </section>
+
+    <div class="account-shell shell">
+      <aside class="account-sidebar">
+        <nav class="account-nav" aria-label="Разделы личного кабинета">
+          <button class="is-active" type="button" data-account-tab="overview" aria-current="page">Обзор</button>
+          <button type="button" data-account-tab="favorites">Избранное <span id="nav-favorites-count">0</span></button>
+          <button type="button" data-account-tab="orders">Мои заказы</button>
+          <button type="button" data-account-tab="profile">Профиль</button>
+        </nav>
+        <div class="account-sidebar-help"><p>Нужна помощь с выбором?</p><a href="selection.html">Пройти подбор <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a></div>
+        <button class="account-logout" type="button" data-account-logout>Выйти</button>
+      </aside>
+
+      <div class="account-content">
+        <section class="account-panel is-active" data-account-panel="overview">
+          <div class="account-panel-head"><div><p>Обзор</p><h2>Все важное — рядом</h2></div><a href="catalog.html">В каталог <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a></div>
+
+          <div class="account-stats">
+            <button type="button" data-account-tab="favorites"><strong id="favorites-count">0</strong><span>в избранном</span></button>
+            <div><strong id="cart-count-large">0</strong><span>в корзине</span></div>
+            <div><strong id="selection-count">0</strong><span>ответов в подборе</span></div>
+          </div>
+
+          <div class="account-overview-grid">
+            <article class="account-card account-scent-card">
+              <div class="account-card-heading"><div><p>Ваш ароматный профиль</p><h3 id="scent-profile-title">Пока не собран</h3></div><svg aria-hidden="true"><use href="assets/icons/lucide.svg#star"></use></svg></div>
+              <div class="account-tags" id="account-selection-tags"></div>
+              <p class="account-card-copy" id="selection-copy">Ответьте на четыре коротких вопроса — мы соберем шесть подходящих ароматов.</p>
+              <a class="account-primary-link" href="selection.html" id="selection-action">Начать подбор <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a>
+            </article>
+
+            <article class="account-card account-order-card">
+              <div class="account-card-heading"><div><p>Мои заказы</p><h3>Здесь появится история покупок</h3></div><span class="account-card-number">00</span></div>
+              <p class="account-card-copy">Оформление заказов подключим вместе с базой данных и оплатой. Корзина уже сохраняется локально.</p>
+              <button class="account-text-button" type="button" data-account-tab="orders">Подробнее</button>
+            </article>
+
+            <article class="account-card account-cart-card">
+              <div class="account-card-heading"><div><p>Корзина</p><h3 id="account-cart-title">Пока пусто</h3></div><svg aria-hidden="true"><use href="assets/icons/lucide.svg#shopping-cart"></use></svg></div>
+              <div class="account-cart-preview" id="account-cart-preview"></div>
+              <a class="account-primary-link" href="catalog.html">Продолжить выбор <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a>
+            </article>
+          </div>
+        </section>
+
+        <section class="account-panel" data-account-panel="favorites" hidden>
+          <div class="account-panel-head"><div><p>Сохраненное</p><h2>Избранные ароматы</h2></div><a href="catalog.html">Все ароматы <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a></div>
+          <div class="account-favorites-grid" id="account-favorites-grid"></div>
+          <div class="account-empty" id="favorites-empty" hidden><h3>В избранном пока пусто</h3><p>Нажимайте на сердце в карточках ароматов, чтобы собрать собственную коллекцию.</p><a href="catalog.html">Открыть каталог</a></div>
+        </section>
+
+        <section class="account-panel" data-account-panel="orders" hidden>
+          <div class="account-panel-head"><div><p>История</p><h2>Мои заказы</h2></div></div>
+          <div class="account-empty account-empty--orders"><span>01</span><h3>Заказов пока нет</h3><p>Когда подключим оформление и оплату, здесь появятся состав, стоимость и статус доставки.</p><a href="catalog.html">Выбрать аромат</a></div>
+        </section>
+
+        <section class="account-panel" data-account-panel="profile" hidden>
+          <div class="account-panel-head"><div><p>Личные данные</p><h2>Профиль</h2></div></div>
+          <form class="account-profile-form" id="account-profile-form">
+            <label><span>Имя</span><input name="name" type="text" maxlength="60" placeholder="Как к вам обращаться" autocomplete="name"></label>
+            <label><span>Телефон</span><input name="phone" type="tel" readonly></label>
+            <label><span>Email</span><input name="email" type="email" maxlength="100" placeholder="Для чеков и уведомлений" autocomplete="email"></label>
+            <div class="account-form-note"><strong>Пока без синхронизации</strong><p>Имя и email сохраняются только на этом устройстве. После подключения БД профиль станет доступен после входа с любого устройства.</p></div>
+            <button class="account-save" type="submit">Сохранить изменения</button>
+            <p class="account-form-status" id="account-form-status" role="status"></p>
+          </form>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="catalog-footer shell" id="contacts">
+    <a href="index.html#top" class="footer-logo"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a>
+    <div><h3>Коллекции</h3><a href="catalog.html">Парфюм</a><a href="catalog.html?category=home">Для дома</a><a href="index.html#gifts">Подарки</a></div>
+    <div><h3>О бренде</h3><a href="about.html">О компании</a><a href="about.html">Пространство во Владимире</a><a href="about.html">Мастер-классы</a></div>
+    <div><h3>Покупателям</h3><a href="index.html#contacts">Связаться с нами</a><a href="index.html#contacts">Доставка и оплата</a></div>
+    <div class="footer-bottom"><span>© FLUIDE Atelier, 2026</span><span>Сделано с чувством.</span><span>Демо-версия кабинета</span></div>
+  </footer>
+
+  <div class="drawer-backdrop"></div>
+  <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина">
+    <div class="drawer-head"><h2>Корзина</h2><button class="drawer-close" type="button" aria-label="Закрыть корзину"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div>
+    <div class="cart-items"></div>
+    <div class="cart-footer" hidden><div><span>Итого</span><strong class="cart-total"></strong></div><button type="button">Оформить заказ</button></div>
+  </aside>
+  <div class="account-toast" id="account-toast" role="status" aria-live="polite"></div>
+</body>
+</html>
