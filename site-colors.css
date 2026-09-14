@@ -1,0 +1,534 @@
+:root {
+  --site-text: #000;
+  --site-action: #373863;
+  --site-action-rgb: 55, 56, 99;
+}
+
+body {
+  --ink: var(--site-text);
+  --blue: var(--site-action);
+  color: var(--site-text);
+}
+
+/* Primary actions */
+.button--dark,
+.pill.dark,
+.add-button,
+.load-more,
+.button-outline,
+.apply-filters,
+.selection-return-action,
+.selection-next,
+.product-add,
+.related-card-add,
+.product-error a,
+.product-review-form > button,
+.product-reviews-empty button,
+.volume-option.is-active,
+.cart-footer > button,
+.cookie button,
+.search-form button,
+.subscribe-form button,
+.filter.is-active,
+.favorite.is-active,
+.auth-panel--phone .auth-phone-button,
+.account-primary-button,
+.account-primary-link,
+.account-light-button,
+.account-save,
+.account-support-card a,
+.account-empty a {
+  border-color: var(--site-action) !important;
+  background: var(--site-action) !important;
+  color: #fff !important;
+}
+
+.button--dark svg,
+.pill.dark svg,
+.add-button svg,
+.load-more svg,
+.button-outline svg,
+.apply-filters svg,
+.selection-return-action svg,
+.selection-next svg,
+.product-add svg,
+.related-card-add svg,
+.product-error a svg,
+.product-review-form > button svg,
+.product-reviews-empty button svg,
+.cart-footer > button svg,
+.cookie button svg,
+.search-form button svg,
+.subscribe-form button svg,
+.account-primary-button svg,
+.account-primary-link svg,
+.account-light-button svg,
+.account-save svg,
+.account-support-card a svg,
+.account-empty a svg {
+  color: #fff !important;
+  stroke: currentColor !important;
+}
+
+.catalog-page .add-button:hover,
+.catalog-page .load-more:hover,
+.catalog-page .button-outline:hover,
+.product-page .product-add:hover,
+.product-page .related-card-add:hover {
+  background: #fff !important;
+  color: var(--site-action) !important;
+}
+
+.catalog-page .add-button:hover svg,
+.catalog-page .load-more:hover svg,
+.catalog-page .button-outline:hover svg,
+.product-page .product-add:hover svg,
+.product-page .related-card-add:hover svg {
+  color: var(--site-action) !important;
+}
+
+/* Outlined actions keep the action colour because the icon is part of the control. */
+.button--outline,
+.pill.outline,
+.home-page .bestsellers #show-more,
+.product-buy-now,
+.product-like,
+.volume-option:not(.is-active),
+.account-selection-reset,
+.account-page .loyalty-history-filters button.is-active,
+.cart-continue {
+  border-color: var(--site-action) !important;
+  background: transparent !important;
+  color: var(--site-action) !important;
+}
+
+.button--outline svg,
+.pill.outline svg,
+.home-page .bestsellers #show-more svg,
+.product-buy-now svg,
+.product-like svg,
+.volume-option:not(.is-active) svg,
+.account-selection-reset svg,
+.account-page .loyalty-history-filters button.is-active svg,
+.cart-continue svg {
+  color: var(--site-action) !important;
+  stroke: currentColor !important;
+}
+
+.service-strip {
+  background: var(--site-action) !important;
+  color: #fff !important;
+}
+
+.service-strip a,
+.service-strip button,
+.service-strip svg {
+  color: #fff !important;
+  stroke: currentColor !important;
+}
+
+/* Typography */
+body,
+a,
+button,
+input,
+select,
+textarea,
+.catalog-title,
+.catalog-copy,
+.section-title,
+.product-title,
+.product-card-title,
+.product-card-price,
+.product-card-label,
+.filter,
+.sort,
+.sort-option,
+.selection-title,
+.selection-subtitle,
+.selection-question,
+.selection-answer,
+.account-page,
+.account-page h1,
+.account-page h2,
+.account-page h3,
+.account-page h4,
+.account-page p,
+.account-page label,
+.account-page li,
+.account-page .account-nav a,
+.home-page .plain-label,
+.home-page .brand-copy > p:not(.plain-label) {
+  color: var(--site-text);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #777 !important;
+}
+
+/* Header and footer on light surfaces */
+.header:not(.header--hero),
+.header.scrolled,
+.catalog-page .header,
+.product-page .header,
+.selection-page .header,
+.account-page .header {
+  color: var(--site-text);
+}
+
+.header:not(.header--hero) a,
+.header:not(.header--hero) button,
+.header:not(.header--hero) svg,
+.header.scrolled a,
+.header.scrolled button,
+.header.scrolled svg,
+.catalog-page .header a,
+.catalog-page .header button,
+.catalog-page .header svg,
+.product-page .header a,
+.product-page .header button,
+.product-page .header svg,
+.selection-page .header a,
+.selection-page .header button,
+.selection-page .header svg,
+.account-page .header a,
+.account-page .header button,
+.account-page .header svg {
+  color: var(--site-text) !important;
+  stroke: currentColor !important;
+}
+
+.catalog-header,
+.catalog-header a,
+.catalog-header button,
+.catalog-header svg,
+.header-actions,
+.header-actions a,
+.header-actions button,
+.header-actions svg {
+  color: var(--site-text) !important;
+  stroke: currentColor !important;
+}
+
+.home-page .header--hero:not(.scrolled),
+.home-page .header--hero:not(.scrolled) a,
+.home-page .header--hero:not(.scrolled) button,
+.home-page .header--hero:not(.scrolled) svg {
+  color: #fff !important;
+  stroke: currentColor !important;
+}
+
+.footer,
+.footer a,
+.footer p,
+.footer span,
+.footer h2,
+.footer h3,
+.footer h4,
+.footer button,
+.footer svg {
+  color: var(--site-text) !important;
+  stroke: currentColor !important;
+}
+
+/* Ordinary icons follow the surrounding black copy. */
+.search-icon,
+.sort svg,
+.sort-option svg,
+.filters-toggle svg,
+.filter svg,
+.favorite:not(.is-active) svg,
+.catalog-page .favorite svg,
+.drawer-close svg,
+.cart-item-controls svg,
+.product-gallery-arrow svg,
+.product-thumbnails button svg,
+.related-card-favorite svg,
+.product-summary svg,
+.product-delivery svg,
+.product-quantity svg,
+.product-rating button svg,
+.selection-back svg,
+.account-nav svg,
+.account-logout svg,
+.account-promo-arrow,
+.account-panel-link svg,
+.loyalty-history-item svg,
+.home-page .product-card .favorite svg,
+.home-page .product-navigation svg,
+.home-page .gift-options svg,
+.home-page .email-icon {
+  color: var(--site-text) !important;
+  stroke: currentColor !important;
+}
+
+.account-nav button,
+.account-nav button svg,
+.account-logout,
+.account-logout svg {
+  color: var(--site-text) !important;
+  stroke: currentColor !important;
+}
+
+.favorite.is-active svg,
+.product-rating button.is-active svg {
+  color: var(--site-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* Selection and account accents */
+.selection-next svg {
+  color: #fff !important;
+}
+
+.account-page .account-nav a.is-active::before,
+.account-page .loyalty-history-filters button.is-active::after {
+  background: var(--site-action) !important;
+}
+
+.account-page .account-loyalty-detail .account-primary-link {
+  border-color: #fff !important;
+  background: #fff !important;
+  color: var(--site-action) !important;
+}
+
+.account-page .account-loyalty-detail .account-primary-link svg {
+  color: var(--site-action) !important;
+  stroke: currentColor !important;
+}
+
+/* Light buttons placed on coloured home-page panels. */
+.home-page .finder-copy .pill.light,
+.home-page .promo .pill.light {
+  color: var(--site-action) !important;
+}
+
+.home-page .hero .pill.light {
+  color: var(--site-text) !important;
+}
+
+/* Replace remaining old navy translucent borders without changing geometry. */
+.catalog-search,
+.catalog-sort,
+.sort-menu {
+  border-color: rgba(var(--site-action-rgb), .46) !important;
+}
+
+.filter,
+.product-choice,
+.product-like,
+.volume-option,
+.quantity-control,
+.product-review-form input,
+.product-review-form textarea {
+  border-color: rgba(var(--site-action-rgb), .38) !important;
+}
+
+.selection-option-mark {
+  border-color: rgba(var(--site-action-rgb), .55) !important;
+}
+
+.product-gallery-arrow {
+  border-color: rgba(var(--site-action-rgb), .16) !important;
+}
+
+.selection-answer {
+  border-color: rgba(var(--site-action-rgb), .24) !important;
+}
+
+.selection-back,
+.selection-back svg {
+  color: var(--site-text) !important;
+  stroke: currentColor !important;
+}
+
+/* Unified button interaction: one-pixel border, no size jump, visible hover. */
+.home-page .product-add,
+.home-page .bestsellers #show-more,
+.home-page .promo .pill,
+.home-page .finder-copy .pill,
+.home-page .brand-copy .pill,
+.catalog-page .add-button,
+.catalog-page .load-more,
+.catalog-page .button-outline,
+.product-page .product-add,
+.product-page .related-card-add,
+.product-page .product-buy-now,
+.account-page .account-primary-button,
+.account-page .account-primary-link,
+.account-page .account-light-button,
+.account-page .account-save,
+.account-page .account-support-card a,
+.account-page .account-empty a {
+  box-sizing: border-box;
+  border-width: 1px !important;
+  border-style: solid !important;
+  transition:
+    background-color .2s ease,
+    border-color .2s ease,
+    color .2s ease,
+    transform .2s ease,
+    box-shadow .2s ease !important;
+}
+
+/* Filled catalogue cards invert to an outline without changing dimensions. */
+.home-page .product-add:hover,
+.home-page .product-add:focus-visible,
+.catalog-page .add-button:hover,
+.catalog-page .add-button:focus-visible,
+.catalog-page .button-outline:hover,
+.catalog-page .button-outline:focus-visible,
+.product-page .product-add:hover,
+.product-page .product-add:focus-visible,
+.product-page .related-card-add:hover,
+.product-page .related-card-add:focus-visible {
+  border-color: var(--site-action) !important;
+  background: #fff !important;
+  color: var(--site-action) !important;
+  box-shadow: none !important;
+}
+
+/* Load-more controls are outlined at rest and filled on hover everywhere. */
+.home-page .bestsellers #show-more,
+.catalog-page .load-more {
+  border-color: var(--site-action) !important;
+  background: #fff !important;
+  color: var(--site-action) !important;
+}
+
+.home-page .bestsellers #show-more:hover,
+.home-page .bestsellers #show-more:focus-visible,
+.catalog-page .load-more:hover,
+.catalog-page .load-more:focus-visible {
+  border-color: var(--site-action) !important;
+  background: var(--site-action) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+/* White promotional buttons keep readable labels in both states. */
+.home-page .promo .pill.light,
+.home-page .finder-copy .pill.light,
+.home-page .brand-copy .pill {
+  border-color: #fff !important;
+  background: #fff !important;
+  color: var(--site-action) !important;
+}
+
+.home-page .promo .pill.light:hover,
+.home-page .promo .pill.light:focus-visible,
+.home-page .finder-copy .pill.light:hover,
+.home-page .finder-copy .pill.light:focus-visible,
+.home-page .brand-copy .pill:hover,
+.home-page .brand-copy .pill:focus-visible {
+  border-color: var(--site-action) !important;
+  background: var(--site-action) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+.home-page .promo .pill.light:hover svg,
+.home-page .promo .pill.light:focus-visible svg,
+.home-page .finder-copy .pill.light:hover svg,
+.home-page .finder-copy .pill.light:focus-visible svg,
+.home-page .brand-copy .pill:hover svg,
+.home-page .brand-copy .pill:focus-visible svg,
+.home-page .bestsellers #show-more:hover svg,
+.home-page .bestsellers #show-more:focus-visible svg,
+.catalog-page .load-more:hover svg,
+.catalog-page .load-more:focus-visible svg {
+  color: #fff !important;
+  stroke: currentColor !important;
+}
+
+/* The homepage header sits over the dark hero until it becomes sticky. */
+.home-page .header:not(.scrolled),
+.home-page .header:not(.scrolled) a,
+.home-page .header:not(.scrolled) button,
+.home-page .header:not(.scrolled) svg {
+  color: #fff !important;
+  stroke: currentColor !important;
+}
+
+/* Catalogue copy is neutral black; indigo remains an action colour only. */
+.catalog-page {
+  --ink: var(--site-text);
+  --muted: var(--site-text);
+  color: var(--site-text);
+}
+
+.catalog-page .catalog-intro h1,
+.catalog-page .catalog-intro-copy,
+.catalog-page .catalog-intro-copy p,
+.catalog-page .catalog-search,
+.catalog-page .catalog-search-caption,
+.catalog-page .catalog-search input,
+.catalog-page .catalog-search input::placeholder,
+.catalog-page .sort-label,
+.catalog-page .sort-trigger,
+.catalog-page .sort-menu button,
+.catalog-page .filter-toggle,
+.catalog-page .results-heading,
+.catalog-page .results-heading h2,
+.catalog-page .result-count,
+.catalog-page .total-fragrances,
+.catalog-page .fragrance-badge,
+.catalog-page .fragrance-info,
+.catalog-page .fragrance-info a,
+.catalog-page .fragrance-original,
+.catalog-page .card-price,
+.catalog-page .filter-panel,
+.catalog-page .filter-panel-head h2,
+.catalog-page .filter-group legend,
+.catalog-page .filter-group summary,
+.catalog-page .filter-options label,
+.catalog-page .filter-gender label,
+.catalog-page .reset-filters,
+.catalog-page .drawer-head h2,
+.catalog-page .dialog-head h2,
+.catalog-page .cart-drawer,
+.catalog-page .cart-row,
+.catalog-page .cart-row h3,
+.catalog-page .cart-row p,
+.catalog-page .cart-quantity,
+.catalog-page .cart-summary,
+.catalog-page .volume-dialog,
+.catalog-page .info-dialog,
+.catalog-page .volume-product h3,
+.catalog-page .volume-product p,
+.catalog-page .volume-label,
+.catalog-page .volume-option,
+.catalog-page .volume-option small,
+.catalog-page .account-dialog-head h2 {
+  color: var(--site-text) !important;
+}
+
+.catalog-page .catalog-search svg,
+.catalog-page .sort-trigger svg,
+.catalog-page .filter-toggle svg,
+.catalog-page .filter-group summary svg,
+.catalog-page .filter-close svg,
+.catalog-page .drawer-close svg,
+.catalog-page .cart-remove svg,
+.catalog-page .cart-row button:not(.cart-continue) svg,
+.catalog-page .favorite-toggle,
+.catalog-page .favorite-toggle svg {
+  color: var(--site-text) !important;
+  stroke: currentColor !important;
+}
+
+.catalog-page .favorite-toggle.is-active svg {
+  color: var(--site-text) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+/* Phone sign-in uses the same action hover as the following code step. */
+.auth-phone-button:not(:disabled):hover,
+.auth-phone-button:not(:disabled):focus-visible {
+  border-color: var(--site-action) !important;
+  background: var(--site-action) !important;
+  color: #fff !important;
+}

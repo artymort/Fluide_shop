@@ -201,6 +201,7 @@
       email: previous?.email || "",
       createdAt: previous?.createdAt || now,
       lastLoginAt: now,
+      loyalty: previous?.loyalty || { balance: 300, welcomeBonus: 300, currencyRate: 1, awardedAt: now },
     });
     window.location.href = "account.html";
   }, true);

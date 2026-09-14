@@ -20,6 +20,7 @@ function initAccountPage(initialAccount) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
   })[char]);
   const favorites = readJson("fluide-favorites", []);
+  const orders = readJson("fluide-orders", []);
   let cart = readJson("fluide-cart", []);
   const readSessionJson = (key, fallback) => {
     try {
@@ -30,16 +31,114 @@ function initAccountPage(initialAccount) {
     }
   };
   const selection = readSessionJson("fluide-selection", {});
-  const selectionLabels = {
-    женский: "Для нее", мужской: "Для него", унисекс: "Унисекс",
-    everyday: "На каждый день", evening: "Вечер", date: "Свидание", gym: "Спорт", walk: "Прогулка",
-    spring: "Весна", summer: "Лето", autumn: "Осень", winter: "Зима",
-  };
-  const selectionValues = [selection.gender, ...(selection.occasion || []), ...(selection.family || []), ...(selection.season || [])].filter(Boolean);
+  const selectionStepCount = [
+    Boolean(selection.gender),
+    Array.isArray(selection.occasion) && selection.occasion.length > 0,
+    Array.isArray(selection.family) && selection.family.length > 0,
+    Array.isArray(selection.season) && selection.season.length > 0,
+  ].filter(Boolean).length;
+  const loyalty = initialAccount.loyalty && Number.isFinite(Number(initialAccount.loyalty.balance))
+    ? initialAccount.loyalty
+    : { balance: 300, welcomeBonus: 300, currencyRate: 1, awardedAt: new Date().toISOString() };
+  if (!initialAccount.loyalty) {
+    initialAccount = { ...initialAccount, loyalty };
+    window.FluideAccount.save(initialAccount);
+  }
   let toastTimer;
+  const loyaltyThemes = new Set(["cobalt", "violet", "emerald", "graphite"]);
+
+  function applyLoyaltyTheme(theme, remember = true) {
+    const safeTheme = loyaltyThemes.has(theme) ? theme : "cobalt";
+    document.querySelector(".account-loyalty-card").dataset.loyaltyTheme = safeTheme;
+    const detailCard = document.querySelector(".loyalty-plastic");
+    if (detailCard) detailCard.dataset.loyaltyTheme = safeTheme;
+    document.querySelectorAll("[data-loyalty-theme-option]").forEach((button) => {
+      const active = button.dataset.loyaltyThemeOption === safeTheme;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    if (remember) localStorage.setItem("fluide-loyalty-theme", safeTheme);
+  }
 
   function money(value) {
     return `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
+  }
+
+  function bonusNumber(value) {
+    return new Intl.NumberFormat("ru-RU").format(Math.abs(Number(value) || 0));
+  }
+
+  function bonusDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Дата не указана";
+    return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(date);
+  }
+
+  function loyaltyTransactions() {
+    const allowedTypes = new Set(["accrual", "spending", "expiration"]);
+    const saved = Array.isArray(loyalty.transactions) ? loyalty.transactions : [];
+    const entries = saved.map((item, index) => ({
+      id: item.id || `saved-${index}`,
+      type: allowedTypes.has(item.type) ? item.type : "accrual",
+      title: item.title || "Операция с бонусами",
+      note: item.note || item.description || "Карта FLUIDE",
+      amount: Number(item.amount) || 0,
+      date: item.date || item.createdAt || loyalty.awardedAt || initialAccount.createdAt,
+      source: item.source || "",
+    }));
+    const hasWelcome = entries.some((item) => item.source === "welcome" || /приветствен/i.test(item.title));
+    if (!hasWelcome) {
+      entries.push({
+        id: "welcome",
+        type: "accrual",
+        title: "Приветственные бонусы",
+        note: "",
+        amount: Number(loyalty.welcomeBonus) || 300,
+        date: loyalty.awardedAt || initialAccount.createdAt,
+        source: "welcome",
+      });
+    }
+    orders.forEach((order, index) => {
+      const amount = Number(order?.bonusEarned ?? order?.loyaltyEarned ?? 0);
+      if (!amount) return;
+      entries.push({
+        id: `order-${order.id || index}`,
+        type: "accrual",
+        title: "Начисление за покупку",
+        note: order.number ? `Заказ № ${order.number}` : "Заказ FLUIDE",
+        amount,
+        date: order.createdAt || order.date || new Date().toISOString(),
+        source: "order",
+      });
+    });
+    return entries.sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
+  }
+
+  function renderLoyaltyHistory(filter = "all") {
+    const container = document.querySelector("#loyalty-history-list");
+    if (!container) return;
+    document.querySelectorAll("[data-loyalty-filter]").forEach((button) => {
+      const active = button.dataset.loyaltyFilter === filter;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    const entries = loyaltyTransactions().filter((item) => filter === "all" || item.type === filter);
+    if (!entries.length) {
+      container.innerHTML = '<p class="loyalty-history-empty">Здесь пока нет таких операций.</p>';
+      return;
+    }
+    container.innerHTML = entries.map((item) => {
+      const positive = item.type === "accrual" && item.amount >= 0;
+      const sign = positive ? "+" : "−";
+      return `<article class="loyalty-transaction">
+        <time datetime="${escapeHtml(item.date)}">${escapeHtml(bonusDate(item.date))}</time>
+        <div class="loyalty-transaction-row">
+          <span class="loyalty-transaction-icon"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#star"></use></svg></span>
+          <div>${item.note ? `<small>${escapeHtml(item.note)}</small>` : ""}<strong>${escapeHtml(item.title)}</strong></div>
+          <b class="${positive ? "is-positive" : "is-negative"}">${sign}${bonusNumber(item.amount)}</b>
+        </div>
+      </article>`;
+    }).join("");
   }
 
   function cartQuantity() {
@@ -59,7 +158,7 @@ function initAccountPage(initialAccount) {
   }
 
   function activateTab(name, updateHash = true) {
-    const safeName = ["overview", "favorites", "orders", "profile"].includes(name) ? name : "overview";
+    const safeName = ["overview", "loyalty", "favorites", "orders", "profile"].includes(name) ? name : "overview";
     document.querySelectorAll("[data-account-panel]").forEach((panel) => {
       const active = panel.dataset.accountPanel === safeName;
       panel.hidden = !active;
@@ -80,6 +179,9 @@ function initAccountPage(initialAccount) {
     form.elements.name.value = profile.name || "";
     form.elements.phone.value = profile.phone;
     form.elements.email.value = profile.email || "";
+    const balance = Number(profile.loyalty?.balance ?? loyalty.balance) || 0;
+    document.querySelector("#loyalty-balance").textContent = new Intl.NumberFormat("ru-RU").format(balance);
+    document.querySelector("#loyalty-balance-detail").textContent = new Intl.NumberFormat("ru-RU").format(balance);
   }
 
   function renderStats() {
@@ -87,30 +189,72 @@ function initAccountPage(initialAccount) {
     document.querySelector("#favorites-count").textContent = favorites.length;
     document.querySelector("#nav-favorites-count").textContent = favorites.length;
     document.querySelector("#cart-count-large").textContent = cartUnits;
-    document.querySelector("#selection-count").textContent = selectionValues.length;
+    document.querySelector("#nav-cart-count").textContent = cartUnits;
+    document.querySelector("#selection-count").textContent = selectionStepCount;
     const badge = document.querySelector(".cart-count");
     badge.textContent = cartUnits || "";
     badge.hidden = cartUnits === 0;
   }
 
   function renderSelectionProfile() {
-    const tags = document.querySelector("#account-selection-tags");
-    tags.innerHTML = selectionValues.map((value) => `<span>${escapeHtml(selectionLabels[value] || value)}</span>`).join("");
-    const hasProfile = selectionValues.length > 0;
-    document.querySelector("#scent-profile-title").textContent = hasProfile ? "Ваши ориентиры собраны" : "Пока не собран";
-    document.querySelector("#selection-copy").textContent = hasProfile
-      ? "Мы сохранили ответы последнего подбора. Вернитесь к ним или соберите новый профиль под другое настроение."
-      : "Ответьте на четыре коротких вопроса — мы соберем шесть подходящих ароматов.";
+    const hasProfile = selectionStepCount === 4;
+    document.querySelector(".account-scent-card").classList.toggle("has-results", hasProfile);
+    document.querySelector("#selection-progress").textContent = selectionStepCount ? `${selectionStepCount} из 4` : "4 вопроса";
+    document.documentElement.style.setProperty("--account-selection-progress", `${selectionStepCount / 4 * 100}%`);
+    document.querySelector("#scent-profile-title").textContent = hasProfile ? "Ваши ароматы" : "Подберем ароматы для вас";
+    const copy = document.querySelector("#selection-copy");
+    copy.textContent = "Ответьте на четыре коротких вопроса — мы соберем шесть подходящих ароматов.";
+    copy.hidden = hasProfile;
     const action = document.querySelector("#selection-action");
-    action.href = hasProfile ? "selection.html?step=4" : "selection.html";
-    action.childNodes[0].textContent = hasProfile ? "Вернуться к подбору " : "Начать подбор ";
+    action.href = hasProfile ? selectionCatalogUrl() : "selection.html";
+    action.childNodes[0].textContent = hasProfile ? "Посмотреть все " : "Начать подбор ";
+    document.querySelector("[data-selection-reset]").hidden = !hasProfile;
+  }
+
+  function selectionCatalogUrl() {
+    const params = new URLSearchParams({ mode: "selection", view: "results" });
+    if (selection.gender) params.set("gender", selection.gender);
+    ["occasion", "family", "season"].forEach((key) => {
+      const values = Array.isArray(selection[key]) ? selection[key] : [];
+      values.forEach((value) => params.append(key, value));
+    });
+    return `catalog.html?${params.toString()}`;
+  }
+
+  function renderSelectionRecommendations(fragrances) {
+    const container = document.querySelector("#account-recommendations");
+    if (selectionStepCount !== 4 || !window.FluideSelectionEngine) {
+      document.querySelector(".account-scent-card").classList.remove("has-results");
+      container.hidden = true;
+      return;
+    }
+    const ranked = window.FluideSelectionEngine.rankRecommendations(fragrances, {
+      gender: selection.gender || "",
+      occasions: Array.isArray(selection.occasion) ? selection.occasion : [],
+      families: Array.isArray(selection.family) ? selection.family : [],
+      seasons: Array.isArray(selection.season) ? selection.season : [],
+    }, 6).items;
+    document.querySelector("#scent-profile-title").textContent = "Ваши ароматы";
+    document.querySelector("#selection-progress").textContent = `${ranked.length} ${ranked.length === 1 ? "аромат" : ranked.length < 5 ? "аромата" : "ароматов"}`;
+    document.querySelector(".account-scent-card").classList.toggle("has-results", ranked.length > 0);
+    container.hidden = ranked.length === 0;
+    container.innerHTML = ranked.slice(0, 6).map((item) => {
+      const title = String(item.title || item.name || "Аромат").replace(/^\d+\s*/, "");
+      return `<a href="product.html?id=${encodeURIComponent(item.id)}">
+        <img src="${escapeHtml(item.thumbnail || item.image || "assets/brand/logo-blue.svg")}" alt="${escapeHtml(title)}">
+        <span>FLUIDE ${Number(item.id)}</span>
+        <strong>${escapeHtml(title)}</strong>
+      </a>`;
+    }).join("");
   }
 
   function renderCartPreview() {
     const container = document.querySelector("#account-cart-preview");
     const detailed = cart.filter((item) => item?.product).slice(0, 3);
     const cartUnits = cartQuantity();
-    document.querySelector("#account-cart-title").textContent = cartUnits ? `${cartUnits} шт. · ${money(cartAmount())}` : "Пока пусто";
+    const title = document.querySelector("#account-cart-title");
+    if (title) title.textContent = cartUnits ? `${cartUnits} шт. · ${money(cartAmount())}` : "Пока пусто";
+    if (!container) return;
     container.innerHTML = detailed.map((item) => `<div class="account-cart-item">
       <img src="${escapeHtml(item.product.image || "assets/brand/logo-blue.svg")}" alt="">
       <div><strong>${escapeHtml(item.product.name || "Аромат FLUIDE")}</strong><span>${Number(item.quantity) || 1} шт. · ${money((Number(item.product.price) || 0) * (Number(item.quantity) || 1))}</span></div>
@@ -167,6 +311,7 @@ function initAccountPage(initialAccount) {
   }
 
   renderAccountIdentity(initialAccount);
+  renderLoyaltyHistory();
   renderStats();
   renderSelectionProfile();
   renderCartPreview();
@@ -177,13 +322,34 @@ function initAccountPage(initialAccount) {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return response.json();
     })
-    .then(renderFavorites)
-    .catch(() => renderFavorites([]));
+    .then((fragrances) => {
+      renderFavorites(fragrances);
+      renderSelectionRecommendations(fragrances);
+    })
+    .catch(() => {
+      renderFavorites([]);
+      renderSelectionRecommendations([]);
+    });
 
   document.addEventListener("click", (event) => {
+    const loyaltyFilter = event.target.closest("[data-loyalty-filter]");
+    if (loyaltyFilter) {
+      renderLoyaltyHistory(loyaltyFilter.dataset.loyaltyFilter);
+      return;
+    }
+    if (event.target.closest("[data-selection-reset]")) {
+      sessionStorage.removeItem("fluide-selection");
+      window.location.reload();
+      return;
+    }
+    const loyaltyThemeOption = event.target.closest("[data-loyalty-theme-option]");
+    if (loyaltyThemeOption) {
+      applyLoyaltyTheme(loyaltyThemeOption.dataset.loyaltyThemeOption);
+      return;
+    }
     const tab = event.target.closest("[data-account-tab]");
     if (tab) activateTab(tab.dataset.accountTab);
-    if (event.target.closest(".cart-button")) openCart();
+    if (event.target.closest(".cart-button") || event.target.closest("[data-account-cart]")) openCart();
     if (event.target.closest(".drawer-close") || event.target.matches(".drawer-backdrop")) closeCart();
     const quantityButton = event.target.closest("[data-cart-index]");
     if (quantityButton) {
@@ -240,5 +406,9 @@ function initAccountPage(initialAccount) {
     document.querySelector("#service-message").textContent = notices[notice];
   }));
 
+  applyLoyaltyTheme(localStorage.getItem("fluide-loyalty-theme") || "cobalt", false);
   activateTab(location.hash.replace("#", "") || "overview", false);
+  window.addEventListener("hashchange", () => {
+    activateTab(location.hash.replace("#", "") || "overview", false);
+  });
 }

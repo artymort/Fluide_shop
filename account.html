@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Личный кабинет FLUIDE Atelier: избранное, подбор ароматов, корзина и профиль.">
   <title>Личный кабинет — FLUIDE Atelier</title>
-  <link rel="stylesheet" href="catalog-page.css?v=cart-unified-v1">
-  <link rel="stylesheet" href="account-page.css?v=account-v1">
-  <script src="auth-session.js?v=account-v1" defer></script>
-  <script src="account-page.js?v=cart-unified-v1" defer></script>
+  <link rel="stylesheet" href="catalog-page.css?v=cart-unified-v2">
+  <link rel="stylesheet" href="account-page.css?v=account-v55">
+  <link rel="stylesheet" href="site-colors.css?v=neutral-text-v14">
+  <script src="auth-session.js?v=account-v2" defer></script>
+  <script src="selection-engine.js?v=selection-v2" defer></script>
+  <script src="account-page.js?v=account-v18" defer></script>
 </head>
 <body class="account-page">
   <a class="skip" href="#account-main">К личному кабинету</a>
@@ -42,73 +44,127 @@
     </nav>
   </header>
 
-  <main id="account-main">
-    <section class="account-hero">
-      <div class="account-hero-inner shell">
-        <div>
-          <h1>Личный кабинет</h1>
-        </div>
-        <div class="account-local-note"><span>FLUIDE ID</span><strong>Ваш локальный профиль</strong><p>Данные сохраняются только в этом браузере</p></div>
-      </div>
-    </section>
+  <main class="account-main" id="account-main">
+    <div class="account-breadcrumb shell"><a href="index.html">Главная</a><span>—</span><span>Личный кабинет</span></div>
 
     <div class="account-shell shell">
       <aside class="account-sidebar">
         <nav class="account-nav" aria-label="Разделы личного кабинета">
-          <button class="is-active" type="button" data-account-tab="overview" aria-current="page">Обзор</button>
-          <button type="button" data-account-tab="favorites">Избранное <span id="nav-favorites-count">0</span></button>
-          <button type="button" data-account-tab="orders">Мои заказы</button>
-          <button type="button" data-account-tab="profile">Профиль</button>
+          <button class="is-active" type="button" data-account-tab="overview" aria-current="page"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#user"></use></svg><span>Профиль</span></button>
+          <button type="button" data-account-tab="profile"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#sliders-horizontal"></use></svg><span>Личные данные</span></button>
+          <button type="button" data-account-tab="orders"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#shopping-bag"></use></svg><span>Мои заказы</span></button>
+          <button type="button" data-account-tab="loyalty"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#star"></use></svg><span>Карта FLUIDE</span></button>
+          <button type="button" data-account-tab="favorites"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg><span>Избранное</span><b id="nav-favorites-count">0</b></button>
+          <button type="button" data-account-cart><svg aria-hidden="true"><use href="assets/icons/lucide.svg#shopping-cart"></use></svg><span>Корзина</span><b id="nav-cart-count">0</b></button>
         </nav>
-        <div class="account-sidebar-help"><p>Нужна помощь с выбором?</p><a href="selection.html">Пройти подбор <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a></div>
-        <button class="account-logout" type="button" data-account-logout>Выйти</button>
+        <button class="account-logout" type="button" data-account-logout><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg><span>Выйти</span></button>
+        <div class="account-support-card">
+          <h3>Нужна помощь?</h3>
+          <p>Поможем с выбором аромата и ответим на вопросы.</p>
+          <a href="index.html#contacts">Написать нам <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a>
+        </div>
       </aside>
 
       <div class="account-content">
         <section class="account-panel is-active" data-account-panel="overview">
-          <div class="account-panel-head"><div><p>Обзор</p><h2>Все важное — рядом</h2></div><a href="catalog.html">В каталог <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a></div>
-
-          <div class="account-stats">
-            <button type="button" data-account-tab="favorites"><strong id="favorites-count">0</strong><span>в избранном</span></button>
-            <div><strong id="cart-count-large">0</strong><span>в корзине</span></div>
-            <div><strong id="selection-count">0</strong><span>ответов в подборе</span></div>
-          </div>
-
           <div class="account-overview-grid">
-            <article class="account-card account-scent-card">
-              <div class="account-card-heading"><div><p>Ваш ароматный профиль</p><h3 id="scent-profile-title">Пока не собран</h3></div><svg aria-hidden="true"><use href="assets/icons/lucide.svg#star"></use></svg></div>
-              <div class="account-tags" id="account-selection-tags"></div>
-              <p class="account-card-copy" id="selection-copy">Ответьте на четыре коротких вопроса — мы соберем шесть подходящих ароматов.</p>
-              <a class="account-primary-link" href="selection.html" id="selection-action">Начать подбор <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a>
+            <article class="account-card account-loyalty-card" data-loyalty-theme="cobalt">
+              <div class="loyalty-card-top"><strong>карта<br>лояльности</strong><img src="assets/brand/logo-white.svg" alt="FLUIDE Atelier"></div>
+              <div class="loyalty-balance"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#star"></use></svg><strong id="loyalty-balance">300</strong><span>бонусов</span></div>
+              <img class="loyalty-qr" src="assets/icons/loyalty-qr.svg?v=indigo-v1" alt="QR-код карты лояльности">
+              <button class="loyalty-card-open" type="button" data-account-tab="loyalty"><span class="visually-hidden">Открыть карту FLUIDE</span></button>
             </article>
 
-            <article class="account-card account-order-card">
-              <div class="account-card-heading"><div><p>Мои заказы</p><h3>Здесь появится история покупок</h3></div><span class="account-card-number">00</span></div>
-              <p class="account-card-copy">Оформление заказов подключим вместе с базой данных и оплатой. Корзина уже сохраняется локально.</p>
-              <button class="account-text-button" type="button" data-account-tab="orders">Подробнее</button>
+            <div class="loyalty-theme-picker" aria-label="Выбор дизайна карты">
+              <span>Дизайн карты</span>
+              <button class="is-active" type="button" data-loyalty-theme-option="cobalt" aria-label="Кобальтовый дизайн" aria-pressed="true"></button>
+              <button type="button" data-loyalty-theme-option="violet" aria-label="Ультрафиолетовый дизайн" aria-pressed="false"></button>
+              <button type="button" data-loyalty-theme-option="emerald" aria-label="Изумрудный дизайн" aria-pressed="false"></button>
+              <button type="button" data-loyalty-theme-option="graphite" aria-label="Графитовый дизайн" aria-pressed="false"></button>
+            </div>
+
+            <article class="account-card account-scent-card" data-scent-theme="ice">
+              <div class="scent-card-head">
+                <h2 id="scent-profile-title">Подберем ароматы для вас</h2>
+                <strong id="selection-progress">4 вопроса</strong>
+              </div>
+              <p class="account-card-copy" id="selection-copy">Ответьте на четыре коротких вопроса — и получите персональную подборку из шести ароматов.</p>
+              <div class="account-recommendations" id="account-recommendations" hidden></div>
+              <div class="account-selection-actions">
+                <a class="account-primary-button" href="selection.html" id="selection-action">Начать подбор <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a>
+                <button class="account-selection-reset" type="button" data-selection-reset hidden>Сбросить подбор</button>
+              </div>
+              <img class="account-scent-sticker" src="assets/media/account-selection-star-sticker-indigo-v2.png" alt="">
             </article>
 
-            <article class="account-card account-cart-card">
-              <div class="account-card-heading"><div><p>Корзина</p><h3 id="account-cart-title">Пока пусто</h3></div><svg aria-hidden="true"><use href="assets/icons/lucide.svg#shopping-cart"></use></svg></div>
-              <div class="account-cart-preview" id="account-cart-preview"></div>
-              <a class="account-primary-link" href="catalog.html">Продолжить выбор <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a>
-            </article>
+            <span class="visually-hidden" id="favorites-count">0</span>
+            <span class="visually-hidden" id="cart-count-large">0</span>
+            <span class="visually-hidden" id="selection-count">0</span>
+
+            <div class="account-promos" aria-label="Предложения для владельца карты">
+              <article class="account-promo account-promo--bonus">
+                <h3>Успейте потратить</h3>
+                <p>300 бонусов действуют до 24 декабря</p>
+                <strong><svg aria-hidden="true"><use href="assets/icons/lucide.svg#star"></use></svg>300 ₽</strong>
+              </article>
+              <a class="account-promo account-promo--selection" href="selection.html">
+                <h3>Новое настроение?</h3>
+                <p>Соберите еще одну подборку ароматов</p>
+                <span>Пройти подбор <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></span>
+                <img class="account-promo-sticker account-promo-sticker--orbit" src="assets/media/account-mood-orbit-sticker-indigo-v2.png" alt="">
+              </a>
+              <a class="account-promo account-promo--atelier" href="about.html">
+                <h3>Создайте свой аромат</h3>
+                <p>Мастер-классы в ателье во Владимире</p>
+                <span>Подробнее <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></span>
+                <img class="account-promo-sticker account-promo-sticker--forms" src="assets/media/account-atelier-forms-sticker-indigo-v2.png" alt="">
+              </a>
+            </div>
           </div>
         </section>
 
+        <section class="account-panel" data-account-panel="loyalty" hidden>
+          <div class="account-panel-head"><div><h2>Карта FLUIDE</h2></div></div>
+          <div class="account-loyalty-detail">
+            <div class="loyalty-plastic" data-loyalty-theme="cobalt">
+              <div class="loyalty-plastic-top"><strong>карта<br>лояльности</strong><img src="assets/brand/logo-white.svg" alt="FLUIDE Atelier"></div>
+              <div class="loyalty-plastic-balance"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#star"></use></svg><strong id="loyalty-balance-detail">300</strong><span>бонусов</span></div>
+            </div>
+            <div class="loyalty-detail-content">
+              <h3>Как работают бонусы</h3>
+              <p>Понятные условия вашей карты FLUIDE.</p>
+              <div class="loyalty-benefits">
+                <div><span>курс списания</span><strong>1 бонус = 1 ₽</strong></div>
+                <div><span>доступны</span><strong>с первой покупки</strong></div>
+              </div>
+              <a class="account-primary-link" href="catalog.html">Выбрать аромат <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a>
+            </div>
+          </div>
+          <section class="loyalty-history" aria-labelledby="loyalty-history-title">
+            <h3 id="loyalty-history-title">Мои бонусы</h3>
+            <div class="loyalty-history-filters" aria-label="Фильтр операций с бонусами">
+              <button class="is-active" type="button" data-loyalty-filter="all" aria-pressed="true">Все</button>
+              <button type="button" data-loyalty-filter="accrual" aria-pressed="false">Начисления</button>
+              <button type="button" data-loyalty-filter="spending" aria-pressed="false">Списания</button>
+              <button type="button" data-loyalty-filter="expiration" aria-pressed="false">Сгорания</button>
+            </div>
+            <div class="loyalty-history-list" id="loyalty-history-list"></div>
+          </section>
+        </section>
+
         <section class="account-panel" data-account-panel="favorites" hidden>
-          <div class="account-panel-head"><div><p>Сохраненное</p><h2>Избранные ароматы</h2></div><a href="catalog.html">Все ароматы <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a></div>
+          <div class="account-panel-head"><div><h2>Избранные ароматы</h2></div><a href="catalog.html">Все ароматы <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a></div>
           <div class="account-favorites-grid" id="account-favorites-grid"></div>
           <div class="account-empty" id="favorites-empty" hidden><h3>В избранном пока пусто</h3><p>Нажимайте на сердце в карточках ароматов, чтобы собрать собственную коллекцию.</p><a href="catalog.html">Открыть каталог</a></div>
         </section>
 
         <section class="account-panel" data-account-panel="orders" hidden>
-          <div class="account-panel-head"><div><p>История</p><h2>Мои заказы</h2></div></div>
-          <div class="account-empty account-empty--orders"><span>01</span><h3>Заказов пока нет</h3><p>Когда подключим оформление и оплату, здесь появятся состав, стоимость и статус доставки.</p><a href="catalog.html">Выбрать аромат</a></div>
+          <div class="account-panel-head"><div><h2>Мои заказы</h2></div></div>
+          <div class="account-empty account-empty--orders"><h3>Заказов пока нет</h3><p>Когда подключим оформление и оплату, здесь появятся состав, стоимость и статус доставки.</p><a href="catalog.html">Выбрать аромат</a></div>
         </section>
 
         <section class="account-panel" data-account-panel="profile" hidden>
-          <div class="account-panel-head"><div><p>Личные данные</p><h2>Профиль</h2></div></div>
+          <div class="account-panel-head"><div><h2>Личные данные</h2></div></div>
           <form class="account-profile-form" id="account-profile-form">
             <label><span>Имя</span><input name="name" type="text" maxlength="60" placeholder="Как к вам обращаться" autocomplete="name"></label>
             <label><span>Телефон</span><input name="phone" type="tel" readonly></label>
@@ -119,6 +175,7 @@
           </form>
         </section>
       </div>
+
     </div>
   </main>
 
