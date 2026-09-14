@@ -20,9 +20,42 @@ const HOME_PRODUCT_SNAPSHOTS = {
   "black-pepper":{name:"Black Pepper",price:3490,image:"assets/product-line/fragrance-black-pepper.png"},
   white:{name:"White",price:1990,image:"assets/product-line/fragrance-white.png"}
 };
+const CATALOG_SECTIONS = {
+  all:null,
+  perfume:["fragrance"],
+  solid:["solid-perfume"],
+  home:["home-fragrance","candle","diffuser"],
+  care:["body-cream","hair-spray","hand-soap"],
+  car:["car-fragrance"]
+};
+const CATALOG_SECTION_LABELS = {
+  all:"Все товары",
+  perfume:"Парфюм",
+  solid:"Твердый парфюм",
+  home:"Для дома",
+  care:"Уход",
+  car:"Автопарфюм"
+};
+const PRODUCT_SEARCH_ALIASES = {
+  "solid-perfume":"твердые духи твердый парфюм",
+  "home-fragrance":"аромат для дома парфюм для дома",
+  candle:"свеча свечи свечей",
+  diffuser:"диффузор аромадиффузор для дома",
+  "body-cream":"крем уход косметика",
+  "hand-soap":"мыло уход косметика",
+  "hair-spray":"спрей для волос уход косметика",
+  "car-fragrance":"автопарфюм аромат для машины"
+};
+const FEATURED_CATALOG_ORDER = [
+  "fragrance-001","product-01","solid-perfume-matsukita","product-19",
+  "fragrance-002","product-04","product-12","product-33",
+  "fragrance-006","product-03","solid-perfume-fleur-narcotique","product-34"
+];
 
 const grid = document.querySelector(".fragrance-grid");
 const catalogHeading = document.querySelector("#catalog-heading");
+const catalogCategories = document.querySelector(".catalog-categories");
+const catalogCategoryButtons = [...document.querySelectorAll("[data-catalog-section]")];
 const selectionResultActions = document.querySelector(".selection-result-actions");
 const resultCount = document.querySelector(".result-count");
 const emptyState = document.querySelector(".catalog-empty");
@@ -62,9 +95,12 @@ const accountBody = document.querySelector("#account-dialog-body");
 const selectionEngine = window.FluideSelectionEngine;
 
 let fragrances = [];
+let catalogProducts = [];
 let visibleLimit = 12;
 let favoritesOnly = false;
 let selectionMode = new URLSearchParams(window.location.search).get("mode") === "selection";
+let activeCatalogSection = selectionMode ? "perfume" : new URLSearchParams(window.location.search).get("section") || (new URLSearchParams(window.location.search).get("category")==="home" ? "home" : "all");
+if(!CATALOG_SECTIONS.hasOwnProperty(activeCatalogSection))activeCatalogSection="all";
 let focusSelectionResultsOnLoad = selectionMode && new URLSearchParams(window.location.search).get("view") === "results";
 let toastTimer;
 let selectedFragranceId = "";
@@ -76,6 +112,8 @@ const normalize = value => String(value ?? "").toLocaleLowerCase("ru-RU").replac
 const formatPrice = value => `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
 const formatPriceMarkup = value => `${new Intl.NumberFormat("ru-RU").format(value)}&nbsp;<span class="price-ruble">₽</span>`;
 const productId = fragrance => `fragrance-${fragrance.id}`;
+const isCatalogProduct = item => item?.kind === "product";
+const catalogItemKey = item => isCatalogProduct(item) ? item.id : productId(item);
 
 function prettyTitle(value){
   return String(value || "")
@@ -88,7 +126,7 @@ function variantsFor(fragrance){
   return ["30","50"].map(size=>({size,volume:`${size} мл`,price:PRICE_BY_SIZE[size]?.[fragrance.category] || 1990}));
 }
 
-function getPrice(fragrance){return Math.min(...variantsFor(fragrance).map(variant=>variant.price))}
+function getPrice(item){return isCatalogProduct(item) ? Number(item.price)||0 : Math.min(...variantsFor(item).map(variant=>variant.price))}
 
 function allNotes(fragrance){
   const notes = fragrance.notes || {};
@@ -169,19 +207,32 @@ function currentFiltered(){
   const families = getChecked("family");
   const occasions = getChecked("occasion");
   const seasons = getChecked("season");
+  const allowedTypes = CATALOG_SECTIONS[activeCatalogSection];
+  const sourceItems = selectionMode
+    ? fragrances
+    : activeCatalogSection === "perfume"
+      ? fragrances
+      : activeCatalogSection === "all"
+        ? [...fragrances,...catalogProducts]
+        : catalogProducts.filter(item=>allowedTypes?.includes(item.productType));
+  const perfumeFiltersActive = selectionMode || activeCatalogSection === "perfume";
 
-  const candidates = fragrances.filter(item=>{
-    const searchText = normalize([
-      item.id,item.name,item.title,item.original,item.group,item.category,item.gender,item.notesRaw,
-      ...(item.families||[]),...(item.accords||[]).map(accord=>accord.name)
-    ].join(" "));
+  const candidates = sourceItems.filter(item=>{
+    const searchText = isCatalogProduct(item)
+      ? normalize([item.id,item.name,item.title,item.productType,item.typeLabel,item.volume,PRODUCT_SEARCH_ALIASES[item.productType]].join(" "))
+      : normalize([
+        item.id,item.name,item.title,item.original,item.group,item.category,item.gender,item.notesRaw,
+        ...(item.families||[]),...(item.accords||[]).map(accord=>accord.name)
+      ].join(" "));
     if(query && !searchText.includes(query))return false;
-    if(!matchesAny(item.category,categories))return false;
-    if(!selectionMode&&gender&&item.gender!==gender)return false;
-    if(!selectionMode&&!matchesAny(item.families,families))return false;
-    if(!selectionMode&&!matchesAny(item.occasion,occasions))return false;
-    if(!selectionMode&&!matchesAny(item.season,seasons))return false;
-    if(favoritesOnly && !favorites.includes(productId(item)))return false;
+    if(perfumeFiltersActive){
+      if(!matchesAny(item.category,categories))return false;
+      if(!selectionMode&&gender&&item.gender!==gender)return false;
+      if(!selectionMode&&!matchesAny(item.families,families))return false;
+      if(!selectionMode&&!matchesAny(item.occasion,occasions))return false;
+      if(!selectionMode&&!matchesAny(item.season,seasons))return false;
+    }
+    if(favoritesOnly && !favorites.includes(catalogItemKey(item)))return false;
     return true;
   });
 
@@ -192,21 +243,48 @@ function currentFiltered(){
     sorted=[...candidates];
   }
   switch(sortSelect.value){
-    case "number": sorted.sort((a,b)=>Number(a.id)-Number(b.id)); break;
+    case "number": sorted.sort((a,b)=>catalogItemKey(a).localeCompare(catalogItemKey(b),"ru",{numeric:true})); break;
     case "name": sorted.sort((a,b)=>prettyTitle(a.title).localeCompare(prettyTitle(b.title),"ru")); break;
-    case "price-asc": sorted.sort((a,b)=>getPrice(a)-getPrice(b)||Number(a.id)-Number(b.id)); break;
-    case "price-desc": sorted.sort((a,b)=>getPrice(b)-getPrice(a)||Number(a.id)-Number(b.id)); break;
+    case "price-asc": sorted.sort((a,b)=>getPrice(a)-getPrice(b)||catalogItemKey(a).localeCompare(catalogItemKey(b),"ru",{numeric:true})); break;
+    case "price-desc": sorted.sort((a,b)=>getPrice(b)-getPrice(a)||catalogItemKey(a).localeCompare(catalogItemKey(b),"ru",{numeric:true})); break;
     default: if(!selectionMode)sorted.sort((a,b)=>{
-      const order={"Селектив":0,"Суперлюкс":1,"Люкс":2};
-      return (order[a.category]??3)-(order[b.category]??3)||Number(a.id)-Number(b.id);
+      if(activeCatalogSection === "all"){
+        const aRank=FEATURED_CATALOG_ORDER.indexOf(catalogItemKey(a));
+        const bRank=FEATURED_CATALOG_ORDER.indexOf(catalogItemKey(b));
+        if(aRank!==-1||bRank!==-1)return (aRank===-1?999:aRank)-(bRank===-1?999:bRank);
+      }
+      if(!isCatalogProduct(a)&&!isCatalogProduct(b)){
+        const order={"Селектив":0,"Суперлюкс":1,"Люкс":2};
+        return (order[a.category]??3)-(order[b.category]??3)||Number(a.id)-Number(b.id);
+      }
+      return catalogItemKey(a).localeCompare(catalogItemKey(b),"ru",{numeric:true});
     });
   }
   return sorted;
 }
 
 function cardTemplate(fragrance){
-  const id = productId(fragrance);
+  const id = catalogItemKey(fragrance);
   const active = favorites.includes(id);
+  if(isCatalogProduct(fragrance)){
+    const productMeta=[fragrance.typeLabel,fragrance.volume].filter(Boolean).join(" · ");
+    return `<article class="fragrance-card catalog-product-card" data-id="${escapeHtml(fragrance.id)}">
+      <div class="fragrance-media-shell">
+        <span class="fragrance-badge">${escapeHtml(fragrance.typeLabel)}</span>
+        <div class="fragrance-media" role="img" aria-label="${escapeHtml(fragrance.title)}">
+          <img src="${escapeHtml(fragrance.image)}" alt="${escapeHtml(fragrance.title)}" loading="lazy">
+        </div>
+        <button class="favorite-toggle ${active?"is-active":""}" type="button" data-favorite="${escapeHtml(id)}" aria-label="${active?"Удалить из избранного":"Добавить в избранное"}">
+          <svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg>
+        </button>
+      </div>
+      <div class="fragrance-info">
+        <div class="fragrance-title-row"><h3>${escapeHtml(fragrance.title)}</h3></div>
+        <p class="fragrance-original">${escapeHtml(productMeta||"Продукция FLUIDE Atelier")}</p>
+        <div class="card-actions"><strong class="card-price">${formatPriceMarkup(getPrice(fragrance))}</strong><button class="add-button" type="button" data-add-product="${escapeHtml(fragrance.id)}" aria-label="Добавить ${escapeHtml(fragrance.title)} в корзину">В корзину</button></div>
+      </div>
+    </article>`;
+  }
   const title = prettyTitle(fragrance.title);
   const cardName = `FLUIDE ${Number(fragrance.id)} ${title}`;
   return `<article class="fragrance-card" data-id="${escapeHtml(fragrance.id)}">
@@ -215,7 +293,7 @@ function cardTemplate(fragrance){
       <a class="fragrance-media" href="product.html?id=${encodeURIComponent(fragrance.id)}" aria-label="Открыть страницу аромата ${escapeHtml(title)}">
         ${productVisual(fragrance)}
       </a>
-      <button class="favorite-toggle ${active?"is-active":""}" type="button" data-favorite="${escapeHtml(fragrance.id)}" aria-label="${active?"Удалить из избранного":"Добавить в избранное"}">
+      <button class="favorite-toggle ${active?"is-active":""}" type="button" data-favorite="${escapeHtml(id)}" aria-label="${active?"Удалить из избранного":"Добавить в избранное"}">
         <svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg>
       </button>
     </div>
@@ -231,10 +309,23 @@ function cardTemplate(fragrance){
 function renderProducts(){
   const filtered = currentFiltered();
   const shown = filtered.slice(0,selectionMode?6:visibleLimit);
-  catalogHeading.textContent=selectionMode?"Подобранные ароматы":"Все ароматы";
+  const perfumeView=selectionMode||activeCatalogSection==="perfume";
+  catalogHeading.textContent=selectionMode?"Подобранные ароматы":CATALOG_SECTION_LABELS[activeCatalogSection];
   if(selectionResultActions)selectionResultActions.hidden=!selectionMode;
+  catalogCategories.hidden=selectionMode;
+  filterToggle.hidden=!perfumeView;
+  activeFilters.hidden=false;
+  activeFilters.classList.toggle("is-placeholder",!perfumeView);
+  activeFilters.setAttribute("aria-hidden",String(!perfumeView));
+  catalogCategoryButtons.forEach(button=>{
+    const active=button.dataset.catalogSection===activeCatalogSection;
+    button.classList.toggle("is-active",active);
+    button.setAttribute("aria-pressed",String(active));
+  });
   grid.innerHTML = shown.map(cardTemplate).join("");
-  resultCount.textContent = `${filtered.length} ${plural(filtered.length,"аромат","аромата","ароматов")}`;
+  resultCount.textContent = perfumeView
+    ? `${filtered.length} ${plural(filtered.length,"аромат","аромата","ароматов")}`
+    : `${filtered.length} ${plural(filtered.length,"товар","товара","товаров")}`;
   const totalFragrances = document.querySelector(".total-fragrances");
   if(totalFragrances)totalFragrances.textContent = `${fragrances.length} ${plural(fragrances.length,"аромат","аромата","ароматов")}`;
   emptyState.hidden = filtered.length !== 0;
@@ -263,6 +354,38 @@ function plural(number,one,few,many){
   return many;
 }
 
+function catalogSectionCount(section){
+  if(section==="all")return fragrances.length+catalogProducts.length;
+  if(section==="perfume")return fragrances.length;
+  const types=CATALOG_SECTIONS[section]||[];
+  return catalogProducts.filter(item=>types.includes(item.productType)).length;
+}
+
+function renderCatalogSectionCounts(){
+  document.querySelectorAll("[data-section-count]").forEach(label=>{
+    label.textContent=catalogSectionCount(label.dataset.sectionCount);
+  });
+}
+
+function syncCatalogSectionUrl(){
+  if(selectionMode)return;
+  const params=new URLSearchParams(location.search);
+  params.delete("category");
+  if(activeCatalogSection==="all")params.delete("section");
+  else params.set("section",activeCatalogSection);
+  const query=params.toString();
+  history.replaceState(null,"",`${location.pathname}${query?`?${query}`:""}`);
+}
+
+function setCatalogSection(section){
+  if(selectionMode||!CATALOG_SECTIONS.hasOwnProperty(section))return;
+  closeFilter();
+  activeCatalogSection=section;
+  visibleLimit=12;
+  syncCatalogSectionUrl();
+  renderProducts();
+}
+
 function activeSelections(){
   const entries=[];
   const gender=getGender();
@@ -286,9 +409,9 @@ function resetFilters(){
   if(allGender)allGender.checked=true;
   searchInput.value="";
   favoritesOnly=false;
-  selectionMode=false;
-  history.replaceState(null,"",location.pathname);
+  if(selectionMode){selectionMode=false;activeCatalogSection="all"}
   visibleLimit=12;
+  syncCatalogSectionUrl();
   renderProducts();
 }
 
@@ -352,8 +475,7 @@ function closeAccount(){
 function saveFavorites(){localStorage.setItem("fluide-favorites",JSON.stringify(favorites))}
 function saveCart(){localStorage.setItem("fluide-cart",JSON.stringify(cart))}
 
-function toggleFavorite(id){
-  const key=`fragrance-${id}`;
+function toggleFavorite(key){
   favorites=favorites.includes(key)?favorites.filter(value=>value!==key):[...favorites,key];
   saveFavorites();
   renderProducts();
@@ -380,6 +502,17 @@ function addToCart(id,size){
   const snapshot={name:`FLUIDE ${Number(fragrance.id)} ${prettyTitle(fragrance.title)} · ${variant.volume}`,price:variant.price,image:fragrance.image||"assets/brand/logo-blue.svg",category:`Парфюм · ${variant.volume}`};
   if(existing){existing.quantity+=1;existing.product=snapshot}else cart.push({id:key,quantity:1,product:snapshot});
   saveCart();renderCart();showToast(`${prettyTitle(fragrance.title)}, ${variant.volume} — в корзине`);
+}
+
+function addCatalogProduct(id){
+  const product=catalogProducts.find(item=>item.id===id);
+  if(!product)return;
+  const existing=cart.find(item=>item.id===product.id);
+  const snapshot={name:product.title,price:getPrice(product),image:product.image,category:[product.typeLabel,product.volume].filter(Boolean).join(" · ")};
+  if(existing){existing.quantity+=1;existing.product=snapshot}else cart.push({id:product.id,quantity:1,product:snapshot});
+  saveCart();
+  renderCart();
+  showToast(`${product.title} — в корзине`);
 }
 
 function renderCart(){
@@ -416,6 +549,7 @@ function openInfo(type){
 document.querySelectorAll(".filter-panel input").forEach(input=>input.addEventListener("change",()=>{visibleLimit=12;syncSelectionUrl();renderProducts()}));
 document.querySelectorAll(".reset-filters").forEach(button=>button.addEventListener("click",resetFilters));
 document.querySelector(".apply-filters").addEventListener("click",closeFilter);
+catalogCategoryButtons.forEach(button=>button.addEventListener("click",()=>setCatalogSection(button.dataset.catalogSection)));
 searchInput.addEventListener("input",()=>{visibleLimit=12;syncSelectionUrl();renderProducts()});
 function closeSortMenu(){
   sortMenu.hidden=true;
@@ -485,7 +619,9 @@ activeFilters.addEventListener("click",event=>{const button=event.target.closest
 grid.addEventListener("click",event=>{
   const favorite=event.target.closest("[data-favorite]");
   const add=event.target.closest("[data-add]");
+  const addProduct=event.target.closest("[data-add-product]");
   if(favorite){event.stopPropagation();toggleFavorite(favorite.dataset.favorite);return}
+  if(addProduct){event.stopPropagation();addCatalogProduct(addProduct.dataset.addProduct);return}
   if(add){event.stopPropagation();openVolumeSelector(add.dataset.add);return}
 });
 volumeContent.addEventListener("click",event=>{const button=event.target.closest("[data-volume]");if(!button)return;addToCart(selectedFragranceId,button.dataset.volume);volumeDialog.close()});
@@ -525,12 +661,20 @@ async function initCatalog(){
   try{
     fragrances=await fetchJsonWithRetry("data/fragrances.json");
     try{
+      catalogProducts=await fetchJsonWithRetry("data/products.json");
+    }catch(productError){
+      catalogProducts=[];
+      console.warn("Дополнительные категории временно недоступны",productError);
+    }
+    try{
       const prices=await fetchJsonWithRetry("data/prices.json");
       PRICE_BY_SIZE={"30":{...PRICE_BY_SIZE["30"],...(prices.perfume?.["30"]||{})},"50":{...PRICE_BY_SIZE["50"],...(prices.perfume?.["50"]||{})}};
     }catch(priceError){
       console.warn("Используются резервные цены каталога",priceError);
     }
     fragrances=fragrances.filter(item=>item?.id);
+    catalogProducts=catalogProducts.filter(item=>item?.id&&item?.productType&&item?.image);
+    renderCatalogSectionCounts();
     const retryButton=emptyState.querySelector(".reset-filters");
     emptyState.querySelector("h3").textContent="Ничего не найдено";
     emptyState.querySelector("p").textContent="Попробуйте изменить фильтры или очистить строку поиска.";

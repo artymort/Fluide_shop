@@ -40,6 +40,83 @@
   .product-tab{font-size:14px}
 }
 
+/* Product information: neutral typography and a stable left reading edge. */
+.product-page .product-tab {
+  color: #000;
+  font-size: 16px;
+}
+
+.product-page .product-tab-panel,
+.product-page .product-tab-panel p,
+.product-page .product-tab-panel span,
+.product-page .product-tab-panel strong,
+.product-page .product-tab-panel b,
+.product-page .product-tab-panel label,
+.product-page .product-about-aside span,
+.product-page .product-about-aside strong,
+.product-page .pyramid-row span,
+.product-page .pyramid-row strong,
+.product-page .occasion-card span,
+.product-page .occasion-card p {
+  color: #000;
+  font-size: 14px;
+}
+
+#product-tab-about .product-about-grid {
+  display: block;
+  max-width: 760px;
+}
+
+#product-tab-about .product-about-grid > p {
+  max-width: 760px;
+  margin: 0 0 28px;
+}
+
+#product-tab-about .product-about-aside {
+  display: grid;
+  max-width: 360px;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+#product-tab-pyramid .pyramid-grid {
+  display: grid;
+  max-width: 760px;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+#product-tab-pyramid .pyramid-row {
+  padding: 16px 0;
+  border-left: 0;
+}
+
+#product-tab-pyramid .pyramid-row:first-child {
+  padding-top: 0;
+}
+
+#product-tab-pyramid .pyramid-row + .pyramid-row {
+  padding-left: 0;
+  border-top: 1px solid var(--line);
+  border-left: 0;
+}
+
+#product-tab-occasion .occasion-grid {
+  display: grid;
+  max-width: 760px;
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+#product-tab-occasion .occasion-card:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+#product-tab-occasion .occasion-card > span {
+  font-weight: 500;
+}
+
 /* Use the same neutral product-image surface across cards and product pages. */
 .product-gallery-stage,
 .product-gallery .product-thumbnail{background-color:#f3f3f3}

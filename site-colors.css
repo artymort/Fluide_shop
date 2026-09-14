@@ -283,6 +283,14 @@ textarea::placeholder {
   color: #fff !important;
 }
 
+.account-page .loyalty-detail-content,
+.account-page .loyalty-detail-content h3,
+.account-page .loyalty-detail-content > p,
+.account-page .loyalty-benefits span,
+.account-page .loyalty-benefits strong {
+  color: #fff !important;
+}
+
 .account-page .account-nav a.is-active::before,
 .account-page .loyalty-history-filters button.is-active::after {
   background: var(--site-action) !important;
