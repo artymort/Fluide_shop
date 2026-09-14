@@ -23,6 +23,20 @@
 .product-tab.is-active,.product-tab.is-active:hover,.product-tab.is-active:focus-visible{font-weight:600}
 .product-tab-panel,.product-tab-panel p,.product-tab-panel strong,.product-tab-panel b{font-family:Onest,Arial,sans-serif}
 .product-tab-panel p,.product-about-grid>p,.pyramid-row strong,.product-accord,.product-accord b,.occasion-card p,.product-review p{font-size:14px;font-weight:400;line-height:1.6}
+
+.catalog-product-detail .product-volume-static{display:inline-flex;min-width:88px;min-height:42px;align-items:center;justify-content:center;padding:0 15px;cursor:default}
+.catalog-product-detail .catalog-product-gallery .product-main-image{width:74%;height:490px;object-fit:contain}
+
+@media(max-width:700px){
+  .catalog-product-detail .catalog-product-gallery .product-main-image{width:78%;height:370px}
+}
+
+.catalog-product-detail .product-volume-static{display:inline-flex;min-width:88px;min-height:42px;align-items:center;justify-content:center;padding:0 15px;cursor:default}
+.catalog-product-detail .catalog-product-gallery .product-main-image{width:74%;height:490px;object-fit:contain}
+
+@media(max-width:700px){
+  .catalog-product-detail .catalog-product-gallery .product-main-image{width:78%;height:370px}
+}
 .product-about-aside span,.occasion-card span{font-size:12px}
 .product-about-aside strong,.pyramid-row span{font-size:14px}
 .product-rating-stars button{border:0!important;background:transparent;font-size:0!important}

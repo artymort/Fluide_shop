@@ -7,7 +7,7 @@
   <title>Аромат FLUIDE Atelier</title>
   <link rel="stylesheet" href="catalog-page.css?v=cart-unified-v2">
   <link rel="stylesheet" href="product-page.css?v=font-spacing-v2">
-  <link rel="stylesheet" href="product-page-final.css?v=product-tabs-v3">
+  <link rel="stylesheet" href="product-page-final.css?v=product-catalog-v1">
   <link rel="stylesheet" href="site-colors.css?v=neutral-text-v14">
   <script src="auth-session.js?v=account-v1" defer></script>
 </head>
@@ -44,9 +44,9 @@
   </header>
 
   <main class="product-main" id="product-main">
-    <div class="shell product-breadcrumbs"><a href="catalog.html"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg>Каталог ароматов</a><span class="breadcrumb-separator">/</span><span class="breadcrumb-current">Загрузка...</span></div>
+    <div class="shell product-breadcrumbs"><a href="catalog.html"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg>Каталог</a><span class="breadcrumb-separator">/</span><span class="breadcrumb-current">Загрузка...</span></div>
     <div class="product-page shell" aria-live="polite">
-      <section class="product-loading"><span></span><p>Загружаем аромат...</p></section>
+      <section class="product-loading"><span></span><p>Загружаем товар...</p></section>
     </div>
     <section class="related-section shell" hidden>
       <div class="related-head"><div><h2>Вам также может понравиться</h2></div><a href="catalog.html">Смотреть каталог <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></a></div>
@@ -56,7 +56,7 @@
 
   <footer class="catalog-footer shell" id="contacts">
     <a href="index.html#top" class="footer-logo"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a>
-    <div><h3>Коллекции</h3><a href="catalog.html">Парфюм</a><a href="catalog.html?category=home">Для дома</a><a href="index.html#gifts">Подарки</a></div>
+    <div><h3>Коллекции</h3><a href="catalog.html?section=perfume">Парфюм</a><a href="catalog.html?section=home">Для дома</a><a href="index.html#gifts">Подарки</a></div>
     <div><h3>О бренде</h3><a href="about.html">О компании</a><a href="about.html">Пространство во Владимире</a><a href="about.html">Мастер-классы</a></div>
     <div><h3>Покупателям</h3><button type="button" data-info="delivery">Доставка и оплата</button><button type="button" data-info="contacts">Связаться с нами</button><button type="button" data-info="privacy">Персональные данные</button></div>
     <div class="footer-bottom"><span>© FLUIDE Atelier, 2026</span><span>Сделано с чувством.</span><button type="button" data-cookie-settings>Настройки cookie</button></div>
@@ -72,6 +72,6 @@
   <dialog class="account-dialog" id="account-dialog"><div class="account-dialog-head"><h2>Личный кабинет</h2><button type="button" data-account-close aria-label="Закрыть"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="account-dialog-body" id="account-dialog-body"></div></dialog>
   <div class="cookie" hidden><p>Используем cookie для корзины<br>и удобной работы сайта.</p><button type="button" data-cookie-accept>Хорошо</button></div>
   <div class="toast" role="status" aria-live="polite"></div>
-  <script src="product-page.js?v=cart-unified-v1"></script>
+  <script src="product-page.js?v=product-catalog-v1"></script>
 </body>
 </html>

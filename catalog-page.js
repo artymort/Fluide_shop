@@ -268,18 +268,19 @@ function cardTemplate(fragrance){
   const active = favorites.includes(id);
   if(isCatalogProduct(fragrance)){
     const productMeta=[fragrance.typeLabel,fragrance.volume].filter(Boolean).join(" · ");
+    const productHref=`product.html?id=${encodeURIComponent(fragrance.id)}`;
     return `<article class="fragrance-card catalog-product-card" data-id="${escapeHtml(fragrance.id)}">
       <div class="fragrance-media-shell">
         <span class="fragrance-badge">${escapeHtml(fragrance.typeLabel)}</span>
-        <div class="fragrance-media" role="img" aria-label="${escapeHtml(fragrance.title)}">
+        <a class="fragrance-media" href="${productHref}" aria-label="Открыть страницу товара ${escapeHtml(fragrance.title)}">
           <img src="${escapeHtml(fragrance.image)}" alt="${escapeHtml(fragrance.title)}" loading="lazy">
-        </div>
+        </a>
         <button class="favorite-toggle ${active?"is-active":""}" type="button" data-favorite="${escapeHtml(id)}" aria-label="${active?"Удалить из избранного":"Добавить в избранное"}">
           <svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg>
         </button>
       </div>
       <div class="fragrance-info">
-        <div class="fragrance-title-row"><h3>${escapeHtml(fragrance.title)}</h3></div>
+        <div class="fragrance-title-row"><h3><a href="${productHref}">${escapeHtml(fragrance.title)}</a></h3></div>
         <p class="fragrance-original">${escapeHtml(productMeta||"Продукция FLUIDE Atelier")}</p>
         <div class="card-actions"><strong class="card-price">${formatPriceMarkup(getPrice(fragrance))}</strong><button class="add-button" type="button" data-add-product="${escapeHtml(fragrance.id)}" aria-label="Добавить ${escapeHtml(fragrance.title)} в корзину">В корзину</button></div>
       </div>

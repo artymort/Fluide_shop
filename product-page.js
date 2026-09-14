@@ -37,6 +37,7 @@ const infoTitle=document.querySelector(".info-title");
 const infoContent=document.querySelector(".info-content");
 
 let fragrances=[];
+let catalogProducts=[];
 let fragrance=null;
 let selectedSize="30";
 let selectedQuantity=1;
@@ -49,7 +50,9 @@ const escapeHtml=value=>String(value??"").replace(/[&<>'"]/g,char=>({"&":"&amp;"
 const formatPrice=value=>`${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
 const formatPriceMarkup=value=>`${new Intl.NumberFormat("ru-RU").format(value)}&nbsp;<span class="price-ruble" aria-hidden="true">₽</span><span class="visually-hidden"> рублей</span>`;
 const prettyTitle=value=>String(value||"").replace(/^\d+\s+/,"").toLocaleLowerCase("ru-RU").replace(/(^|[\s-])([a-zа-я\u0451])/giu,(match,space,letter)=>`${space}${letter.toLocaleUpperCase("ru-RU")}`);
-const priceFor=(item,size=selectedSize)=>PRICE_BY_SIZE[size]?.[item.category]||PRICE_BY_SIZE["30"][item.category]||1990;
+const isCatalogProduct=item=>item?.kind==="product";
+const favoriteKeyFor=item=>isCatalogProduct(item)?item.id:`fragrance-${item.id}`;
+const priceFor=(item,size=selectedSize)=>isCatalogProduct(item)?Number(item.price)||0:PRICE_BY_SIZE[size]?.[item.category]||PRICE_BY_SIZE["30"][item.category]||1990;
 const colorFor=item=>CARD_COLORS[(Number.parseInt(item.id,10)||0)%CARD_COLORS.length];
 const allNotes=item=>[...(item.notes?.top||[]),...(item.notes?.middle||[]),...(item.notes?.base||[]),...(item.notes?.main||[])];
 const reviewKey=()=>`fluide-reviews-${fragrance?.id||"unknown"}`;
@@ -59,7 +62,7 @@ const starMarkup=(filled=false)=>`<svg aria-hidden="true" class="${filled?"is-fi
 const ratingButtonsMarkup=(value=0,attribute="data-review-star")=>Array.from({length:5},(_,index)=>`<button type="button" ${attribute}="${index+1}" class="${index<value?"is-filled":""}" aria-label="${index+1} из 5">${starMarkup(index<value)}</button>`).join("");
 
 function productVisual(item,context="main"){
-  if(item.image)return `<img src="${escapeHtml(item.image)}" alt="Флакон FLUIDE ${escapeHtml(prettyTitle(item.title))}">`;
+  if(item.image)return `<img src="${escapeHtml(item.image)}" alt="${isCatalogProduct(item)?escapeHtml(item.title):`Флакон FLUIDE ${escapeHtml(prettyTitle(item.title))}`}">`;
   return `<div class="fragrance-placeholder ${context==="related"?"is-related":""}" role="img" aria-label="Изображение аромата готовится"><img src="assets/brand/logo-blue.svg" alt="" aria-hidden="true"><strong>№ ${escapeHtml(item.id)}</strong><span>Изображение готовится</span></div>`;
 }
 
@@ -74,6 +77,81 @@ function productDescription(item){
   return `Ведущий аккорд «${escapeHtml(lead)}» задает композиции характер. Собранный аромат с заметным шлейфом раскрывается постепенно и остается с вами в течение дня.`;
 }
 
+function catalogProductDescription(item){
+  const descriptions={
+    "solid-perfume":"Компактный твердый парфюм FLUIDE удобно брать с собой и обновлять аромат в течение дня.",
+    "home-fragrance":"Парфюм для дома FLUIDE помогает наполнить пространство выбранным ароматом и создать нужное настроение.",
+    candle:"Ароматическая свеча FLUIDE объединяет декоративную форму и мягкое звучание аромата в интерьере.",
+    diffuser:"Аромадиффузор FLUIDE предназначен для постепенного и равномерного наполнения пространства ароматом.",
+    "body-cream":"Уходовое средство FLUIDE дополняет ежедневный ритуал и оставляет на коже деликатный аромат.",
+    "hand-soap":"Парфюмированное мыло FLUIDE создано для ежедневного ухода за руками.",
+    "hair-spray":"Парфюмированный спрей FLUIDE придает волосам легкий аромат и подходит для использования в течение дня.",
+    "car-fragrance":"Компактный аромат FLUIDE создан для использования в автомобиле."
+  };
+  return descriptions[item.productType]||`Продукт FLUIDE Atelier из категории «${escapeHtml(item.typeLabel||"Коллекция FLUIDE") }».`;
+}
+
+function renderCatalogProduct(){
+  const title=fragrance.title;
+  const favoriteKey=favoriteKeyFor(fragrance);
+  const favoriteActive=favorites.includes(favoriteKey);
+  const reviews=loadReviews();
+  const ownReview=reviews[0]||null;
+  const averageRating=reviews.length?reviews.reduce((sum,review)=>sum+Number(review.rating||0),0)/reviews.length:0;
+  const productMeta=[fragrance.typeLabel,fragrance.volume].filter(Boolean).join(" · ");
+  breadcrumbCurrent.textContent=title;
+  document.title=`${title} — FLUIDE Atelier`;
+  document.querySelector('meta[name="description"]').content=`${title}: описание, характеристики и цена в каталоге FLUIDE Atelier.`;
+  headerFavorite.classList.toggle("is-active",favoriteActive);
+  headerFavorite.setAttribute("aria-label",favoriteActive?"Удалить из избранного":"Добавить в избранное");
+
+  page.innerHTML=`<article class="product-layout catalog-product-detail">
+    <div class="product-overview">
+      <section class="product-gallery catalog-product-gallery">
+        <div class="product-gallery-stage">
+          <img class="product-main-image" src="${escapeHtml(fragrance.image||"assets/brand/logo-blue.svg")}" alt="${escapeHtml(title)}">
+        </div>
+      </section>
+      <section class="product-details">
+        <h1>${escapeHtml(title)}</h1>
+        <p class="product-inspiration">${escapeHtml(productMeta||"Продукция FLUIDE Atelier")}</p>
+        <div class="product-rating" data-product-rating aria-label="${reviews.length?`Средняя оценка ${averageRating.toFixed(1)} из 5`:`У этого товара пока нет оценок`}"><span class="product-rating-stars">${ratingButtonsMarkup(Math.round(averageRating))}</span><button type="button" data-review-open>Отзывы (<span data-review-count>${reviews.length}</span>)</button></div>
+        <div class="product-purchase">
+          <div class="product-price" data-product-price>${formatPriceMarkup(priceFor(fragrance))}</div>
+          ${fragrance.volume?`<fieldset class="product-choice"><legend>Объем</legend><div class="volume-options"><span class="volume-option is-active product-volume-static">${escapeHtml(fragrance.volume)}</span></div></fieldset>`:""}
+          <div class="quantity-block"><span>Количество</span><div class="quantity-control"><button type="button" data-quantity="-1" aria-label="Уменьшить количество">−</button><output data-product-quantity>1</output><button type="button" data-quantity="1" aria-label="Увеличить количество">+</button></div></div>
+          <div class="product-actions"><button class="product-add" type="button">В корзину</button><button class="product-buy-now" type="button">Купить в 1 клик</button><button class="product-like ${favoriteActive?"is-active":""}" type="button" aria-label="${favoriteActive?"Удалить из избранного":"Добавить в избранное"}"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg></button></div>
+          <p class="product-delivery-note"><svg aria-hidden="true"><use href="assets/icons/lucide.svg?v=product-v1#truck"></use></svg>Бесплатная доставка от 5 000 ₽</p>
+        </div>
+      </section>
+    </div>
+    <section class="product-info">
+      <div class="product-tabs" role="tablist" aria-label="Информация о товаре">
+        <button class="product-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="product-tab-about" data-product-tab="about" data-label="О товаре">О товаре</button>
+        <button class="product-tab" type="button" role="tab" aria-selected="false" aria-controls="product-tab-characteristics" data-product-tab="characteristics" data-label="Характеристики">Характеристики</button>
+        <button class="product-tab" type="button" role="tab" aria-selected="false" aria-controls="product-tab-reviews" data-product-tab="reviews" data-label="Отзывы">Отзывы</button>
+      </div>
+      <div class="product-tab-panels">
+        <section class="product-tab-panel is-active" id="product-tab-about" role="tabpanel" data-product-panel="about"><div class="product-about-grid"><p>${catalogProductDescription(fragrance)}</p><div class="product-about-aside"><div><span>Категория</span><strong>${escapeHtml(fragrance.typeLabel||"Продукция FLUIDE")}</strong></div>${fragrance.volume?`<div><span>Объем</span><strong>${escapeHtml(fragrance.volume)}</strong></div>`:""}<div><span>Бренд</span><strong>FLUIDE Atelier</strong></div></div></div></section>
+        <section class="product-tab-panel" id="product-tab-characteristics" role="tabpanel" data-product-panel="characteristics" hidden><div class="pyramid-grid"><div class="pyramid-row"><span>Категория</span><strong>${escapeHtml(fragrance.typeLabel||"Продукция FLUIDE")}</strong></div>${fragrance.volume?`<div class="pyramid-row"><span>Объем</span><strong>${escapeHtml(fragrance.volume)}</strong></div>`:""}<div class="pyramid-row"><span>Бренд</span><strong>FLUIDE Atelier</strong></div></div></section>
+        <section class="product-tab-panel" id="product-tab-reviews" role="tabpanel" data-product-panel="reviews" hidden><div class="product-reviews-layout"><div class="product-review-list" data-review-list></div><form class="product-review-form" data-review-form ${ownReview?"hidden":""}><fieldset><legend>Ваша оценка</legend><div class="product-review-rating-picker">${ratingButtonsMarkup(Number(ownReview?.rating)||0,"data-form-rating")}</div></fieldset><label>Ваше имя<input name="name" type="text" maxlength="40" autocomplete="name" value="${escapeHtml(ownReview?.name||"")}" required></label><label>Отзыв<textarea name="text" rows="4" maxlength="700" required>${escapeHtml(ownReview?.text||"")}</textarea></label><button type="submit">${ownReview?"Сохранить изменения":"Оставить отзыв"}</button></form></div></section>
+      </div>
+    </section>
+  </article>`;
+
+  page.querySelectorAll("[data-quantity]").forEach(button=>button.addEventListener("click",()=>changeQuantity(Number(button.dataset.quantity))));
+  page.querySelectorAll("[data-product-tab]").forEach(button=>button.addEventListener("click",()=>selectProductTab(button.dataset.productTab)));
+  page.querySelector("[data-review-open]").addEventListener("click",()=>selectProductTab("reviews"));
+  page.querySelectorAll("[data-review-star]").forEach(button=>button.addEventListener("click",()=>{selectProductTab("reviews");openReviewEditor(Number(button.dataset.reviewStar),true)}));
+  page.querySelectorAll("[data-form-rating]").forEach(button=>button.addEventListener("click",()=>setReviewRating(Number(button.dataset.formRating))));
+  page.querySelector("[data-review-form]").addEventListener("submit",submitReview);
+  renderReviewList();
+  page.querySelector(".product-add").addEventListener("click",addToCart);
+  page.querySelector(".product-buy-now").addEventListener("click",()=>showToast("Быстрая покупка будет подключена позже"));
+  page.querySelector(".product-like").addEventListener("click",toggleFavorite);
+  renderRelated();
+}
+
 function renderProduct(){
   const title=prettyTitle(fragrance.title);
   const seasons=(fragrance.season||[]).map(value=>SEASON_LABELS[value]||value);
@@ -81,7 +159,7 @@ function renderProduct(){
   const accords=(fragrance.accords||[]).slice(0,8);
   const fragranceNumber=Number(fragrance.id)||fragrance.id;
   const galleryImages=[fragrance.image||"assets/brand/logo-blue.svg",...Array(3).fill("assets/product-line/matsukita-gallery-v2.png")];
-  const favoriteKey=`fragrance-${fragrance.id}`;
+  const favoriteKey=favoriteKeyFor(fragrance);
   const favoriteActive=favorites.includes(favoriteKey);
   const reviews=loadReviews();
   const ownReview=reviews[0]||null;
@@ -190,7 +268,7 @@ function openReviewEditor(rating,focusForm=false){
 function renderReviewList(){
   const reviews=loadReviews();
   const list=page.querySelector("[data-review-list]");
-  if(list)list.innerHTML=reviews.length?reviews.map((review,index)=>`<article class="product-review"><div class="product-review-head"><strong>${escapeHtml(review.name)}</strong><div class="product-review-meta"><span class="product-review-stars" aria-label="Оценка ${Number(review.rating)||0} из 5">${Array.from({length:5},(_,starIndex)=>starMarkup(starIndex<Number(review.rating))).join("")}</span><time datetime="${escapeHtml(review.date||"")}">${formatReviewDate(review.date)}</time></div></div><p>${escapeHtml(review.text)}</p>${index===0?`<button class="product-review-edit" type="button" data-edit-review>Редактировать отзыв</button>`:""}</article>`).join(""):`<div class="product-reviews-empty"><strong>Отзывов пока нет</strong><p>Будьте первым, кто поделится впечатлением об аромате.</p></div>`;
+  if(list)list.innerHTML=reviews.length?reviews.map((review,index)=>`<article class="product-review"><div class="product-review-head"><strong>${escapeHtml(review.name)}</strong><div class="product-review-meta"><span class="product-review-stars" aria-label="Оценка ${Number(review.rating)||0} из 5">${Array.from({length:5},(_,starIndex)=>starMarkup(starIndex<Number(review.rating))).join("")}</span><time datetime="${escapeHtml(review.date||"")}">${formatReviewDate(review.date)}</time></div></div><p>${escapeHtml(review.text)}</p>${index===0?`<button class="product-review-edit" type="button" data-edit-review>Редактировать отзыв</button>`:""}</article>`).join(""):`<div class="product-reviews-empty"><strong>Отзывов пока нет</strong><p>Будьте первым, кто поделится впечатлением ${isCatalogProduct(fragrance)?"о товаре":"об аромате"}.</p></div>`;
   const average=reviews.length?reviews.reduce((sum,review)=>sum+Number(review.rating||0),0)/reviews.length:0;
   const rating=page.querySelector("[data-product-rating]");
   if(rating){
@@ -235,7 +313,7 @@ function changeQuantity(delta){
 }
 
 function toggleFavorite(){
-  const key=`fragrance-${fragrance.id}`;
+  const key=favoriteKeyFor(fragrance);
   toggleFavoriteKey(key);
   const active=favorites.includes(key);
   const productLike=page.querySelector(".product-like");
@@ -252,6 +330,14 @@ function toggleFavoriteKey(key){
 }
 
 function addToCart(){
+  if(isCatalogProduct(fragrance)){
+    const key=fragrance.id;
+    const existing=cart.find(item=>item.id===key);
+    const snapshot={name:fragrance.title,price:priceFor(fragrance),image:fragrance.image||"assets/brand/logo-blue.svg",category:[fragrance.typeLabel,fragrance.volume].filter(Boolean).join(" · ")};
+    if(existing){existing.quantity+=selectedQuantity;existing.product=snapshot}else cart.push({id:key,quantity:selectedQuantity,product:snapshot});
+    saveCart();renderCart();showToast(`${fragrance.title} — в корзине`);
+    return;
+  }
   const key=`fragrance-${fragrance.id}-${selectedSize}`;
   const existing=cart.find(item=>item.id===key);
   const snapshot={name:`FLUIDE ${Number(fragrance.id)||fragrance.id} ${prettyTitle(fragrance.title)} · ${selectedSize} мл`,price:priceFor(fragrance),image:fragrance.image||"assets/brand/logo-blue.svg",category:`Парфюм · ${selectedSize} мл`};
@@ -260,6 +346,33 @@ function addToCart(){
 }
 
 function renderRelated(){
+  relatedSection.hidden=true;
+  if(isCatalogProduct(fragrance)){
+    const related=catalogProducts.filter(item=>item.id!==fragrance.id&&item.productType===fragrance.productType).slice(0,4);
+    if(!related.length)return;
+    relatedGrid.innerHTML=related.map(item=>{const key=favoriteKeyFor(item);const href=`product.html?id=${encodeURIComponent(item.id)}`;const meta=[item.typeLabel,item.volume].filter(Boolean).join(" · ");return `<article class="related-card">
+      <div class="related-card-visual">
+        <span class="related-card-badge">${escapeHtml(item.typeLabel||"Коллекция")}</span>
+        <button class="related-card-favorite ${favorites.includes(key)?"is-active":""}" type="button" data-related-favorite="${escapeHtml(key)}" aria-label="${favorites.includes(key)?"Удалить из избранного":"Добавить в избранное"}"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg></button>
+        <a class="related-card-media" href="${href}">${productVisual(item,"related")}</a>
+      </div>
+      <div class="related-card-info">
+        <h3><a href="${href}">${escapeHtml(item.title)}</a></h3>
+        <p>${escapeHtml(meta||"Продукция FLUIDE Atelier")}</p>
+        <div class="related-card-purchase"><strong>${formatPriceMarkup(priceFor(item))}</strong><a class="related-card-add" href="${href}">Подробнее</a></div>
+      </div>
+    </article>`}).join("");
+    relatedGrid.querySelectorAll("[data-related-favorite]").forEach(button=>button.addEventListener("click",()=>{
+      const key=button.dataset.relatedFavorite;
+      toggleFavoriteKey(key);
+      const active=favorites.includes(key);
+      button.classList.toggle("is-active",active);
+      button.setAttribute("aria-label",active?"Удалить из избранного":"Добавить в избранное");
+      showToast(active?"Добавлено в избранное":"Удалено из избранного");
+    }));
+    relatedSection.hidden=false;
+    return;
+  }
   const related=fragrances.filter(item=>item.id!==fragrance.id&&((item.families||[]).some(value=>(fragrance.families||[]).includes(value))||item.category===fragrance.category)).slice(0,4);
   if(!related.length)return;
   relatedGrid.innerHTML=related.map(item=>{const key=`fragrance-${item.id}`;const href=`product.html?id=${encodeURIComponent(item.id)}`;return `<article class="related-card">
@@ -299,7 +412,7 @@ function renderCart(){
 function openCart(){cartDrawer.classList.add("is-open");cartDrawer.setAttribute("aria-hidden","false");backdrop.classList.add("is-open");document.body.classList.add("is-locked")}
 function closeCart(){cartDrawer.classList.remove("is-open");cartDrawer.setAttribute("aria-hidden","true");backdrop.classList.remove("is-open");document.body.classList.remove("is-locked")}
 function showToast(message){toast.textContent=message;toast.classList.add("is-visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove("is-visible"),2200)}
-function renderError(){page.innerHTML=`<section class="product-error"><h1>Аромат не найден</h1><p>Вернитесь в каталог и выберите другую композицию.</p><a href="catalog.html">Перейти в каталог</a></section>`;breadcrumbCurrent.textContent="Аромат не найден"}
+function renderError(){page.innerHTML=`<section class="product-error"><h1>Товар не найден</h1><p>Вернитесь в каталог и выберите другой товар.</p><a href="catalog.html">Перейти в каталог</a></section>`;breadcrumbCurrent.textContent="Товар не найден"}
 
 function openInfo(type){
   const content={
@@ -339,14 +452,15 @@ document.querySelector("[data-cookie-settings]").addEventListener("click",()=>{c
 async function init(){
   renderCart();
   try{
-    const [fragrancesResponse,pricesResponse]=await Promise.all([fetch("data/fragrances.json"),fetch("data/prices.json")]);
+    const [fragrancesResponse,pricesResponse,productsResponse]=await Promise.all([fetch("data/fragrances.json"),fetch("data/prices.json"),fetch("data/products.json")]);
     if(!fragrancesResponse.ok)throw new Error(`HTTP ${fragrancesResponse.status}`);
     fragrances=(await fragrancesResponse.json()).filter(item=>item?.id);
+    if(productsResponse.ok){const products=await productsResponse.json();catalogProducts=(Array.isArray(products)?products:[]).filter(item=>item?.id&&item?.kind==="product")}
     if(pricesResponse.ok){const prices=await pricesResponse.json();PRICE_BY_SIZE={...PRICE_BY_SIZE,...(prices.perfume||{})}}
     const requested=new URLSearchParams(location.search).get("id")||"";
-    fragrance=fragrances.find(item=>item.id===requested.padStart(3,"0"));
+    fragrance=fragrances.find(item=>item.id===requested.padStart(3,"0"))||catalogProducts.find(item=>item.id===requested);
     if(!fragrance){renderError();return}
-    renderProduct();
+    if(isCatalogProduct(fragrance))renderCatalogProduct();else renderProduct();
   }catch(error){renderError();console.error(error)}
 }
 init();
