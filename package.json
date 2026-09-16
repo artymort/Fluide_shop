@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server/index.js",
     "migrate": "node --env-file-if-exists=.env server/scripts/migrate.js",
+    "generate:sitemap": "node server/scripts/generate-sitemap.js",
     "check": "node --check server/index.js && node --check server/app.js && node --check server/scripts/migrate.js",
     "test": "node --test server/test/sessions.test.js"
   },

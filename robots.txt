@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /account.html
+Disallow: /api/
+
+Clean-param: favorites&mode&view&gender&q&sort&section&category /catalog.html
+Clean-param: step&restart /selection.html
+
+Sitemap: https://fluide-atelier.ru/sitemap.xml
