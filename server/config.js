@@ -23,6 +23,7 @@ export function loadConfig() {
   const sessionSecret = required("SESSION_SECRET");
   const yandexClientId = readString("YANDEX_CLIENT_ID");
   const yandexClientSecret = readString("YANDEX_CLIENT_SECRET");
+  const vkClientId = readString("VK_CLIENT_ID");
   const smsProvider = readString("SMS_PROVIDER", nodeEnv === "production" ? "disabled" : "console").toLowerCase();
   const smsRuApiKey = readString("SMS_RU_API_KEY");
 
@@ -31,6 +32,9 @@ export function loadConfig() {
   }
   if (Boolean(yandexClientId) !== Boolean(yandexClientSecret)) {
     throw new Error("YANDEX_CLIENT_ID and YANDEX_CLIENT_SECRET must be set together");
+  }
+  if (vkClientId && !/^\d+$/.test(vkClientId)) {
+    throw new Error("VK_CLIENT_ID must contain only digits");
   }
   if (!["disabled", "console", "smsru"].includes(smsProvider)) {
     throw new Error("SMS_PROVIDER must be disabled, console, or smsru");
@@ -69,6 +73,16 @@ export function loadConfig() {
         nodeEnv === "production"
           ? "https://fluide-atelier.ru/api/auth/yandex/callback"
           : "http://127.0.0.1:3000/api/auth/yandex/callback",
+      ),
+    }),
+    vk: Object.freeze({
+      enabled: Boolean(vkClientId),
+      clientId: vkClientId,
+      redirectUri: readString(
+        "VK_REDIRECT_URI",
+        nodeEnv === "production"
+          ? "https://fluide-atelier.ru/api/auth/vk/callback"
+          : "http://127.0.0.1:3000/api/auth/vk/callback",
       ),
     }),
     sms: Object.freeze({

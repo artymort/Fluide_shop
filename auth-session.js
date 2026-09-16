@@ -245,8 +245,9 @@
           window.location.assign("/api/auth/yandex/start");
           return;
         }
-        const status = host.body.querySelector(".auth-inline-status");
-        if (status) status.textContent = `${provider.dataset.authProvider} подключим после серверной авторизации.`;
+        if (provider.dataset.authProvider === "VK ID") {
+          window.location.assign("/api/auth/vk/start");
+        }
       }
     }
   }, true);
@@ -328,12 +329,21 @@
         const messages = {
           access_denied: "Вход через Яндекс был отменён.",
           invalid_state: "Сессия входа устарела. Попробуйте ещё раз.",
+          vk_access_denied: "Вход через VK ID был отменён.",
+          vk_invalid_state: "Сессия входа через VK ID устарела. Попробуйте ещё раз.",
+          vk_invalid_response: "VK ID вернул некорректный ответ. Попробуйте ещё раз.",
+          vk_token_exchange_failed: "Не удалось завершить вход через VK ID. Попробуйте ещё раз.",
+          vk_profile_request_failed: "VK ID не передал данные профиля. Попробуйте ещё раз.",
+          vk_profile_invalid: "Не удалось определить профиль VK ID.",
           account_conflict: "Этот email или телефон уже связан с другим аккаунтом.",
         };
         currentAccount = null;
         openAuth();
         const status = authHost()?.body.querySelector(".auth-inline-status");
-        if (status) status.textContent = messages[authError] || "Не удалось войти через Яндекс. Попробуйте ещё раз.";
+        if (status) {
+          status.textContent = messages[authError] || "Не удалось войти. Попробуйте ещё раз.";
+          status.classList.add("is-visible");
+        }
       } else if (params.get("login") === "1" && !readAccount()) {
         requestAnimationFrame(openAuth);
       }

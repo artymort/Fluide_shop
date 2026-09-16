@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { buildYandexAuthorizeUrl, fetchYandexProfile, YandexOAuthError } from "../oauth/yandex.js";
+import { buildVkAuthorizeUrl, fetchVkProfile, VkOAuthError } from "../oauth/vk.js";
 import { createOAuthState, readOAuthState } from "../security/oauth-state.js";
 import {
   generateOtpCode,
@@ -18,8 +19,8 @@ import {
 } from "../security/sessions.js";
 import { createSmsSender, SmsDeliveryError } from "../sms/sender.js";
 
-const yandexStateCookieName = (config) => (
-  config.isProduction ? "__Host-fluide_yandex_oauth" : "fluide_yandex_oauth"
+const oauthStateCookieName = (config, provider) => (
+  config.isProduction ? `__Host-fluide_${provider}_oauth` : `fluide_${provider}_oauth`
 );
 
 const oauthCookieOptions = (config) => ({
@@ -60,7 +61,7 @@ async function findSessionUser(database, request, config) {
   return result.rows[0] || null;
 }
 
-async function signInWithYandex({ pool, config, request, profile }) {
+async function signInWithProvider({ pool, config, request, provider, profile }) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -68,9 +69,9 @@ async function signInWithYandex({ pool, config, request, profile }) {
       `SELECT u.id
          FROM auth_identities ai
          JOIN users u ON u.id = ai.user_id
-        WHERE ai.provider = 'yandex' AND ai.provider_subject = $1
+        WHERE ai.provider = $1 AND ai.provider_subject = $2
         FOR UPDATE OF ai, u`,
-      [profile.subject],
+      [provider, profile.subject],
     );
 
     let user;
@@ -91,7 +92,7 @@ async function signInWithYandex({ pool, config, request, profile }) {
         `UPDATE auth_identities
             SET profile = $3::JSONB, last_login_at = NOW()
           WHERE provider = $1 AND provider_subject = $2`,
-        ["yandex", profile.subject, JSON.stringify(profile.profile)],
+        [provider, profile.subject, JSON.stringify(profile.profile)],
       );
     } else {
       const inserted = await client.query(
@@ -103,15 +104,15 @@ async function signInWithYandex({ pool, config, request, profile }) {
       user = inserted.rows[0];
       await client.query(
         `INSERT INTO auth_identities (user_id, provider, provider_subject, profile, last_login_at)
-         VALUES ($1, 'yandex', $2, $3::JSONB, NOW())`,
-        [user.id, profile.subject, JSON.stringify(profile.profile)],
+         VALUES ($1, $2, $3, $4::JSONB, NOW())`,
+        [user.id, provider, profile.subject, JSON.stringify(profile.profile)],
       );
     }
 
     await client.query(
       `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, details, ip_address)
        VALUES ($1, 'auth.login', 'user', $1::TEXT, $2::JSONB, $3)`,
-      [user.id, JSON.stringify({ provider: "yandex", eventId: randomUUID() }), request.ip || null],
+      [user.id, JSON.stringify({ provider, eventId: randomUUID() }), request.ip || null],
     );
     const session = await createSession({ pool: client, config, userId: user.id, request });
     await client.query("COMMIT");
@@ -202,7 +203,7 @@ export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch, s
     }
 
     const oauth = createOAuthState(config.session.secret);
-    response.cookie(yandexStateCookieName(config), oauth.cookieValue, {
+    response.cookie(oauthStateCookieName(config, "yandex"), oauth.cookieValue, {
       ...oauthCookieOptions(config),
       maxAge: oauth.maxAgeMs,
     });
@@ -215,9 +216,9 @@ export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch, s
   });
 
   router.get("/yandex/callback", async (request, response, next) => {
-    const cookieValue = readCookie(request.get("cookie"), yandexStateCookieName(config));
+    const cookieValue = readCookie(request.get("cookie"), oauthStateCookieName(config, "yandex"));
     const oauth = readOAuthState(cookieValue, config.session.secret);
-    response.clearCookie(yandexStateCookieName(config), oauthCookieOptions(config));
+    response.clearCookie(oauthStateCookieName(config, "yandex"), oauthCookieOptions(config));
 
     if (request.query.error) {
       response.redirect(authErrorLocation("access_denied"));
@@ -239,12 +240,91 @@ export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch, s
         code: request.query.code,
         verifier: oauth.verifier,
       });
-      const { user, session } = await signInWithYandex({ pool, config, request, profile });
+      const { user, session } = await signInWithProvider({
+        pool,
+        config,
+        request,
+        provider: "yandex",
+        profile,
+      });
       setSessionCookie(response, config, session.token, session.expiresAt);
       response.set("Cache-Control", "no-store").redirect("/account.html?auth=success");
     } catch (error) {
       if (error instanceof YandexOAuthError) {
         console.warn(`Yandex OAuth failed: ${error.code}`);
+        response.redirect(authErrorLocation(error.code));
+        return;
+      }
+      if (error?.code === "23505") {
+        response.redirect(authErrorLocation("account_conflict"));
+        return;
+      }
+      next(error);
+    }
+  });
+
+  router.get("/vk/start", oauthStartLimit, (_request, response) => {
+    if (!config.vk.enabled) {
+      response.status(503).json({ error: "vk_not_configured" });
+      return;
+    }
+
+    const oauth = createOAuthState(config.session.secret);
+    response.cookie(oauthStateCookieName(config, "vk"), oauth.cookieValue, {
+      ...oauthCookieOptions(config),
+      maxAge: oauth.maxAgeMs,
+    });
+    response.set("Cache-Control", "no-store").redirect(buildVkAuthorizeUrl({
+      clientId: config.vk.clientId,
+      redirectUri: config.vk.redirectUri,
+      state: oauth.state,
+      challenge: oauth.challenge,
+    }));
+  });
+
+  router.get("/vk/callback", async (request, response, next) => {
+    const cookieValue = readCookie(request.get("cookie"), oauthStateCookieName(config, "vk"));
+    const oauth = readOAuthState(cookieValue, config.session.secret);
+    response.clearCookie(oauthStateCookieName(config, "vk"), oauthCookieOptions(config));
+
+    if (request.query.error) {
+      response.redirect(authErrorLocation("vk_access_denied"));
+      return;
+    }
+    if (!config.vk.enabled || !oauth || request.query.state !== oauth.state) {
+      response.redirect(authErrorLocation("vk_invalid_state"));
+      return;
+    }
+
+    const code = typeof request.query.code === "string" ? request.query.code : "";
+    const deviceId = typeof request.query.device_id === "string" ? request.query.device_id : "";
+    const type = typeof request.query.type === "string" ? request.query.type : "";
+    if (!code || code.length > 4096 || !deviceId || deviceId.length > 256 || (type && type !== "code_v2")) {
+      response.redirect(authErrorLocation("vk_invalid_response"));
+      return;
+    }
+
+    try {
+      const profile = await fetchVkProfile({
+        fetchImpl,
+        config: config.vk,
+        code,
+        deviceId,
+        verifier: oauth.verifier,
+        state: oauth.state,
+      });
+      const { user, session } = await signInWithProvider({
+        pool,
+        config,
+        request,
+        provider: "vk",
+        profile,
+      });
+      setSessionCookie(response, config, session.token, session.expiresAt);
+      response.set("Cache-Control", "no-store").redirect("/account.html?auth=vk-success");
+    } catch (error) {
+      if (error instanceof VkOAuthError) {
+        console.warn(`VK OAuth failed: ${error.code}`);
         response.redirect(authErrorLocation(error.code));
         return;
       }

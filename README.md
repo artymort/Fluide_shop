@@ -39,6 +39,18 @@ YANDEX_REDIRECT_URI=https://fluide-atelier.ru/api/auth/yandex/callback
 Секрет нельзя добавлять в Git. OAuth-поток использует `state` и PKCE, а токены Яндекса не
 хранятся в браузере или PostgreSQL.
 
+## VK ID
+
+Для отдельного кабинета VK ID задайте публичный идентификатор приложения и точный callback:
+
+```dotenv
+VK_CLIENT_ID=54774890
+VK_REDIRECT_URI=https://fluide-atelier.ru/api/auth/vk/callback
+```
+
+VK ID использует OAuth 2.1 с `state` и PKCE. Сайт запрашивает только необязательный email;
+номер телефона, дата рождения и пол не запрашиваются. Токены VK не сохраняются.
+
 ## Вход по телефону
 
 Яндекс ID, VK ID и телефон являются независимыми способами регистрации и могут вести в
