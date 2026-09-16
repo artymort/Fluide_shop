@@ -1,0 +1,22 @@
+{
+  "name": "fluide-atelier",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FLUIDE Atelier storefront and API",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "migrate": "node --env-file-if-exists=.env server/scripts/migrate.js",
+    "check": "node --check server/index.js && node --check server/app.js && node --check server/scripts/migrate.js",
+    "test": "node --test server/test/sessions.test.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "pg": "^8.23.0"
+  }
+}
