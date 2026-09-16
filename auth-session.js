@@ -138,7 +138,7 @@
       </div>
       <div class="auth-divider"><span>или</span></div>
       <button class="auth-phone-button" type="button" data-auth-phone>По номеру телефона</button>
-      <p class="auth-inline-status" role="status"></p>
+      <p class="auth-inline-status" role="alert" aria-live="assertive"></p>
     </div><p class="auth-legal">При входе через Яндекс данные профиля сохраняются в защищённой базе FLUIDE.</p></div>`;
   }
 
@@ -223,7 +223,11 @@
     if (event.target.closest("[data-auth-phone]")) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      renderPhone(host.body);
+      const status = host.body.querySelector(".auth-inline-status");
+      if (status) {
+        status.textContent = "Сервис временно недоступен. Попробуйте продолжить регистрацию через Яндекс ID или VK ID.";
+        status.classList.add("is-visible");
+      }
     } else if (event.target.closest("[data-auth-back-main]")) {
       event.preventDefault();
       event.stopImmediatePropagation();
