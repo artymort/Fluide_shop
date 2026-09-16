@@ -14,6 +14,7 @@ test("source catalog creates made-to-order fragrance variants", () => {
       original: "Cacharel Amor Amor",
       category: "Люкс",
       image: "images/011.webp",
+      thumbnail: "images/thumbs/011.webp",
       notesRaw: "Верхние: цитрус",
     }],
     products: [],
@@ -25,6 +26,11 @@ test("source catalog creates made-to-order fragrance variants", () => {
   assert.equal(catalog[0].leadTimeDays, 1);
   assert.deepEqual(catalog[0].variants.map((variant) => variant.priceMinor), [199000, 299000]);
   assert.deepEqual(catalog[0].variants.map((variant) => variant.sku), ["FL-011-30", "FL-011-50"]);
+  assert.deepEqual(catalog[0].media, [{
+    url: "images/011.webp",
+    altText: "Флакон FLUIDE 11 AMOR AMOR",
+    sortOrder: 0,
+  }]);
 });
 
 test("source catalog imports standalone products without inventory fields", () => {

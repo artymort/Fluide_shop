@@ -70,6 +70,40 @@ function productVisual(item,context="main"){
   return `<div class="fragrance-placeholder ${context==="related"?"is-related":""}" role="img" aria-label="Изображение аромата готовится"><img src="assets/brand/logo-blue.svg" alt="" aria-hidden="true"><strong>№ ${escapeHtml(item.id)}</strong><span>Изображение готовится</span></div>`;
 }
 
+const galleryImagesFor=item=>{
+  const managed=Array.isArray(item?.images)
+    ? item.images.map(image=>typeof image==="string"?image:image?.url).filter(Boolean)
+    : [];
+  if(managed.length)return managed;
+  return [item?.image||"assets/brand/logo-blue.svg"];
+};
+
+function galleryMarkup(images,title){
+  const hasGallery=images.length>1;
+  return `<div class="product-gallery-stage">
+    ${hasGallery?`<button class="gallery-arrow gallery-arrow--prev" type="button" data-gallery-step="-1" aria-label="Предыдущее изображение"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg></button>`:""}
+    <img class="product-main-image" data-gallery-main src="${escapeHtml(images[0])}" alt="${escapeHtml(title)}">
+    ${hasGallery?`<button class="gallery-arrow gallery-arrow--next" type="button" data-gallery-step="1" aria-label="Следующее изображение"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></button>`:""}
+  </div>
+  ${hasGallery?`<div class="product-thumbnails" aria-label="Фотографии товара"><button class="product-thumbnails-arrow product-thumbnails-arrow--prev" type="button" data-gallery-step="-1" aria-label="Предыдущее изображение в галерее"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg></button><div class="product-thumbnails-viewport"><div class="product-thumbnail-track">${images.map((image,index)=>`<button class="product-thumbnail ${index===0?"is-active":""}" type="button" data-gallery-index="${index}" style="background-image:url('${escapeHtml(image)}')" aria-label="${index===0?"Основное изображение":`Дополнительное изображение ${index}`}"><img src="${escapeHtml(image)}" alt=""></button>`).join("")}</div></div><button class="product-thumbnails-arrow product-thumbnails-arrow--next" type="button" data-gallery-step="1" aria-label="Следующее изображение в галерее"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></button></div>`:""}`;
+}
+
+function bindGallery(images){
+  if(images.length<2||!page.querySelector("[data-gallery-main]"))return;
+  let galleryIndex=0;
+  const showGalleryImage=index=>{
+    galleryIndex=(index+images.length)%images.length;
+    page.querySelector("[data-gallery-main]").src=images[galleryIndex];
+    page.querySelectorAll("[data-gallery-index]").forEach(button=>{
+      const active=Number(button.dataset.galleryIndex)===galleryIndex;
+      button.classList.toggle("is-active",active);
+      if(active)button.scrollIntoView({behavior:"smooth",block:"nearest",inline:"nearest"});
+    });
+  };
+  page.querySelectorAll("[data-gallery-index]").forEach(button=>button.addEventListener("click",()=>showGalleryImage(Number(button.dataset.galleryIndex))));
+  page.querySelectorAll("[data-gallery-step]").forEach(button=>button.addEventListener("click",()=>showGalleryImage(galleryIndex+Number(button.dataset.galleryStep))));
+}
+
 function noteRows(item){
   return [["Верхние ноты",item.notes?.top],["Сердце",item.notes?.middle],["База",item.notes?.base],["Основные ноты",item.notes?.main]]
     .filter(([,values])=>values?.length)
@@ -97,6 +131,7 @@ function catalogProductDescription(item){
 
 function renderCatalogProduct(){
   const title=fragrance.title;
+  const galleryImages=galleryImagesFor(fragrance);
   const favoriteKey=favoriteKeyFor(fragrance);
   const favoriteActive=favorites.includes(favoriteKey);
   const reviews=loadReviews();
@@ -112,9 +147,7 @@ function renderCatalogProduct(){
   page.innerHTML=`<article class="product-layout catalog-product-detail">
     <div class="product-overview">
       <section class="product-gallery catalog-product-gallery">
-        <div class="product-gallery-stage">
-          <img class="product-main-image" src="${escapeHtml(fragrance.image||"assets/brand/logo-blue.svg")}" alt="${escapeHtml(title)}">
-        </div>
+        ${galleryMarkup(galleryImages,title)}
       </section>
       <section class="product-details">
         <h1>${escapeHtml(title)}</h1>
@@ -144,6 +177,7 @@ function renderCatalogProduct(){
   </article>`;
 
   page.querySelectorAll("[data-quantity]").forEach(button=>button.addEventListener("click",()=>changeQuantity(Number(button.dataset.quantity))));
+  bindGallery(galleryImages);
   page.querySelectorAll("[data-product-tab]").forEach(button=>button.addEventListener("click",()=>selectProductTab(button.dataset.productTab)));
   page.querySelector("[data-review-open]").addEventListener("click",()=>selectProductTab("reviews"));
   page.querySelectorAll("[data-review-star]").forEach(button=>button.addEventListener("click",()=>{selectProductTab("reviews");openReviewEditor(Number(button.dataset.reviewStar),true)}));
@@ -162,7 +196,7 @@ function renderProduct(){
   const occasions=(fragrance.occasion||[]).map(value=>OCCASION_LABELS[value]||value);
   const accords=(fragrance.accords||[]).slice(0,8);
   const fragranceNumber=Number(fragrance.id)||fragrance.id;
-  const galleryImages=[fragrance.image||"assets/brand/logo-blue.svg",...Array(3).fill("assets/product-line/matsukita-gallery-v2.png")];
+  const galleryImages=galleryImagesFor(fragrance);
   const favoriteKey=favoriteKeyFor(fragrance);
   const favoriteActive=favorites.includes(favoriteKey);
   const reviews=loadReviews();
@@ -177,12 +211,7 @@ function renderProduct(){
   page.innerHTML=`<article class="product-layout">
     <div class="product-overview">
       <section class="product-gallery">
-        <div class="product-gallery-stage">
-          <button class="gallery-arrow gallery-arrow--prev" type="button" data-gallery-step="-1" aria-label="Предыдущее изображение"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg></button>
-          <img class="product-main-image" data-gallery-main src="${escapeHtml(galleryImages[0])}" alt="Флакон FLUIDE ${escapeHtml(title)}">
-          <button class="gallery-arrow gallery-arrow--next" type="button" data-gallery-step="1" aria-label="Следующее изображение"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></button>
-        </div>
-        <div class="product-thumbnails" aria-label="Фотографии товара"><button class="product-thumbnails-arrow product-thumbnails-arrow--prev" type="button" data-gallery-step="-1" aria-label="Предыдущее изображение в галерее"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg></button><div class="product-thumbnails-viewport"><div class="product-thumbnail-track">${galleryImages.map((image,index)=>`<button class="product-thumbnail ${index===0?"is-active":""}" type="button" data-gallery-index="${index}" style="background-image:url('${escapeHtml(image)}')" aria-label="${index===0?"Основное изображение":`Дополнительное изображение ${index}`}"><img src="${escapeHtml(image)}" alt=""></button>`).join("")}</div></div><button class="product-thumbnails-arrow product-thumbnails-arrow--next" type="button" data-gallery-step="1" aria-label="Следующее изображение в галерее"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></button></div>
+        ${galleryMarkup(galleryImages,`Флакон FLUIDE ${title}`)}
       </section>
       <section class="product-details">
         <h1>FLUIDE ${escapeHtml(fragranceNumber)} ${escapeHtml(title)}</h1>
@@ -217,10 +246,7 @@ function renderProduct(){
 
   page.querySelectorAll("[data-size]").forEach(button=>button.addEventListener("click",()=>selectSize(button.dataset.size)));
   page.querySelectorAll("[data-quantity]").forEach(button=>button.addEventListener("click",()=>changeQuantity(Number(button.dataset.quantity))));
-  let galleryIndex=0;
-  const showGalleryImage=index=>{galleryIndex=(index+galleryImages.length)%galleryImages.length;page.querySelector("[data-gallery-main]").src=galleryImages[galleryIndex];page.querySelectorAll("[data-gallery-index]").forEach(button=>{const active=Number(button.dataset.galleryIndex)===galleryIndex;button.classList.toggle("is-active",active);if(active)button.scrollIntoView({behavior:"smooth",block:"nearest",inline:"nearest"})})};
-  page.querySelectorAll("[data-gallery-index]").forEach(button=>button.addEventListener("click",()=>showGalleryImage(Number(button.dataset.galleryIndex))));
-  page.querySelectorAll("[data-gallery-step]").forEach(button=>button.addEventListener("click",()=>showGalleryImage(galleryIndex+Number(button.dataset.galleryStep))));
+  bindGallery(galleryImages);
   page.querySelectorAll("[data-product-tab]").forEach(button=>button.addEventListener("click",()=>selectProductTab(button.dataset.productTab)));
   page.querySelector("[data-review-open]").addEventListener("click",()=>selectProductTab("reviews"));
   page.querySelectorAll("[data-review-star]").forEach(button=>button.addEventListener("click",()=>{selectProductTab("reviews");openReviewEditor(Number(button.dataset.reviewStar),true)}));

@@ -3,6 +3,28 @@ const TOKEN_URL = "https://oauth.yandex.ru/token";
 const USER_INFO_URL = "https://login.yandex.ru/info?format=json";
 const SCOPES = ["login:info", "login:email", "login:default_phone"];
 
+const cleanText = (value, max = 120) => String(value || "").trim().slice(0, max) || null;
+
+const normalizeBirthDate = (value) => {
+  const text = String(value || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text) || text.includes("0000") || text.includes("-00")) return null;
+  const date = new Date(`${text}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== text ? null : text;
+};
+
+const normalizeGender = (value) => {
+  const gender = String(value || "").toLowerCase();
+  return ["male", "female"].includes(gender) ? gender : null;
+};
+
+const yandexAvatarUrl = (profile) => {
+  if (profile.is_avatar_empty) return null;
+  const id = String(profile.default_avatar_id || "").trim();
+  return id && /^[A-Za-z0-9_/-]+$/.test(id)
+    ? `https://avatars.yandex.net/get-yapic/${id}/islands-200`
+    : null;
+};
+
 export class YandexOAuthError extends Error {
   constructor(code, message = code) {
     super(message);
@@ -78,25 +100,40 @@ export function normalizeYandexProfile(profile) {
   const phone = String(profile.default_phone?.number || profile.number || "").replace(/[^+\d]/g, "");
   const normalizedPhone = /^\+[1-9]\d{7,14}$/.test(phone) ? phone : null;
   const email = String(profile.default_email || profile.email || "").trim().toLowerCase();
-  const displayName = String(
+  const firstName = cleanText(profile.first_name);
+  const lastName = cleanText(profile.last_name);
+  const displayName = cleanText(
     profile.real_name
       || profile.display_name
-      || [profile.first_name, profile.last_name].filter(Boolean).join(" ")
+      || [firstName, lastName].filter(Boolean).join(" ")
       || profile.login
       || "",
-  ).trim().slice(0, 120) || null;
+  );
+  const birthDate = normalizeBirthDate(profile.birthday);
+  const gender = normalizeGender(profile.sex || profile.gender);
+  const avatarUrl = yandexAvatarUrl(profile);
 
   return {
     subject,
     displayName,
+    firstName,
+    lastName,
     email: email && email.length <= 320 ? email : null,
     phone: normalizedPhone,
+    birthDate,
+    gender,
+    avatarUrl,
     profile: {
       id: subject,
       login: String(profile.login || "").slice(0, 120) || null,
       displayName,
+      firstName,
+      lastName,
       email: email && email.length <= 320 ? email : null,
       phone: normalizedPhone,
+      birthDate,
+      gender,
+      avatarUrl,
     },
   };
 }

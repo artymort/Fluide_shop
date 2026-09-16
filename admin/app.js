@@ -10,10 +10,14 @@ const state = {
 
 const elements = Object.fromEntries([
   "login-view", "login-form", "login-message", "cms-view", "admin-name", "logout-button",
-  "menu-button", "dashboard-stats", "catalog-search", "catalog-status", "catalog-rows",
+  "menu-button", "dashboard-title", "dashboard-new-product", "dashboard-stats", "dashboard-categories",
+  "dashboard-health", "dashboard-recent-products", "dashboard-action-import",
+  "catalog-search", "catalog-status", "catalog-type", "catalog-sort", "catalog-rows",
   "customer-search", "customer-rows", "new-product-button", "product-dialog", "product-form",
-  "product-dialog-title", "product-message", "add-variant-button", "variant-rows", "media-rows",
-  "product-image-upload", "cancel-product", "catalog-import", "import-dialog", "import-preview",
+  "customer-dialog", "customer-dialog-title", "customer-detail",
+  "product-dialog-title", "product-message", "add-variant-button", "variant-rows",
+  "primary-media-row", "gallery-media-rows",
+  "product-main-image-upload", "product-image-upload", "cancel-product", "catalog-import", "import-dialog", "import-preview",
   "apply-import", "cancel-import", "import-result",
   "staff-rows", "new-staff-button", "staff-dialog", "staff-form", "staff-password",
   "staff-message", "cancel-staff",
@@ -25,6 +29,7 @@ const providerLabels = { yandex: "Яндекс ID", vk: "VK ID", phone: "Тел�
 const roleLabels = { owner: "Владелец", admin: "Администратор", editor: "Редактор", orders: "Заказы", analyst: "Аналитика" };
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 const priceFormatter = new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 });
+const dayFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "long" });
 
 function showLogin(message = "") {
   elements["cms-view"].hidden = true;
@@ -68,6 +73,18 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? "—" : dateFormatter.format(date);
 }
 
+function formatDay(value) {
+  if (!value) return "Не указана";
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? "Не указана" : dayFormatter.format(date);
+}
+
+function customerName(customer) {
+  return customer.display_name
+    || [customer.first_name, customer.last_name].filter(Boolean).join(" ")
+    || "Без имени";
+}
+
 function makeCell(text, className = "") {
   const cell = document.createElement("td");
   cell.textContent = text ?? "—";
@@ -92,23 +109,93 @@ function debounce(callback, delay = 280) {
 
 async function loadDashboard() {
   const data = await api("/dashboard");
+
   const cards = [
-    ["Опубликовано товаров", data.published_products],
-    ["Черновики", data.draft_products],
-    ["Активные варианты", data.active_variants],
-    ["Покупатели", data.customers],
-    ["Новые за 7 дней", data.new_customers_7d],
-    ["Последний импорт", formatDate(data.last_import_at)],
+    { label: "Товары", value: data.published_products, meta: `${data.draft_products || 0} в черновиках`, tone: "ink" },
+    { label: "Покупатели", value: data.customers, meta: "активных аккаунтов", tone: "sand" },
+    { label: "Новые покупатели", value: data.new_customers_7d, meta: "за последние 7 дней", tone: "rose" },
   ];
-  elements["dashboard-stats"].replaceChildren(...cards.map(([label, value]) => {
+  elements["dashboard-stats"].replaceChildren(...cards.map((item) => {
     const card = document.createElement("div");
-    card.className = "stat";
+    card.className = `dashboard-stat ${item.tone}`;
+    const top = document.createElement("div");
+    top.className = "dashboard-stat-top";
     const caption = document.createElement("span");
     const number = document.createElement("strong");
-    caption.textContent = label;
-    number.textContent = value ?? 0;
-    card.append(caption, number);
+    const meta = document.createElement("small");
+    caption.textContent = item.label;
+    number.textContent = item.value ?? 0;
+    meta.textContent = item.meta;
+    top.append(caption);
+    card.append(top, number, meta);
     return card;
+  }));
+
+  const categories = Array.isArray(data.categories) ? data.categories : [];
+  const largestCategory = Math.max(1, ...categories.map((category) => Number(category.count) || 0));
+  elements["dashboard-categories"].replaceChildren(...categories.slice(0, 7).map((category) => {
+    const row = document.createElement("button");
+    row.className = "category-row";
+    row.type = "button";
+    row.addEventListener("click", async () => {
+      await switchSection("catalog");
+      elements["catalog-type"].value = category.value;
+      await loadCatalog();
+    });
+    const copy = document.createElement("span");
+    const label = document.createElement("strong");
+    const count = document.createElement("b");
+    const track = document.createElement("span");
+    const fill = document.createElement("i");
+    label.textContent = category.value;
+    count.textContent = category.count;
+    fill.style.width = `${Math.max(4, (Number(category.count) || 0) / largestCategory * 100)}%`;
+    copy.append(label, count);
+    track.className = "category-track";
+    track.append(fill);
+    row.append(copy, track);
+    return row;
+  }));
+
+  const totalProducts = Number(data.published_products || 0) + Number(data.draft_products || 0);
+  const publishedShare = totalProducts ? Math.round(Number(data.published_products || 0) / totalProducts * 100) : 0;
+  const health = document.createElement("div");
+  health.className = "health-overview";
+  const ring = document.createElement("div");
+  ring.className = "health-ring";
+  ring.style.setProperty("--health", `${publishedShare * 3.6}deg`);
+  ring.innerHTML = `<strong>${publishedShare}%</strong><span>опубликовано</span>`;
+  const healthList = document.createElement("div");
+  healthList.className = "health-list";
+  [
+    ["Опубликовано", data.published_products || 0, "published"],
+    ["Черновики", data.draft_products || 0, "draft"],
+    ["Без фотографий", data.products_without_media || 0, "media"],
+  ].forEach(([labelText, value, className]) => {
+    const row = document.createElement("div");
+    row.innerHTML = `<span><i class="${className}"></i>${labelText}</span><strong>${value}</strong>`;
+    healthList.append(row);
+  });
+  health.append(ring, healthList);
+  elements["dashboard-health"].replaceChildren(health);
+
+  const recentProducts = Array.isArray(data.recent_products) ? data.recent_products : [];
+  elements["dashboard-recent-products"].replaceChildren(...recentProducts.map((product) => {
+    const row = document.createElement("button");
+    row.className = "dashboard-product";
+    row.type = "button";
+    row.addEventListener("click", () => openProduct(product.id).catch(console.error));
+    const image = document.createElement("img");
+    image.src = product.imageUrl || "../assets/brand/logo-blue.svg";
+    image.alt = "";
+    const copy = document.createElement("span");
+    const name = document.createElement("strong");
+    const detail = document.createElement("small");
+    name.textContent = product.name;
+    detail.textContent = product.typeLabel || product.productType || "Товар";
+    copy.append(name, detail);
+    row.append(image, copy);
+    return row;
   }));
 }
 
@@ -116,8 +203,25 @@ async function loadCatalog() {
   const params = new URLSearchParams({
     q: elements["catalog-search"].value.trim(),
     status: elements["catalog-status"].value,
+    type: elements["catalog-type"].value,
+    sort: elements["catalog-sort"].value,
   });
-  const { products } = await api(`/products?${params}`);
+  const { products, productTypes = [], totalProducts = products.length } = await api(`/products?${params}`);
+  const selectedType = elements["catalog-type"].value;
+  const normalizedTypes = productTypes.map((type) => typeof type === "string"
+    ? { value: type, count: null }
+    : { value: type.value, count: Number(type.count) })
+    .filter((type) => type.value)
+    .sort((left, right) => (right.count || 0) - (left.count || 0) || left.value.localeCompare(right.value, "ru"));
+  const typeOptions = normalizedTypes.map(({ value, count }) => new Option(
+    Number.isFinite(count) ? `${value} — ${count}` : value,
+    value,
+  ));
+  elements["catalog-type"].replaceChildren(
+    new Option(`Все товары — ${Number(totalProducts) || 0}`, ""),
+    ...typeOptions,
+  );
+  elements["catalog-type"].value = normalizedTypes.some((type) => type.value === selectedType) ? selectedType : "";
   if (!products.length) {
     const row = document.createElement("tr");
     const cell = makeCell("Товары не найдены", "empty-cell");
@@ -171,8 +275,9 @@ async function loadCustomers() {
     }
     elements["customer-rows"].replaceChildren(...customers.map((customer) => {
       const row = document.createElement("tr");
+      row.addEventListener("click", () => openCustomer(customer.id));
       row.append(
-        makeCell(customer.display_name || "Без имени"),
+        makeCell(customerName(customer)),
         makeCell([customer.phone_e164, customer.email].filter(Boolean).join(" · ") || "—"),
         makeCell((customer.providers || []).map((item) => providerLabels[item] || item).join(", ") || "—"),
         makeCell(formatDate(customer.created_at)),
@@ -190,6 +295,100 @@ async function loadCustomers() {
       return;
     }
     throw error;
+  }
+}
+
+function customerDetailItem(label, value, options = {}) {
+  const item = document.createElement("div");
+  item.className = "customer-detail-item";
+  const caption = document.createElement("span");
+  const content = document.createElement("strong");
+  caption.textContent = label;
+  content.textContent = value || "Не указано";
+  if (options.wide) item.classList.add("is-wide");
+  item.append(caption, content);
+  return item;
+}
+
+function renderCustomerDetail(customer, identities) {
+  const root = elements["customer-detail"];
+  const heading = document.createElement("section");
+  heading.className = "customer-profile-head";
+  const avatar = document.createElement(customer.avatar_url ? "img" : "span");
+  avatar.className = "customer-avatar";
+  if (customer.avatar_url) {
+    avatar.src = customer.avatar_url;
+    avatar.alt = "";
+  } else {
+    avatar.textContent = customerName(customer).split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "—";
+  }
+  const identity = document.createElement("div");
+  const title = document.createElement("h3");
+  const meta = document.createElement("p");
+  title.textContent = customerName(customer);
+  meta.textContent = customer.status === "blocked" ? "Аккаунт заблокирован" : "Активный покупатель";
+  identity.append(title, meta);
+  heading.append(avatar, identity);
+
+  const detailsTitle = document.createElement("h3");
+  detailsTitle.className = "customer-section-title";
+  detailsTitle.textContent = "Данные покупателя";
+  const details = document.createElement("div");
+  details.className = "customer-detail-grid";
+  details.append(
+    customerDetailItem("Имя", customer.first_name || "Не указано"),
+    customerDetailItem("Фамилия", customer.last_name || "Не указана"),
+    customerDetailItem("Email", customer.email || "Не указан", { wide: true }),
+    customerDetailItem("Контактный телефон", customer.phone_e164 || "Не указан", { wide: true }),
+    customerDetailItem("Дата рождения", formatDay(customer.birth_date)),
+    customerDetailItem("Пол", ({ male: "Мужской", female: "Женский" })[customer.gender] || "Не указан"),
+    customerDetailItem("Регистрация", formatDate(customer.created_at)),
+    customerDetailItem("Обновление профиля", formatDate(customer.updated_at)),
+  );
+
+  const providersTitle = document.createElement("h3");
+  providersTitle.className = "customer-section-title";
+  providersTitle.textContent = "Способы входа";
+  const providers = document.createElement("div");
+  providers.className = "customer-providers";
+  identities.forEach((provider) => {
+    const card = document.createElement("article");
+    card.className = "customer-provider-card";
+    const top = document.createElement("div");
+    const name = document.createElement("strong");
+    const mark = document.createElement("span");
+    name.textContent = providerLabels[provider.provider] || provider.provider;
+    mark.textContent = provider.provider === "phone" ? "Подтверждён" : "Подключён";
+    top.append(name, mark);
+    card.append(
+      top,
+      customerDetailItem("ID у провайдера", provider.provider_subject, { wide: true }),
+      customerDetailItem("Первый вход", formatDate(provider.created_at)),
+      customerDetailItem("Последний вход", formatDate(provider.last_login_at)),
+    );
+    providers.append(card);
+  });
+  if (!identities.length) {
+    const empty = document.createElement("p");
+    empty.className = "subtle";
+    empty.textContent = "Способы входа не найдены";
+    providers.append(empty);
+  }
+  root.replaceChildren(heading, detailsTitle, details, providersTitle, providers);
+}
+
+async function openCustomer(id) {
+  elements["customer-dialog-title"].textContent = "Покупатель";
+  elements["customer-detail"].textContent = "Загружаем данные…";
+  elements["customer-dialog"].showModal();
+  try {
+    const { customer, identities } = await api(`/customers/${id}`);
+    elements["customer-dialog-title"].textContent = customerName(customer);
+    renderCustomerDetail(customer, identities || []);
+  } catch (error) {
+    elements["customer-detail"].textContent = error.status === 404
+      ? "Покупатель не найден"
+      : "Не удалось загрузить данные покупателя";
   }
 }
 
@@ -295,36 +494,119 @@ function addVariant(variant = {}) {
 }
 
 function renderMedia() {
-  if (!state.media.length) {
-    const empty = document.createElement("p");
-    empty.className = "subtle";
-    empty.textContent = "Изображения пока не добавлены";
-    elements["media-rows"].replaceChildren(empty);
-    return;
-  }
-  elements["media-rows"].replaceChildren(...state.media.map((media, index) => {
+  const buildRow = (media, index, primary = false) => {
     const row = document.createElement("div");
     row.className = "media-row";
     const image = document.createElement("img");
+    image.className = "media-preview";
     image.src = media.url;
     image.alt = media.altText || "";
+    const content = document.createElement("div");
+    content.className = "media-content";
     const label = document.createElement("label");
     label.textContent = "Alt-текст";
     const input = document.createElement("input");
     input.value = media.altText || "";
     input.addEventListener("input", () => { state.media[index].altText = input.value; });
     label.append(input);
+
+    const actions = document.createElement("div");
+    actions.className = "media-actions";
+    if (primary) {
+      const replace = document.createElement("label");
+      replace.className = "media-action";
+      replace.htmlFor = "product-main-image-upload";
+      replace.textContent = "Заменить фото";
+      actions.append(replace);
+    } else {
+      const replace = document.createElement("label");
+      replace.className = "media-action";
+      replace.textContent = "Заменить";
+      const replaceInput = document.createElement("input");
+      replaceInput.type = "file";
+      replaceInput.accept = "image/jpeg,image/png,image/webp,image/avif";
+      replaceInput.hidden = true;
+      replaceInput.addEventListener("change", async () => {
+        const [file] = replaceInput.files;
+        if (!file) return;
+        elements["product-message"].textContent = "Заменяем изображение…";
+        try {
+          await uploadImage(file, index);
+          elements["product-message"].textContent = "";
+        } catch {
+          elements["product-message"].textContent = "Не удалось заменить изображение. Проверьте формат и размер.";
+        }
+      });
+      replace.append(replaceInput);
+      actions.append(replace);
+
+      const makePrimary = document.createElement("button");
+      makePrimary.type = "button";
+      makePrimary.className = "media-action";
+      makePrimary.textContent = "Назначить основным";
+      makePrimary.addEventListener("click", () => {
+        state.media.unshift(state.media.splice(index, 1)[0]);
+        renderMedia();
+      });
+      actions.append(makePrimary);
+
+      const moveUp = document.createElement("button");
+      moveUp.type = "button";
+      moveUp.className = "media-action";
+      moveUp.textContent = "Выше";
+      moveUp.disabled = index === 1;
+      moveUp.addEventListener("click", () => {
+        [state.media[index - 1], state.media[index]] = [state.media[index], state.media[index - 1]];
+        renderMedia();
+      });
+      const moveDown = document.createElement("button");
+      moveDown.type = "button";
+      moveDown.className = "media-action";
+      moveDown.textContent = "Ниже";
+      moveDown.disabled = index === state.media.length - 1;
+      moveDown.addEventListener("click", () => {
+        [state.media[index + 1], state.media[index]] = [state.media[index], state.media[index + 1]];
+        renderMedia();
+      });
+      actions.append(moveUp, moveDown);
+    }
+
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.className = "remove-row";
-    remove.textContent = "×";
+    remove.className = "media-action is-danger";
+    remove.textContent = "Удалить";
     remove.addEventListener("click", () => {
       state.media.splice(index, 1);
       renderMedia();
     });
-    row.append(image, label, remove);
+    actions.append(remove);
+    content.append(label, actions);
+    row.append(image, content);
     return row;
-  }));
+  };
+
+  if (state.media[0]) {
+    elements["primary-media-row"].replaceChildren(buildRow(state.media[0], 0, true));
+  } else {
+    const empty = document.createElement("div");
+    empty.className = "media-empty";
+    const copy = document.createElement("span");
+    copy.textContent = "Основное фото пока не загружено";
+    const upload = document.createElement("label");
+    upload.className = "media-action";
+    upload.htmlFor = "product-main-image-upload";
+    upload.textContent = "Загрузить фото";
+    empty.append(copy, upload);
+    elements["primary-media-row"].replaceChildren(empty);
+  }
+  if (state.media.length > 1) {
+    elements["gallery-media-rows"].replaceChildren(...state.media.slice(1).map((media, offset) => buildRow(media, offset + 1)));
+  } else {
+    const empty = document.createElement("p");
+    empty.className = "media-empty";
+    empty.textContent = "Дополнительных фотографий пока нет";
+    elements["gallery-media-rows"].replaceChildren(empty);
+  }
 }
 
 function resetProductForm() {
@@ -333,7 +615,6 @@ function resetProductForm() {
   elements["product-form"].reset();
   elements["product-form"].elements.id.value = "";
   elements["product-form"].elements.status.value = "draft";
-  elements["product-form"].elements.leadTimeDays.value = "1";
   elements["product-dialog-title"].textContent = "Новый товар";
   elements["product-message"].textContent = "";
   elements["variant-rows"].replaceChildren();
@@ -354,7 +635,6 @@ async function openProduct(id = null) {
     form.status.value = product.status || "draft";
     form.productType.value = product.productType || "";
     form.typeLabel.value = product.typeLabel || "";
-    form.leadTimeDays.value = product.leadTimeDays ?? 1;
     form.shortDescription.value = product.shortDescription || "";
     form.description.value = product.description || "";
     form.seoTitle.value = product.seoTitle || "";
@@ -385,7 +665,7 @@ function serializeProductForm() {
     kind: state.editingProduct?.kind || (form.productType.value === "fragrance" ? "fragrance" : "product"),
     productType: form.productType.value.trim(),
     typeLabel: form.typeLabel.value.trim(),
-    leadTimeDays: Number(form.leadTimeDays.value),
+    leadTimeDays: 1,
     shortDescription: form.shortDescription.value.trim(),
     description: form.description.value.trim(),
     seoTitle: form.seoTitle.value.trim(),
@@ -396,11 +676,18 @@ function serializeProductForm() {
   };
 }
 
-async function uploadImage(file) {
+async function uploadImage(file, replaceIndex = null) {
   const form = new FormData();
   form.append("file", file);
   const uploaded = await api("/media", { method: "POST", body: form });
-  state.media.push({ url: uploaded.url, altText: elements["product-form"].elements.name.value.trim() });
+  const media = {
+    url: uploaded.url,
+    altText: replaceIndex === null
+      ? elements["product-form"].elements.name.value.trim()
+      : state.media[replaceIndex]?.altText || elements["product-form"].elements.name.value.trim(),
+  };
+  if (replaceIndex === null) state.media.push(media);
+  else state.media.splice(replaceIndex, 1, media);
   renderMedia();
 }
 
@@ -489,19 +776,39 @@ elements["logout-button"].addEventListener("click", async () => {
 document.querySelectorAll(".nav-item:not(:disabled)").forEach((button) => {
   button.addEventListener("click", () => switchSection(button.dataset.section).catch(console.error));
 });
+document.querySelectorAll("[data-dashboard-nav]").forEach((button) => {
+  button.addEventListener("click", () => switchSection(button.dataset.dashboardNav).catch(console.error));
+});
 elements["menu-button"].addEventListener("click", () => elements["cms-view"].classList.toggle("menu-open"));
 elements["catalog-search"].addEventListener("input", debounce(() => loadCatalog().catch(console.error)));
 elements["catalog-status"].addEventListener("change", () => loadCatalog().catch(console.error));
+elements["catalog-type"].addEventListener("change", () => loadCatalog().catch(console.error));
+elements["catalog-sort"].addEventListener("change", () => loadCatalog().catch(console.error));
 elements["customer-search"].addEventListener("input", debounce(() => loadCustomers().catch(console.error)));
+elements["dashboard-new-product"].addEventListener("click", () => openProduct().catch(console.error));
+elements["dashboard-action-import"].addEventListener("click", () => elements["catalog-import"].click());
 elements["new-product-button"].addEventListener("click", () => openProduct().catch(console.error));
 elements["add-variant-button"].addEventListener("click", () => addVariant());
 elements["cancel-product"].addEventListener("click", () => elements["product-dialog"].close());
-elements["product-image-upload"].addEventListener("change", async (event) => {
+elements["product-main-image-upload"].addEventListener("change", async (event) => {
   const [file] = event.target.files;
   if (!file) return;
-  elements["product-message"].textContent = "Загружаем изображение…";
+  elements["product-message"].textContent = state.media.length ? "Заменяем основное фото…" : "Загружаем основное фото…";
   try {
-    await uploadImage(file);
+    await uploadImage(file, state.media.length ? 0 : null);
+    elements["product-message"].textContent = "";
+  } catch {
+    elements["product-message"].textContent = "Не удалось загрузить изображение. Проверьте формат и размер.";
+  } finally {
+    event.target.value = "";
+  }
+});
+elements["product-image-upload"].addEventListener("change", async (event) => {
+  const files = [...event.target.files];
+  if (!files.length) return;
+  elements["product-message"].textContent = files.length === 1 ? "Загружаем изображение…" : `Загружаем изображения: ${files.length}…`;
+  try {
+    for (const file of files) await uploadImage(file);
     elements["product-message"].textContent = "";
   } catch {
     elements["product-message"].textContent = "Не удалось загрузить изображение. Проверьте формат и размер.";

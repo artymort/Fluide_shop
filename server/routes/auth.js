@@ -33,7 +33,7 @@ const oauthCookieOptions = (config) => ({
 const serializeUser = (row) => ({
   id: row.id,
   displayName: row.display_name,
-  phone: row.phone_e164,
+  phone: row.phone_e164 || row.contact_phone_e164,
   phoneVerified: Boolean(row.phone_verified_at),
   phoneRequired: false,
   email: row.email,
@@ -47,7 +47,8 @@ async function findSessionUser(database, request, config) {
   if (!token) return null;
 
   const result = await database.query(
-    `SELECT u.id, u.display_name, u.phone_e164, u.phone_verified_at, u.email, u.created_at
+    `SELECT u.id, u.display_name, u.phone_e164, u.contact_phone_e164,
+            u.phone_verified_at, u.email, u.created_at
        FROM sessions s
        JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1
@@ -82,10 +83,27 @@ async function signInWithProvider({ pool, config, request, provider, profile }) 
                 email = CASE
                   WHEN email_verified_at IS NULL AND $3::TEXT IS NOT NULL THEN $3
                   ELSE email
-                END
+                END,
+                first_name = COALESCE($4, first_name),
+                last_name = COALESCE($5, last_name),
+                contact_phone_e164 = COALESCE($6, contact_phone_e164),
+                birth_date = COALESCE($7::DATE, birth_date),
+                gender = COALESCE($8, gender),
+                avatar_url = COALESCE($9, avatar_url)
           WHERE id = $1
-          RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
-        [existing.rows[0].id, profile.displayName, profile.email],
+          RETURNING id, display_name, phone_e164, contact_phone_e164,
+                    phone_verified_at, email, created_at`,
+        [
+          existing.rows[0].id,
+          profile.displayName,
+          profile.email,
+          profile.firstName,
+          profile.lastName,
+          profile.phone,
+          profile.birthDate,
+          profile.gender,
+          profile.avatarUrl,
+        ],
       );
       user = updated.rows[0];
       await client.query(
@@ -96,10 +114,22 @@ async function signInWithProvider({ pool, config, request, provider, profile }) 
       );
     } else {
       const inserted = await client.query(
-        `INSERT INTO users (display_name, email)
-         VALUES ($1, $2)
-         RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
-        [profile.displayName, profile.email],
+        `INSERT INTO users
+          (display_name, email, first_name, last_name, contact_phone_e164,
+           birth_date, gender, avatar_url)
+         VALUES ($1, $2, $3, $4, $5, $6::DATE, $7, $8)
+         RETURNING id, display_name, phone_e164, contact_phone_e164,
+                   phone_verified_at, email, created_at`,
+        [
+          profile.displayName,
+          profile.email,
+          profile.firstName,
+          profile.lastName,
+          profile.phone,
+          profile.birthDate,
+          profile.gender,
+          profile.avatarUrl,
+        ],
       );
       user = inserted.rows[0];
       await client.query(
@@ -127,7 +157,8 @@ async function signInWithProvider({ pool, config, request, provider, profile }) 
 
 async function findOrCreatePhoneUser({ client, phone }) {
   const existing = await client.query(
-    `SELECT id, display_name, phone_e164, phone_verified_at, email, created_at
+    `SELECT id, display_name, phone_e164, contact_phone_e164,
+            phone_verified_at, email, created_at
        FROM users
       WHERE phone_e164 = $1 AND status = 'active' AND deleted_at IS NULL
       FOR UPDATE`,
@@ -138,7 +169,8 @@ async function findOrCreatePhoneUser({ client, phone }) {
       `UPDATE users
           SET phone_verified_at = COALESCE(phone_verified_at, NOW())
         WHERE id = $1
-        RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
+        RETURNING id, display_name, phone_e164, contact_phone_e164,
+                  phone_verified_at, email, created_at`,
       [existing.rows[0].id],
     );
     return verified.rows[0];
@@ -147,7 +179,8 @@ async function findOrCreatePhoneUser({ client, phone }) {
   const inserted = await client.query(
     `INSERT INTO users (phone_e164, phone_verified_at)
      VALUES ($1, NOW())
-     RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
+     RETURNING id, display_name, phone_e164, contact_phone_e164,
+               phone_verified_at, email, created_at`,
     [phone],
   );
   return inserted.rows[0];
@@ -553,7 +586,8 @@ export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch, s
         `UPDATE users
             SET display_name = $2, email = $3
           WHERE id = $1 AND status = 'active' AND deleted_at IS NULL
-          RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
+          RETURNING id, display_name, phone_e164, contact_phone_e164,
+                    phone_verified_at, email, created_at`,
         [current.id, displayName, email],
       );
       response.set("Cache-Control", "no-store").json({ user: serializeUser(result.rows[0]) });

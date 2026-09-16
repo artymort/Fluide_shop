@@ -17,6 +17,8 @@ test("public catalog keeps CMS prices and legacy storefront identities", () => {
   assert.equal(catalog.fragrances[0].id, "011");
   assert.equal(catalog.fragrances[0].title, "AMOR AMOR");
   assert.equal(catalog.fragrances[0].variants[0].price, 2090);
+  assert.deepEqual(catalog.fragrances[0].images, [{ url: "fragrance.webp", altText: "FLUIDE 11 AMOR AMOR" }]);
   assert.equal(catalog.products[0].id, "product-01");
   assert.equal(catalog.products[0].price, 490);
+  assert.deepEqual(catalog.products[0].images, [{ url: "home.webp", altText: "Парфюм для дома" }]);
 });

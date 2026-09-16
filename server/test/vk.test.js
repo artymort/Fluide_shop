@@ -18,7 +18,7 @@ test("VK authorization URL uses state, PKCE, and only the email scope", () => {
   assert.equal(url.searchParams.get("scope"), "email");
 });
 
-test("VK profile normalization keeps only required identity fields", () => {
+test("VK profile normalization keeps permitted customer fields", () => {
   const profile = normalizeVkProfile({
     user_id: 42,
     first_name: "Иван",
@@ -27,14 +27,19 @@ test("VK profile normalization keeps only required identity fields", () => {
     phone: "+79990000000",
     birthday: "1980-01-01",
     avatar: "https://example.test/avatar.jpg",
+    sex: 2,
   });
 
   assert.equal(profile.subject, "42");
   assert.equal(profile.displayName, "Иван Иванов");
   assert.equal(profile.email, "user@example.com");
-  assert.equal("phone" in profile.profile, false);
-  assert.equal("birthday" in profile.profile, false);
-  assert.equal("avatar" in profile.profile, false);
+  assert.equal(profile.firstName, "Иван");
+  assert.equal(profile.lastName, "Иванов");
+  assert.equal(profile.phone, "+79990000000");
+  assert.equal(profile.birthDate, "1980-01-01");
+  assert.equal(profile.gender, "male");
+  assert.equal(profile.avatarUrl, "https://example.test/avatar.jpg");
+  assert.equal(profile.profile.phone, "+79990000000");
 });
 
 test("VK token exchange uses PKCE and does not return OAuth tokens", async () => {

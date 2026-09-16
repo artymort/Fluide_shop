@@ -258,16 +258,44 @@ export function createAdminRouter({ pool, config }) {
 
   router.get("/dashboard", async (_request, response, next) => {
     try {
-      const result = await pool.query(`
+      const [summaryResult, categoriesResult, recentProductsResult] = await Promise.all([pool.query(`
         SELECT
           (SELECT COUNT(*) FROM catalog_products WHERE status = 'published')::INT AS published_products,
           (SELECT COUNT(*) FROM catalog_products WHERE status = 'draft')::INT AS draft_products,
           (SELECT COUNT(*) FROM catalog_variants WHERE active)::INT AS active_variants,
           (SELECT COUNT(*) FROM users WHERE status = 'active' AND deleted_at IS NULL)::INT AS customers,
           (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '7 days')::INT AS new_customers_7d,
+          (SELECT COUNT(*) FROM catalog_products p
+            WHERE NOT EXISTS (SELECT 1 FROM catalog_media m WHERE m.product_id = p.id))::INT AS products_without_media,
           (SELECT MAX(finished_at) FROM catalog_import_runs WHERE status = 'completed') AS last_import_at
-      `);
-      response.json(result.rows[0]);
+      `), pool.query(`
+        SELECT COALESCE(NULLIF(type_label, ''), product_type) AS value,
+               COUNT(*)::INT AS count
+          FROM catalog_products
+         WHERE status = 'published'
+           AND COALESCE(NULLIF(type_label, ''), product_type) IS NOT NULL
+           AND COALESCE(NULLIF(type_label, ''), product_type) <> ''
+         GROUP BY value
+         ORDER BY count DESC, value ASC
+         LIMIT 7
+      `), pool.query(`
+        SELECT p.*,
+               (array_agg(m.url ORDER BY m.sort_order, m.id)
+                 FILTER (WHERE m.url IS NOT NULL))[1] AS image_url
+          FROM catalog_products p
+          LEFT JOIN catalog_media m ON m.product_id = p.id
+         GROUP BY p.id
+         ORDER BY p.updated_at DESC, p.name ASC
+         LIMIT 5
+      `)]);
+      response.json({
+        ...summaryResult.rows[0],
+        categories: categoriesResult.rows,
+        recent_products: recentProductsResult.rows.map((row) => ({
+          ...serializeProduct(row),
+          imageUrl: row.image_url,
+        })),
+      });
     } catch (error) {
       next(error);
     }
@@ -281,7 +309,11 @@ export function createAdminRouter({ pool, config }) {
     try {
       const search = String(request.query.q || "").trim().slice(0, 120);
       const result = await pool.query(
-        `SELECT u.id, u.display_name, u.phone_e164, u.email, u.status, u.created_at,
+        `SELECT u.id, u.display_name, u.first_name, u.last_name,
+                COALESCE(u.phone_e164, u.contact_phone_e164) AS phone_e164,
+                u.phone_e164 AS login_phone_e164,
+                u.contact_phone_e164, u.email, u.birth_date, u.gender,
+                u.avatar_url, u.status, u.created_at,
                 MAX(ai.last_login_at) AS last_login_at,
                 COALESCE(array_agg(DISTINCT ai.provider) FILTER (WHERE ai.provider IS NOT NULL), '{}') AS providers
            FROM users u
@@ -300,31 +332,94 @@ export function createAdminRouter({ pool, config }) {
     }
   });
 
+  router.get("/customers/:id", async (request, response, next) => {
+    if (!CUSTOMER_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    if (!/^[0-9a-f-]{36}$/i.test(request.params.id)) {
+      response.status(404).json({ error: "customer_not_found" });
+      return;
+    }
+    try {
+      const result = await pool.query(
+        `SELECT u.id, u.display_name, u.first_name, u.last_name,
+                COALESCE(u.phone_e164, u.contact_phone_e164) AS phone_e164,
+                u.phone_e164 AS login_phone_e164, u.contact_phone_e164,
+                u.phone_verified_at, u.email, u.email_verified_at,
+                u.birth_date, u.gender, u.avatar_url, u.status,
+                u.created_at, u.updated_at
+           FROM users u
+          WHERE u.id = $1 AND u.deleted_at IS NULL
+          LIMIT 1`,
+        [request.params.id],
+      );
+      if (!result.rowCount) {
+        response.status(404).json({ error: "customer_not_found" });
+        return;
+      }
+      const identities = await pool.query(
+        `SELECT provider, provider_subject, created_at, last_login_at
+           FROM auth_identities
+          WHERE user_id = $1
+          ORDER BY created_at, provider`,
+        [request.params.id],
+      );
+      response.json({ customer: result.rows[0], identities: identities.rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.get("/products", async (request, response, next) => {
     try {
       const search = String(request.query.q || "").trim().slice(0, 120);
       const status = String(request.query.status || "");
-      const result = await pool.query(
+      const type = String(request.query.type || "").trim().slice(0, 120);
+      const sort = String(request.query.sort || "updated-desc");
+      const sortSql = {
+        "updated-desc": "p.updated_at DESC, p.name ASC",
+        "name-asc": "p.name ASC",
+        "name-desc": "p.name DESC",
+        "price-asc": "MIN(v.price_minor) FILTER (WHERE v.active) ASC NULLS LAST, p.name ASC",
+        "price-desc": "MIN(v.price_minor) FILTER (WHERE v.active) DESC NULLS LAST, p.name ASC",
+        "volume-asc": "MIN(v.volume_ml) FILTER (WHERE v.active) ASC NULLS LAST, p.name ASC",
+        "volume-desc": "MIN(v.volume_ml) FILTER (WHERE v.active) DESC NULLS LAST, p.name ASC",
+      }[sort] || "p.updated_at DESC, p.name ASC";
+      const [result, typeResult, totalResult] = await Promise.all([pool.query(
         `SELECT p.*,
                 COUNT(DISTINCT v.id)::INT AS variant_count,
                 MIN(v.price_minor) FILTER (WHERE v.active) AS min_price_minor,
+                MIN(v.volume_ml) FILTER (WHERE v.active) AS min_volume_ml,
                 (array_agg(m.url ORDER BY m.sort_order, m.id) FILTER (WHERE m.url IS NOT NULL))[1] AS image_url
            FROM catalog_products p
            LEFT JOIN catalog_variants v ON v.product_id = p.id
            LEFT JOIN catalog_media m ON m.product_id = p.id
           WHERE ($1 = '' OR p.name ILIKE '%' || $1 || '%' OR p.sku ILIKE '%' || $1 || '%')
             AND ($2 = '' OR p.status = $2)
+            AND ($3 = '' OR COALESCE(NULLIF(p.type_label, ''), p.product_type) = $3)
           GROUP BY p.id
-          ORDER BY p.updated_at DESC
+          ORDER BY ${sortSql}
           LIMIT 500`,
-        [search, status],
-      );
+        [search, status, type],
+      ), pool.query(
+        `SELECT COALESCE(NULLIF(type_label, ''), product_type) AS value,
+                COUNT(*)::INT AS product_count
+           FROM catalog_products
+          WHERE COALESCE(NULLIF(type_label, ''), product_type) IS NOT NULL
+            AND COALESCE(NULLIF(type_label, ''), product_type) <> ''
+          GROUP BY value
+          ORDER BY product_count DESC, value ASC`,
+      ), pool.query("SELECT COUNT(*)::INT AS product_count FROM catalog_products")]);
       response.json({ products: result.rows.map((row) => ({
         ...serializeProduct(row),
         variantCount: row.variant_count,
         minPrice: row.min_price_minor === null ? null : Number(row.min_price_minor) / 100,
+        minVolume: row.min_volume_ml === null ? null : Number(row.min_volume_ml),
         imageUrl: row.image_url,
-      })) });
+      })),
+      productTypes: typeResult.rows.map((row) => ({ value: row.value, count: row.product_count })),
+      totalProducts: totalResult.rows[0]?.product_count || 0 });
     } catch (error) {
       next(error);
     }

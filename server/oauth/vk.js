@@ -2,6 +2,37 @@ const AUTHORIZE_URL = "https://id.vk.ru/authorize";
 const TOKEN_URL = "https://id.vk.ru/oauth2/auth";
 const USER_INFO_URL = "https://id.vk.ru/oauth2/user_info";
 
+const cleanText = (value, max = 120) => String(value || "").trim().slice(0, max) || null;
+
+const normalizePhone = (value) => {
+  const phone = String(value || "").replace(/[^+\d]/g, "");
+  return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : null;
+};
+
+const normalizeBirthDate = (value) => {
+  const text = String(value || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text) || text.includes("0000") || text.includes("-00")) return null;
+  const date = new Date(`${text}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== text ? null : text;
+};
+
+const normalizeGender = (value) => {
+  if (value === 1 || String(value).toLowerCase() === "female") return "female";
+  if (value === 2 || String(value).toLowerCase() === "male") return "male";
+  return null;
+};
+
+const normalizeAvatar = (profile) => {
+  const value = String(profile.avatar || profile.avatar_200 || profile.photo_200 || "").trim();
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) ? value.slice(0, 2048) : null;
+  } catch {
+    return null;
+  }
+};
+
 export class VkOAuthError extends Error {
   constructor(code, message = code) {
     super(message);
@@ -89,20 +120,37 @@ export function normalizeVkProfile(profile) {
   if (!subject) throw new VkOAuthError("vk_profile_invalid");
 
   const email = String(profile.email || "").trim().toLowerCase();
-  const displayName = [profile.first_name, profile.last_name]
-    .map((value) => String(value || "").trim())
+  const firstName = cleanText(profile.first_name);
+  const lastName = cleanText(profile.last_name);
+  const displayName = [firstName, lastName]
     .filter(Boolean)
     .join(" ")
     .slice(0, 120) || null;
+  const phone = normalizePhone(profile.phone);
+  const birthDate = normalizeBirthDate(profile.birthday || profile.birth_date);
+  const gender = normalizeGender(profile.sex ?? profile.gender);
+  const avatarUrl = normalizeAvatar(profile);
 
   return {
     subject,
     displayName,
+    firstName,
+    lastName,
     email: email && email.length <= 320 ? email : null,
+    phone,
+    birthDate,
+    gender,
+    avatarUrl,
     profile: {
       id: subject,
       displayName,
+      firstName,
+      lastName,
       email: email && email.length <= 320 ? email : null,
+      phone,
+      birthDate,
+      gender,
+      avatarUrl,
     },
   };
 }

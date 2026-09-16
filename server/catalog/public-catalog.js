@@ -13,6 +13,10 @@ export function serializePublicCatalog(products, variants, media) {
     const productVariants = variantsByProduct.get(product.id) || [];
     const productMedia = mediaByProduct.get(product.id) || [];
     const image = productMedia[0]?.url || null;
+    const images = productMedia.map((row) => ({
+      url: row.url,
+      altText: row.alt_text || product.name,
+    }));
     const attributes = product.attributes || {};
 
     if (product.kind === "fragrance") {
@@ -23,7 +27,8 @@ export function serializePublicCatalog(products, variants, media) {
         name: product.name,
         title: fragranceTitle(product),
         image,
-        thumbnail: productMedia[1]?.url || image,
+        images,
+        thumbnail: image,
         notesRaw: product.description || attributes.notesRaw || "",
         variants: productVariants.map((variant) => ({
           sku: variant.sku,
@@ -47,6 +52,7 @@ export function serializePublicCatalog(products, variants, media) {
       volume: primaryVariant.name || attributes.volume || "",
       price: money(primaryVariant.price_minor),
       image,
+      images,
       variants: productVariants.map((variant) => ({
         sku: variant.sku,
         size: variant.volume_ml === null ? "" : String(variant.volume_ml),

@@ -66,13 +66,13 @@ export function buildSourceCatalog({ fragrances = [], products = [], prices = {}
       seoTitle: `${name} — купить в FLUIDE Atelier`,
       seoDescription: null,
       variants,
-      media: [fragrance.image, fragrance.thumbnail]
-        .filter(Boolean)
-        .map((url, index) => ({
-          url,
-          altText: index === 0 ? `Флакон ${name}` : `Миниатюра ${name}`,
-          sortOrder: index,
-        })),
+      // `thumbnail` is a generated storefront derivative of the main image,
+      // not a separate gallery photo managed by the CMS.
+      media: fragrance.image ? [{
+        url: fragrance.image,
+        altText: `Флакон ${name}`,
+        sortOrder: 0,
+      }] : [],
     });
   }
 
