@@ -81,6 +81,7 @@ export function loadConfig() {
       resendSeconds: readInteger("SMS_RESEND_SECONDS", 60, { min: 30, max: 600 }),
       dailyPerPhone: readInteger("SMS_DAILY_PER_PHONE", 5, { min: 1, max: 20 }),
       dailyPerIp: readInteger("SMS_DAILY_PER_IP", 30, { min: 5, max: 200 }),
+      dailyGlobal: readInteger("SMS_DAILY_GLOBAL", 100, { min: 10, max: 10000 }),
     }),
     allowedOrigins: Object.freeze([
       "https://fluide-atelier.ru",

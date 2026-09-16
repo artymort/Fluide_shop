@@ -289,13 +289,15 @@ export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch, s
       const daily = await pool.query(
         `SELECT
            COUNT(*) FILTER (WHERE phone_e164 = $1) AS phone_count,
-           COUNT(*) FILTER (WHERE ip_address = $2::INET) AS ip_count
+           COUNT(*) FILTER (WHERE ip_address = $2::INET) AS ip_count,
+           COUNT(*) AS global_count
          FROM otp_challenges
         WHERE created_at > NOW() - INTERVAL '24 hours'`,
         [phone, request.ip || null],
       );
       if (Number(daily.rows[0].phone_count) >= config.sms.dailyPerPhone
-        || Number(daily.rows[0].ip_count) >= config.sms.dailyPerIp) {
+        || Number(daily.rows[0].ip_count) >= config.sms.dailyPerIp
+        || Number(daily.rows[0].global_count) >= config.sms.dailyGlobal) {
         response.status(429).json({ error: "daily_limit_reached" });
         return;
       }
