@@ -218,7 +218,9 @@ fieldset{border:0;padding:0;margin:0}
 .auth-panel--phone input:focus{border-color:var(--ink)}
 .auth-panel--phone .auth-phone-button{background:var(--ink);color:#fff}
 #auth-phone-status{margin:14px 0 0;color:var(--muted);font-size:14px}
-.auth-inline-status,#auth-code-status{min-height:20px;margin:14px 0 0;color:var(--muted);font-size:14px;line-height:1.4}
+.auth-content{position:relative}
+.auth-inline-status{position:absolute;top:calc(100% + 14px);left:0;right:0;min-height:20px;margin:0;color:var(--muted);font-size:14px;line-height:1.4}
+#auth-code-status{min-height:20px;margin:14px 0 0;color:var(--muted);font-size:14px;line-height:1.4}
 .auth-inline-status.is-visible{padding:12px 14px;border:1px solid var(--line);background:#f7f5f2;color:var(--ink)}
 .auth-code-input{font-size:24px!important;font-variant-numeric:tabular-nums;letter-spacing:.24em;text-align:center}
 .auth-phone-button:disabled{border-color:#c5c8d0;background:#c5c8d0;color:#fff;cursor:not-allowed}
