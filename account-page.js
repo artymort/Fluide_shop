@@ -321,14 +321,10 @@ function initAccountPage(initialAccount) {
   renderCartPreview();
   renderCartDrawer();
 
-  fetch("data/fragrances.json", { cache: "no-cache" })
-    .then((response) => {
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return response.json();
-    })
-    .then((fragrances) => {
-      renderFavorites(fragrances);
-      renderSelectionRecommendations(fragrances);
+  window.FluideCatalogData.load()
+    .then((catalog) => {
+      renderFavorites(catalog.fragrances);
+      renderSelectionRecommendations(catalog.fragrances);
     })
     .catch(() => {
       renderFavorites([]);

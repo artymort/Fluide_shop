@@ -390,13 +390,9 @@ document.querySelector("[data-cookie-settings]").addEventListener("click", () =>
 
 document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeCart(); });
 
-fetch("data/fragrances.json", { cache: "no-store" })
-  .then((response) => {
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
-  })
-  .then((items) => {
-    fragrances = items.filter((item) => item && item.id);
+window.FluideCatalogData.load()
+  .then((catalog) => {
+    fragrances = catalog.fragrances.filter((item) => item && item.id);
     updateStatus();
   })
   .catch((error) => {

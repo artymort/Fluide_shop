@@ -52,7 +52,11 @@ const formatPriceMarkup=value=>`${new Intl.NumberFormat("ru-RU").format(value)}&
 const prettyTitle=value=>String(value||"").replace(/^\d+\s+/,"").toLocaleLowerCase("ru-RU").replace(/(^|[\s-])([a-zа-я\u0451])/giu,(match,space,letter)=>`${space}${letter.toLocaleUpperCase("ru-RU")}`);
 const isCatalogProduct=item=>item?.kind==="product";
 const favoriteKeyFor=item=>isCatalogProduct(item)?item.id:`fragrance-${item.id}`;
-const priceFor=(item,size=selectedSize)=>isCatalogProduct(item)?Number(item.price)||0:PRICE_BY_SIZE[size]?.[item.category]||PRICE_BY_SIZE["30"][item.category]||1990;
+const priceFor=(item,size=selectedSize)=>{
+  if(isCatalogProduct(item))return Number(item.price)||0;
+  const variant=Array.isArray(item?.variants)?item.variants.find(row=>String(row.size)===String(size)):null;
+  return Number(variant?.price)||PRICE_BY_SIZE[size]?.[item.category]||PRICE_BY_SIZE["30"][item.category]||1990;
+};
 const colorFor=item=>CARD_COLORS[(Number.parseInt(item.id,10)||0)%CARD_COLORS.length];
 const allNotes=item=>[...(item.notes?.top||[]),...(item.notes?.middle||[]),...(item.notes?.base||[]),...(item.notes?.main||[])];
 const reviewKey=()=>`fluide-reviews-${fragrance?.id||"unknown"}`;
@@ -452,11 +456,10 @@ document.querySelector("[data-cookie-settings]").addEventListener("click",()=>{c
 async function init(){
   renderCart();
   try{
-    const [fragrancesResponse,pricesResponse,productsResponse]=await Promise.all([fetch("data/fragrances.json"),fetch("data/prices.json"),fetch("data/products.json")]);
-    if(!fragrancesResponse.ok)throw new Error(`HTTP ${fragrancesResponse.status}`);
-    fragrances=(await fragrancesResponse.json()).filter(item=>item?.id);
-    if(productsResponse.ok){const products=await productsResponse.json();catalogProducts=(Array.isArray(products)?products:[]).filter(item=>item?.id&&item?.kind==="product")}
-    if(pricesResponse.ok){const prices=await pricesResponse.json();PRICE_BY_SIZE={...PRICE_BY_SIZE,...(prices.perfume||{})}}
+    const catalog=await window.FluideCatalogData.load();
+    fragrances=(catalog.fragrances||[]).filter(item=>item?.id);
+    catalogProducts=(catalog.products||[]).filter(item=>item?.id&&item?.kind==="product");
+    if(catalog.prices){PRICE_BY_SIZE={...PRICE_BY_SIZE,...(catalog.prices.perfume||{})}}
     const requested=new URLSearchParams(location.search).get("id")||"";
     fragrance=fragrances.find(item=>item.id===requested.padStart(3,"0"))||catalogProducts.find(item=>item.id===requested);
     if(!fragrance){renderError();return}

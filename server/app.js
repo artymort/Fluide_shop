@@ -2,6 +2,8 @@ import express from "express";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { createAuthRouter } from "./routes/auth.js";
+import { createAdminRouter } from "./routes/admin.js";
+import { createCatalogRouter } from "./routes/catalog.js";
 import { createHealthRouter } from "./routes/health.js";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -33,7 +35,9 @@ export function createApp({ pool, config }) {
   }));
 
   app.use("/api/health", createHealthRouter(pool));
+  app.use("/api/catalog", createCatalogRouter(pool));
   app.use("/api/auth", createAuthRouter({ pool, config }));
+  app.use("/api/admin", createAdminRouter({ pool, config }));
 
   app.use("/api", (_request, response) => {
     response.status(404).json({ error: "not_found" });

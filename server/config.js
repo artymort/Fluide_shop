@@ -64,6 +64,12 @@ export function loadConfig() {
       cookieName: nodeEnv === "production" ? "__Host-fluide_session" : "fluide_session",
       ttlDays: readInteger("SESSION_TTL_DAYS", 30, { min: 1, max: 365 }),
     }),
+    admin: Object.freeze({
+      cookieName: nodeEnv === "production" ? "__Host-fluide_admin" : "fluide_admin",
+      sessionTtlHours: readInteger("ADMIN_SESSION_TTL_HOURS", 12, { min: 1, max: 168 }),
+      mediaDirectory: readString("CMS_MEDIA_DIR", "media/uploads"),
+      maxUploadMb: readInteger("CMS_MAX_UPLOAD_MB", 12, { min: 1, max: 50 }),
+    }),
     yandex: Object.freeze({
       enabled: Boolean(yandexClientId && yandexClientSecret),
       clientId: yandexClientId,

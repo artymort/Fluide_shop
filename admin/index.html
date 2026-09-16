@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>FLUIDE CMS</title>
+  <link rel="icon" href="../icon_fluide.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css?v=1">
+  <script src="app.js?v=1" defer></script>
+</head>
+<body>
+  <section class="login-shell" id="login-view" hidden>
+    <form class="login-card" id="login-form">
+      <img src="../assets/brand/logo-blue.svg" alt="FLUIDE Atelier">
+      <div><span class="eyebrow">Система управления</span><h1>Вход в CMS</h1></div>
+      <label>Email<input name="email" type="email" autocomplete="username" required></label>
+      <label>Пароль<input name="password" type="password" autocomplete="current-password" minlength="12" required></label>
+      <p class="form-message" id="login-message" aria-live="polite"></p>
+      <button class="primary" type="submit">Войти</button>
+    </form>
+  </section>
+
+  <div class="cms" id="cms-view" hidden>
+    <aside class="sidebar">
+      <a class="cms-logo" href="#dashboard"><img src="../assets/brand/logo-white.svg" alt="FLUIDE Atelier"><span>CMS</span></a>
+      <nav aria-label="Разделы CMS">
+        <button class="nav-item is-active" data-section="dashboard">Обзор</button>
+        <button class="nav-item" data-section="catalog">Каталог</button>
+        <button class="nav-item" data-section="customers">Покупатели</button>
+        <button class="nav-item" data-section="staff">Сотрудники</button>
+        <button class="nav-item" data-section="orders" disabled>Заказы <small>следующий этап</small></button>
+        <button class="nav-item" data-section="content" disabled>Контент и блог <small>следующий этап</small></button>
+        <button class="nav-item" data-section="analytics" disabled>Аналитика <small>следующий этап</small></button>
+      </nav>
+      <div class="sidebar-footer"><span id="admin-name"></span><button id="change-password-button" type="button">Сменить пароль</button><button id="logout-button" type="button">Выйти</button></div>
+    </aside>
+
+    <main class="workspace">
+      <header class="mobile-head"><button id="menu-button" type="button" aria-label="Открыть меню">Меню</button><strong>FLUIDE CMS</strong></header>
+
+      <section class="view is-active" data-view="dashboard">
+        <div class="page-head"><div><span class="eyebrow">FLUIDE Atelier</span><h1>Обзор магазина</h1></div></div>
+        <div class="stats" id="dashboard-stats"></div>
+        <div class="notice"><strong>Товары из текущего сайта будут импортированы автоматически.</strong><p>Ароматы отмечаются как изготавливаемые после заказа. Срок подготовки — один день.</p></div>
+      </section>
+
+      <section class="view" data-view="catalog">
+        <div class="page-head">
+          <div><span class="eyebrow">Управление ассортиментом</span><h1>Каталог</h1></div>
+          <button class="primary" id="new-product-button" type="button">Добавить товар</button>
+        </div>
+        <div class="toolbar">
+          <input id="catalog-search" type="search" placeholder="Название или SKU">
+          <select id="catalog-status" aria-label="Статус"><option value="">Все статусы</option><option value="published">Опубликован</option><option value="draft">Черновик</option><option value="archived">Архив</option></select>
+          <a class="secondary" href="/api/admin/catalog.xlsx">Выгрузить Excel</a>
+          <label class="secondary file-button">Загрузить Excel<input id="catalog-import" type="file" accept=".xlsx" hidden></label>
+        </div>
+        <div class="import-result" id="import-result" hidden></div>
+        <div class="table-wrap"><table><thead><tr><th>Товар</th><th>SKU</th><th>Тип</th><th>Варианты</th><th>Цена</th><th>Статус</th></tr></thead><tbody id="catalog-rows"></tbody></table></div>
+      </section>
+
+      <section class="view" data-view="customers">
+        <div class="page-head"><div><span class="eyebrow">Аккаунты сайта</span><h1>Покупатели</h1></div></div>
+        <div class="toolbar"><input id="customer-search" type="search" placeholder="Имя, телефон или email"></div>
+        <div class="table-wrap"><table><thead><tr><th>Покупатель</th><th>Контакты</th><th>Вход</th><th>Регистрация</th><th>Последний вход</th></tr></thead><tbody id="customer-rows"></tbody></table></div>
+      </section>
+
+      <section class="view" data-view="staff">
+        <div class="page-head"><div><span class="eyebrow">Доступ к CMS</span><h1>Сотрудники</h1></div><button class="primary" id="new-staff-button" type="button">Добавить сотрудника</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Сотрудник</th><th>Роль</th><th>Статус</th><th>Последний вход</th><th>Создан</th></tr></thead><tbody id="staff-rows"></tbody></table></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="product-dialog">
+    <form method="dialog" class="dialog-head"><div><span class="eyebrow">Карточка товара</span><h2 id="product-dialog-title">Новый товар</h2></div><button value="cancel" aria-label="Закрыть">×</button></form>
+    <form id="product-form" class="product-form">
+      <input name="id" type="hidden">
+      <div class="form-grid">
+        <label class="wide">Название<input name="name" maxlength="240" required></label>
+        <label>SKU товара<input name="sku" pattern="[A-Za-z0-9._-]{2,100}" required></label>
+        <label>Статус<select name="status"><option value="draft">Черновик</option><option value="published">Опубликован</option><option value="archived">Архив</option></select></label>
+        <label>Тип товара<input name="productType" placeholder="fragrance"></label>
+        <label>Подпись типа<input name="typeLabel" placeholder="Парфюм"></label>
+        <label>Подготовка, дней<input name="leadTimeDays" type="number" min="0" max="365" value="1" required></label>
+        <label class="wide">Краткое описание<textarea name="shortDescription" rows="2"></textarea></label>
+        <label class="wide">Полное описание<textarea name="description" rows="5"></textarea></label>
+      </div>
+
+      <section class="form-section"><div class="section-title"><h3>Варианты и цены</h3><button class="text-button" id="add-variant-button" type="button">Добавить вариант</button></div><div id="variant-rows"></div></section>
+      <section class="form-section"><div class="section-title"><h3>Изображения</h3><label class="text-button">Загрузить<input id="product-image-upload" type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden></label></div><div id="media-rows"></div></section>
+      <section class="form-section"><h3>SEO</h3><div class="form-grid"><label class="wide">SEO title<input name="seoTitle" maxlength="240"></label><label class="wide">SEO description<textarea name="seoDescription" rows="3" maxlength="500"></textarea></label><label class="check"><input name="noindex" type="checkbox">Не индексировать страницу</label></div></section>
+      <p class="form-message" id="product-message" aria-live="polite"></p>
+      <footer class="dialog-actions"><button class="secondary" type="button" id="cancel-product">Отмена</button><button class="primary" type="submit">Сохранить</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="import-dialog">
+    <form method="dialog" class="dialog-head"><div><span class="eyebrow">Проверка Excel</span><h2>Импорт каталога</h2></div><button value="cancel">×</button></form>
+    <div class="import-preview" id="import-preview"></div>
+    <footer class="dialog-actions"><button class="secondary" id="cancel-import" type="button">Отмена</button><button class="primary" id="apply-import" type="button">Применить изменения</button></footer>
+  </dialog>
+
+  <dialog id="staff-dialog">
+    <form method="dialog" class="dialog-head"><div><span class="eyebrow">Доступ к CMS</span><h2>Новый сотрудник</h2></div><button value="cancel">×</button></form>
+    <form id="staff-form" class="product-form">
+      <div class="form-grid"><label>Имя<input name="displayName" maxlength="120" required></label><label>Email<input name="email" type="email" maxlength="320" required></label><label>Роль<select name="role"><option value="editor">Редактор каталога</option><option value="orders">Заказы и покупатели</option><option value="analyst">Аналитика</option><option value="admin">Администратор</option></select></label></div>
+      <div class="generated-password" id="staff-password" hidden></div>
+      <p class="form-message" id="staff-message"></p>
+      <footer class="dialog-actions"><button class="secondary" type="button" id="cancel-staff">Отмена</button><button class="primary" type="submit">Создать</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="password-dialog">
+    <form method="dialog" class="dialog-head"><div><span class="eyebrow">Безопасность</span><h2>Смена пароля</h2></div><button value="cancel">×</button></form>
+    <form id="password-form" class="product-form">
+      <div class="form-grid"><label class="wide">Текущий пароль<input name="currentPassword" type="password" autocomplete="current-password" required></label><label class="wide">Новый пароль<input name="newPassword" type="password" minlength="12" autocomplete="new-password" required></label><label class="wide">Повторите новый пароль<input name="confirmPassword" type="password" minlength="12" autocomplete="new-password" required></label></div>
+      <p class="form-message" id="password-message"></p>
+      <footer class="dialog-actions"><button class="secondary" type="button" id="cancel-password">Отмена</button><button class="primary" type="submit">Сохранить пароль</button></footer>
+    </form>
+  </dialog>
+</body>
+</html>

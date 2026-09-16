@@ -123,6 +123,13 @@ function prettyTitle(value){
 }
 
 function variantsFor(fragrance){
+  if(Array.isArray(fragrance.variants)&&fragrance.variants.length){
+    return fragrance.variants.map(variant=>({
+      size:String(variant.size||variant.volume||"").replace(/\D/g,""),
+      volume:variant.volume||`${variant.size} мл`,
+      price:Number(variant.price)||0
+    }));
+  }
   return ["30","50"].map(size=>({size,volume:`${size} мл`,price:PRICE_BY_SIZE[size]?.[fragrance.category] || 1990}));
 }
 
@@ -660,15 +667,11 @@ async function initCatalog(){
   renderCart();
   initializeFiltersFromUrl();
   try{
-    fragrances=await fetchJsonWithRetry("data/fragrances.json");
+    const catalog=await window.FluideCatalogData.load();
+    fragrances=catalog.fragrances;
+    catalogProducts=catalog.products;
     try{
-      catalogProducts=await fetchJsonWithRetry("data/products.json");
-    }catch(productError){
-      catalogProducts=[];
-      console.warn("Дополнительные категории временно недоступны",productError);
-    }
-    try{
-      const prices=await fetchJsonWithRetry("data/prices.json");
+      const prices=catalog.prices||{};
       PRICE_BY_SIZE={"30":{...PRICE_BY_SIZE["30"],...(prices.perfume?.["30"]||{})},"50":{...PRICE_BY_SIZE["50"],...(prices.perfume?.["50"]||{})}};
     }catch(priceError){
       console.warn("Используются резервные цены каталога",priceError);

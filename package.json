@@ -10,14 +10,22 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server/index.js",
     "migrate": "node --env-file-if-exists=.env server/scripts/migrate.js",
+    "catalog:import": "node --env-file-if-exists=.env server/scripts/import-catalog.js",
+    "admin:create": "node --env-file-if-exists=.env server/scripts/create-admin.js",
     "generate:sitemap": "node server/scripts/generate-sitemap.js",
-    "check": "node --check server/index.js && node --check server/app.js && node --check server/routes/auth.js && node --check server/oauth/yandex.js && node --check server/oauth/vk.js && node --check server/security/oauth-state.js && node --check server/security/phone-otp.js && node --check server/sms/sender.js && node --check server/scripts/migrate.js && node --check auth-session.js && node --check account-page.js",
+    "check": "node --check server/index.js && node --check server/app.js && node --check server/routes/auth.js && node --check server/routes/admin.js && node --check server/routes/catalog.js && node --check server/oauth/yandex.js && node --check server/oauth/vk.js && node --check server/security/oauth-state.js && node --check server/security/phone-otp.js && node --check server/security/admin-auth.js && node --check server/catalog/source-catalog.js && node --check server/catalog/public-catalog.js && node --check server/catalog/workbook.js && node --check server/sms/sender.js && node --check server/scripts/migrate.js && node --check server/scripts/import-catalog.js && node --check server/scripts/create-admin.js && node --check auth-session.js && node --check account-page.js && node --check catalog-data.js && node --check admin/app.js",
     "test": "node --test server/test/*.test.js"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
+    "file-type": "^22.1.0",
     "helmet": "^8.3.0",
+    "multer": "^2.4.0",
     "pg": "^8.23.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

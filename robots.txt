@@ -2,6 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /account.html
 Disallow: /api/
+Disallow: /admin/
 
 Clean-param: favorites&mode&view&gender&q&sort&section&category /catalog.html
 Clean-param: step&restart /selection.html
