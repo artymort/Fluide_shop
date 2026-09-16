@@ -1,11 +1,15 @@
 "use strict";
 
-const account = window.FluideAccount?.read();
-if (!account) {
-  window.location.replace("index.html?login=1");
-} else {
-  initAccountPage(account);
-}
+const accountReady = window.FluideAccount?.ready
+  || Promise.resolve(window.FluideAccount?.read());
+
+accountReady.then((account) => {
+  if (!account) {
+    window.location.replace("index.html?login=1");
+  } else if (!account.phoneRequired) {
+    initAccountPage(account);
+  }
+});
 
 function initAccountPage(initialAccount) {
   const readJson = (key, fallback) => {
@@ -331,7 +335,7 @@ function initAccountPage(initialAccount) {
       renderSelectionRecommendations([]);
     });
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     const loyaltyFilter = event.target.closest("[data-loyalty-filter]");
     if (loyaltyFilter) {
       renderLoyaltyHistory(loyaltyFilter.dataset.loyaltyFilter);
@@ -373,19 +377,29 @@ function initAccountPage(initialAccount) {
       renderCartDrawer();
     }
     if (event.target.closest("[data-account-logout]")) {
-      window.FluideAccount.clear();
+      await window.FluideAccount.clear();
       window.location.href = "index.html";
     }
   });
 
-  document.querySelector("#account-profile-form").addEventListener("submit", (event) => {
+  document.querySelector("#account-profile-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const updated = { ...window.FluideAccount.read(), name: String(data.get("name") || "").trim(), email: String(data.get("email") || "").trim() };
-    window.FluideAccount.save(updated);
-    renderAccountIdentity(updated);
-    document.querySelector("#account-form-status").textContent = "Изменения сохранены на этом устройстве.";
-    showToast("Профиль сохранен");
+    const status = document.querySelector("#account-form-status");
+    status.textContent = "Сохраняем…";
+    try {
+      const updated = await window.FluideAccount.updateProfile({
+        name: String(data.get("name") || "").trim(),
+        email: String(data.get("email") || "").trim(),
+      });
+      renderAccountIdentity(updated);
+      status.textContent = updated.source === "server"
+        ? "Изменения сохранены в вашем профиле."
+        : "Изменения сохранены на этом устройстве.";
+      showToast("Профиль сохранен");
+    } catch {
+      status.textContent = "Не удалось сохранить профиль. Проверьте email и попробуйте снова.";
+    }
   });
 
   document.addEventListener("keydown", (event) => {

@@ -25,3 +25,16 @@ npm start
 
 Продакшен-сайт обслуживает Nginx. API работает отдельным systemd-сервисом только
 на `127.0.0.1:3000`, а PostgreSQL принимает соединения только с localhost.
+
+## Яндекс ID
+
+Для входа через Яндекс в защищённом файле окружения должны быть заданы:
+
+```dotenv
+YANDEX_CLIENT_ID=...
+YANDEX_CLIENT_SECRET=...
+YANDEX_REDIRECT_URI=https://fluide-atelier.ru/api/auth/yandex/callback
+```
+
+Секрет нельзя добавлять в Git. OAuth-поток использует `state` и PKCE, а токены Яндекса не
+хранятся в браузере или PostgreSQL.

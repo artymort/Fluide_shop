@@ -21,9 +21,14 @@ const required = (name) => {
 export function loadConfig() {
   const nodeEnv = readString("NODE_ENV", "development");
   const sessionSecret = required("SESSION_SECRET");
+  const yandexClientId = readString("YANDEX_CLIENT_ID");
+  const yandexClientSecret = readString("YANDEX_CLIENT_SECRET");
 
   if (sessionSecret.length < 32) {
     throw new Error("SESSION_SECRET must contain at least 32 characters");
+  }
+  if (Boolean(yandexClientId) !== Boolean(yandexClientSecret)) {
+    throw new Error("YANDEX_CLIENT_ID and YANDEX_CLIENT_SECRET must be set together");
   }
 
   return Object.freeze({
@@ -41,8 +46,19 @@ export function loadConfig() {
     }),
     session: Object.freeze({
       secret: sessionSecret,
-      cookieName: "__Host-fluide_session",
+      cookieName: nodeEnv === "production" ? "__Host-fluide_session" : "fluide_session",
       ttlDays: readInteger("SESSION_TTL_DAYS", 30, { min: 1, max: 365 }),
+    }),
+    yandex: Object.freeze({
+      enabled: Boolean(yandexClientId && yandexClientSecret),
+      clientId: yandexClientId,
+      clientSecret: yandexClientSecret,
+      redirectUri: readString(
+        "YANDEX_REDIRECT_URI",
+        nodeEnv === "production"
+          ? "https://fluide-atelier.ru/api/auth/yandex/callback"
+          : "http://127.0.0.1:3000/api/auth/yandex/callback",
+      ),
     }),
     allowedOrigins: Object.freeze([
       "https://fluide-atelier.ru",

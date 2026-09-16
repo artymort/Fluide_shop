@@ -2,12 +2,13 @@
 
 (() => {
   const STORAGE_KEY = "fluide-account";
+  let currentAccount;
 
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
   })[char]);
 
-  function readAccount() {
+  function readLocalAccount() {
     try {
       const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       return value && typeof value === "object" && value.phone ? value : null;
@@ -16,15 +17,94 @@
     }
   }
 
+  function readAccount() {
+    return currentAccount ?? null;
+  }
+
   function saveAccount(account) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(account));
+    currentAccount = account;
+    if (account?.source !== "server") localStorage.setItem(STORAGE_KEY, JSON.stringify(account));
     updateHeaderAuth();
   }
 
-  function clearAccount() {
+  async function clearAccount() {
+    if (currentAccount?.source === "server") {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }).catch(() => {});
+    }
     localStorage.removeItem(STORAGE_KEY);
+    currentAccount = null;
     updateHeaderAuth();
   }
+
+  function serverAccount(user) {
+    const local = readLocalAccount();
+    return {
+      source: "server",
+      id: user.id,
+      name: user.displayName || "",
+      phone: formatPhone(String(user.phone || "").replace(/\D/g, "")) || user.phone || "",
+      phoneVerified: Boolean(user.phoneVerified),
+      phoneRequired: Boolean(user.phoneRequired),
+      email: user.email || "",
+      createdAt: user.createdAt || new Date().toISOString(),
+      loyalty: local?.loyalty || { balance: 300, welcomeBonus: 300, currencyRate: 1, awardedAt: new Date().toISOString() },
+    };
+  }
+
+  async function loadAccount() {
+    try {
+      const response = await fetch("/api/auth/session", {
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+      });
+      const payload = response.ok ? await response.json() : null;
+      currentAccount = payload?.authenticated ? serverAccount(payload.user) : readLocalAccount();
+    } catch {
+      currentAccount = readLocalAccount();
+    }
+    updateHeaderAuth();
+    return currentAccount;
+  }
+
+  async function updateProfile({ name, email }) {
+    if (currentAccount?.source !== "server") {
+      const updated = { ...currentAccount, name, email };
+      saveAccount(updated);
+      return updated;
+    }
+
+    const response = await fetch("/api/auth/profile", {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ displayName: name, email }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "profile_update_failed");
+    currentAccount = { ...serverAccount(payload.user), loyalty: currentAccount.loyalty };
+    updateHeaderAuth();
+    return currentAccount;
+  }
+
+  async function addRequiredPhone(phone) {
+    const digits = phoneDigits(phone);
+    const normalized = /^\d{8,15}$/.test(digits) ? `+${digits}` : "";
+    if (!normalized) throw new Error("invalid_phone");
+
+    const response = await fetch("/api/auth/phone", {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ phone: normalized }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "phone_update_failed");
+    currentAccount = { ...serverAccount(payload.user), loyalty: currentAccount?.loyalty };
+    updateHeaderAuth();
+    return currentAccount;
+  }
+
+  const ready = loadAccount();
 
   function phoneDigits(value) {
     let digits = String(value || "").replace(/\D/g, "");
@@ -58,7 +138,7 @@
       <div class="auth-divider"><span>или</span></div>
       <button class="auth-phone-button" type="button" data-auth-phone>По номеру телефона</button>
       <p class="auth-inline-status" role="status"></p>
-    </div><p class="auth-legal">Демо-режим: номер и данные профиля сохраняются только в этом браузере.</p></div>`;
+    </div><p class="auth-legal">При входе через Яндекс данные профиля сохраняются в защищённой базе FLUIDE.</p></div>`;
   }
 
   function renderPhone(body) {
@@ -75,6 +155,32 @@
       </form>
     </div><p class="auth-legal">Продолжая, вы соглашаетесь на локальную обработку данных в демонстрационной версии сайта.</p></div>`;
     requestAnimationFrame(() => body.querySelector("#auth-phone")?.focus());
+  }
+
+  function renderRequiredPhone(body) {
+    body.innerHTML = `<div class="auth-panel auth-panel--phone"><div class="auth-content">
+      <p class="auth-kicker">Завершение регистрации</p>
+      <h3 class="auth-title">Укажите телефон</h3>
+      <p class="auth-subtitle">Яндекс не передал номер. Он нужен для аккаунта FLUIDE.</p>
+      <form data-fluide-required-phone-form novalidate>
+        <label for="required-phone">Номер телефона</label>
+        <input id="required-phone" name="phone" type="tel" value="+7 " placeholder="+7 999 000-00-00" autocomplete="tel" inputmode="tel">
+        <button class="auth-phone-button" type="submit">Сохранить номер</button>
+        <p id="required-phone-status" role="status"></p>
+      </form>
+    </div><p class="auth-legal">До подключения SMS номер будет сохранён как неподтверждённый.</p></div>`;
+    requestAnimationFrame(() => body.querySelector("#required-phone")?.focus());
+  }
+
+  function openRequiredPhone() {
+    const host = authHost();
+    if (!host?.dialog) return;
+    const title = document.querySelector("#panel-title");
+    if (title) title.textContent = "Завершите регистрацию";
+    renderRequiredPhone(host.body);
+    if (!host.dialog.open) host.dialog.showModal();
+    document.body.classList.add("is-locked");
+    document.body.style.overflow = "hidden";
   }
 
   function renderCode(body, phone) {
@@ -156,6 +262,10 @@
       if (provider) {
         event.preventDefault();
         event.stopImmediatePropagation();
+        if (provider.dataset.authProvider === "Яндекс ID") {
+          window.location.assign("/api/auth/yandex/start");
+          return;
+        }
         const status = host.body.querySelector(".auth-inline-status");
         if (status) status.textContent = `${provider.dataset.authProvider} подключим после серверной авторизации.`;
       }
@@ -170,6 +280,22 @@
   });
 
   document.addEventListener("submit", (event) => {
+    const requiredPhoneForm = event.target.closest("[data-fluide-required-phone-form]");
+    if (requiredPhoneForm) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const status = requiredPhoneForm.querySelector("#required-phone-status");
+      status.textContent = "Сохраняем…";
+      addRequiredPhone(new FormData(requiredPhoneForm).get("phone"))
+        .then(() => { window.location.href = "/account.html"; })
+        .catch((error) => {
+          status.textContent = error.message === "phone_in_use"
+            ? "Этот номер уже используется в другом аккаунте."
+            : "Введите номер в международном формате.";
+        });
+      return;
+    }
+
     const phoneForm = event.target.closest("[data-fluide-phone-form]");
     if (phoneForm) {
       event.preventDefault();
@@ -215,17 +341,47 @@
       }
     }));
 
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("login") === "1" && !readAccount()) {
-      params.delete("login");
-      const query = params.toString();
-      const cleanUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
-      history.replaceState(null, "", cleanUrl);
-      requestAnimationFrame(openAuth);
-    }
+    ready.then(() => {
+      const params = new URLSearchParams(window.location.search);
+      const authError = params.get("auth_error");
+      if (currentAccount?.source === "server" && currentAccount.phoneRequired) {
+        requestAnimationFrame(openRequiredPhone);
+      } else if (authError) {
+        const messages = {
+          access_denied: "Вход через Яндекс был отменён.",
+          invalid_state: "Сессия входа устарела. Попробуйте ещё раз.",
+          account_conflict: "Этот email или телефон уже связан с другим аккаунтом.",
+        };
+        currentAccount = null;
+        openAuth();
+        const status = authHost()?.body.querySelector(".auth-inline-status");
+        if (status) status.textContent = messages[authError] || "Не удалось войти через Яндекс. Попробуйте ещё раз.";
+      } else if (params.get("login") === "1" && !readAccount()) {
+        requestAnimationFrame(openAuth);
+      }
+
+      if (params.has("login") || params.has("auth_error") || params.has("auth")) {
+        params.delete("login");
+        params.delete("auth_error");
+        params.delete("auth");
+        const query = params.toString();
+        const cleanUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+        history.replaceState(null, "", cleanUrl);
+      }
+    });
   }
 
-  window.FluideAccount = { read: readAccount, save: saveAccount, clear: clearAccount, open: openAuth, formatPhone };
+  window.FluideAccount = {
+    read: readAccount,
+    save: saveAccount,
+    clear: clearAccount,
+    open: openAuth,
+    format: formatPhone,
+    formatPhone,
+    ready,
+    addRequiredPhone,
+    updateProfile,
+  };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
   else init();
 })();
