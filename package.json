@@ -11,7 +11,7 @@
     "start": "node --env-file-if-exists=.env server/index.js",
     "migrate": "node --env-file-if-exists=.env server/scripts/migrate.js",
     "generate:sitemap": "node server/scripts/generate-sitemap.js",
-    "check": "node --check server/index.js && node --check server/app.js && node --check server/routes/auth.js && node --check server/oauth/yandex.js && node --check server/security/oauth-state.js && node --check server/scripts/migrate.js && node --check auth-session.js && node --check account-page.js",
+    "check": "node --check server/index.js && node --check server/app.js && node --check server/routes/auth.js && node --check server/oauth/yandex.js && node --check server/security/oauth-state.js && node --check server/security/phone-otp.js && node --check server/sms/sender.js && node --check server/scripts/migrate.js && node --check auth-session.js && node --check account-page.js",
     "test": "node --test server/test/*.test.js"
   },
   "dependencies": {

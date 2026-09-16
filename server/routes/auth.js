@@ -1,7 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { Router } from "express";
+import { rateLimit } from "express-rate-limit";
 import { buildYandexAuthorizeUrl, fetchYandexProfile, YandexOAuthError } from "../oauth/yandex.js";
 import { createOAuthState, readOAuthState } from "../security/oauth-state.js";
+import {
+  generateOtpCode,
+  hashOtpCode,
+  normalizeRussianPhone,
+  verifyOtpCode,
+} from "../security/phone-otp.js";
 import {
   clearSessionCookie,
   createSession,
@@ -9,6 +16,7 @@ import {
   readCookie,
   setSessionCookie,
 } from "../security/sessions.js";
+import { createSmsSender, SmsDeliveryError } from "../sms/sender.js";
 
 const yandexStateCookieName = (config) => (
   config.isProduction ? "__Host-fluide_yandex_oauth" : "fluide_yandex_oauth"
@@ -26,18 +34,18 @@ const serializeUser = (row) => ({
   displayName: row.display_name,
   phone: row.phone_e164,
   phoneVerified: Boolean(row.phone_verified_at),
-  phoneRequired: !row.phone_e164,
+  phoneRequired: false,
   email: row.email,
   createdAt: row.created_at,
 });
 
 const authErrorLocation = (code) => `/index.html?login=1&auth_error=${encodeURIComponent(code)}`;
 
-async function findSessionUser(pool, request, config) {
+async function findSessionUser(database, request, config) {
   const token = readCookie(request.get("cookie"), config.session.cookieName);
   if (!token) return null;
 
-  const result = await pool.query(
+  const result = await database.query(
     `SELECT u.id, u.display_name, u.phone_e164, u.phone_verified_at, u.email, u.created_at
        FROM sessions s
        JOIN users u ON u.id = s.user_id
@@ -73,14 +81,10 @@ async function signInWithYandex({ pool, config, request, profile }) {
                 email = CASE
                   WHEN email_verified_at IS NULL AND $3::TEXT IS NOT NULL THEN $3
                   ELSE email
-                END,
-                phone_e164 = CASE
-                  WHEN phone_verified_at IS NULL AND $4::TEXT IS NOT NULL THEN $4
-                  ELSE phone_e164
                 END
           WHERE id = $1
           RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
-        [existing.rows[0].id, profile.displayName, profile.email, profile.phone],
+        [existing.rows[0].id, profile.displayName, profile.email],
       );
       user = updated.rows[0];
       await client.query(
@@ -91,10 +95,10 @@ async function signInWithYandex({ pool, config, request, profile }) {
       );
     } else {
       const inserted = await client.query(
-        `INSERT INTO users (display_name, phone_e164, email)
-         VALUES ($1, $2, $3)
+        `INSERT INTO users (display_name, email)
+         VALUES ($1, $2)
          RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
-        [profile.displayName, profile.phone, profile.email],
+        [profile.displayName, profile.email],
       );
       user = inserted.rows[0];
       await client.query(
@@ -120,8 +124,58 @@ async function signInWithYandex({ pool, config, request, profile }) {
   }
 }
 
-export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch }) {
+async function findOrCreatePhoneUser({ client, phone }) {
+  const existing = await client.query(
+    `SELECT id, display_name, phone_e164, phone_verified_at, email, created_at
+       FROM users
+      WHERE phone_e164 = $1 AND status = 'active' AND deleted_at IS NULL
+      FOR UPDATE`,
+    [phone],
+  );
+  if (existing.rowCount) {
+    const verified = await client.query(
+      `UPDATE users
+          SET phone_verified_at = COALESCE(phone_verified_at, NOW())
+        WHERE id = $1
+        RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
+      [existing.rows[0].id],
+    );
+    return verified.rows[0];
+  }
+
+  const inserted = await client.query(
+    `INSERT INTO users (phone_e164, phone_verified_at)
+     VALUES ($1, NOW())
+     RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
+    [phone],
+  );
+  return inserted.rows[0];
+}
+
+export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch, sendOtpImpl }) {
   const router = Router();
+  const sendOtp = sendOtpImpl || createSmsSender({ config, fetchImpl });
+  const oauthStartLimit = rateLimit({
+    windowMs: 10 * 60_000,
+    limit: 20,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    handler: (_request, response) => response.status(429).json({ error: "too_many_requests" }),
+  });
+  const requestPhoneLimit = rateLimit({
+    windowMs: 10 * 60_000,
+    limit: 5,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    handler: (_request, response) => response.status(429).json({ error: "too_many_requests" }),
+  });
+  const verifyPhoneLimit = rateLimit({
+    windowMs: 10 * 60_000,
+    limit: 15,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    handler: (_request, response) => response.status(429).json({ error: "too_many_requests" }),
+  });
 
   router.get("/session", async (request, response, next) => {
     try {
@@ -141,7 +195,7 @@ export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch })
     }
   });
 
-  router.get("/yandex/start", (_request, response) => {
+  router.get("/yandex/start", oauthStartLimit, (_request, response) => {
     if (!config.yandex.enabled) {
       response.status(503).json({ error: "yandex_not_configured" });
       return;
@@ -187,9 +241,7 @@ export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch })
       });
       const { user, session } = await signInWithYandex({ pool, config, request, profile });
       setSessionCookie(response, config, session.token, session.expiresAt);
-      response.set("Cache-Control", "no-store").redirect(
-        user.phone_e164 ? "/account.html?auth=success" : "/account.html?auth=success&phone=required",
-      );
+      response.set("Cache-Control", "no-store").redirect("/account.html?auth=success");
     } catch (error) {
       if (error instanceof YandexOAuthError) {
         console.warn(`Yandex OAuth failed: ${error.code}`);
@@ -204,65 +256,199 @@ export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch })
     }
   });
 
-  router.patch("/phone", async (request, response, next) => {
+  router.post("/phone/request", requestPhoneLimit, async (request, response, next) => {
+    const phone = normalizeRussianPhone(request.body?.phone);
+    if (!phone) {
+      response.status(400).json({ error: "invalid_phone" });
+      return;
+    }
+    if (!config.sms.enabled) {
+      response.status(503).json({ error: "sms_not_configured" });
+      return;
+    }
+
     try {
-      const current = await findSessionUser(pool, request, config);
-      if (!current) {
-        response.status(401).json({ error: "not_authenticated" });
-        return;
-      }
-
-      const phone = String(request.body?.phone || "").replace(/[^+\d]/g, "");
-      if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
-        response.status(400).json({ error: "invalid_phone" });
-        return;
-      }
-
-      const result = await pool.query(
-        `UPDATE users
-            SET phone_e164 = COALESCE(phone_e164, $2)
-          WHERE id = $1 AND status = 'active' AND deleted_at IS NULL
-          RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
-        [current.id, phone],
+      const recent = await pool.query(
+        `SELECT EXTRACT(EPOCH FROM (created_at + ($2 * INTERVAL '1 second') - NOW()))::INT AS retry_after
+           FROM otp_challenges
+          WHERE phone_e164 = $1
+            AND consumed_at IS NULL
+            AND created_at > NOW() - ($2 * INTERVAL '1 second')
+          ORDER BY created_at DESC
+          LIMIT 1`,
+        [phone, config.sms.resendSeconds],
       );
-      response.set("Cache-Control", "no-store").json({ user: serializeUser(result.rows[0]) });
+      if (recent.rowCount) {
+        response.status(429).json({
+          error: "code_recently_sent",
+          retryAfter: Math.max(1, recent.rows[0].retry_after || config.sms.resendSeconds),
+        });
+        return;
+      }
+
+      const daily = await pool.query(
+        `SELECT
+           COUNT(*) FILTER (WHERE phone_e164 = $1) AS phone_count,
+           COUNT(*) FILTER (WHERE ip_address = $2::INET) AS ip_count
+         FROM otp_challenges
+        WHERE created_at > NOW() - INTERVAL '24 hours'`,
+        [phone, request.ip || null],
+      );
+      if (Number(daily.rows[0].phone_count) >= config.sms.dailyPerPhone
+        || Number(daily.rows[0].ip_count) >= config.sms.dailyPerIp) {
+        response.status(429).json({ error: "daily_limit_reached" });
+        return;
+      }
+
+      const challengeId = randomUUID();
+      const code = generateOtpCode();
+      const expiresAt = new Date(Date.now() + config.sms.codeTtlMinutes * 60_000);
+      const codeHash = hashOtpCode({
+        secret: config.session.secret,
+        challengeId,
+        phone,
+        code,
+      });
+      await pool.query(
+        `UPDATE otp_challenges
+            SET consumed_at = NOW()
+          WHERE phone_e164 = $1 AND consumed_at IS NULL`,
+        [phone],
+      );
+      await pool.query(
+        `INSERT INTO otp_challenges
+          (id, phone_e164, code_hash, expires_at, ip_address)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [challengeId, phone, codeHash, expiresAt, request.ip || null],
+      );
+
+      try {
+        await sendOtp({ phone, code, ipAddress: request.ip || null });
+      } catch (error) {
+        await pool.query("UPDATE otp_challenges SET consumed_at = NOW() WHERE id = $1", [challengeId]);
+        throw error;
+      }
+
+      const payload = {
+        challengeId,
+        expiresInSeconds: config.sms.codeTtlMinutes * 60,
+      };
+      if (!config.isProduction && config.sms.provider === "console") payload.developmentCode = code;
+      response.set("Cache-Control", "no-store").status(202).json(payload);
     } catch (error) {
-      if (error?.code === "23505") {
-        response.status(409).json({ error: "phone_in_use" });
+      if (error instanceof SmsDeliveryError) {
+        console.warn(`SMS delivery failed: ${error.code}`, error.details);
+        response.status(error.code === "sms_not_configured" ? 503 : 502).json({ error: error.code });
         return;
       }
       next(error);
     }
   });
 
-  router.patch("/phone", async (request, response, next) => {
+  router.post("/phone/verify", verifyPhoneLimit, async (request, response, next) => {
+    const challengeId = String(request.body?.challengeId || "");
+    const code = String(request.body?.code || "");
+    if (!/^[0-9a-f-]{36}$/i.test(challengeId) || !/^\d{6}$/.test(code)) {
+      response.status(400).json({ error: "invalid_code" });
+      return;
+    }
+
+    const client = await pool.connect();
     try {
-      const current = await findSessionUser(pool, request, config);
-      if (!current) {
-        response.status(401).json({ error: "not_authenticated" });
-        return;
-      }
-
-      const phone = String(request.body?.phone || "").replace(/[^+\d]/g, "");
-      if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
-        response.status(400).json({ error: "invalid_phone" });
-        return;
-      }
-
-      const result = await pool.query(
-        `UPDATE users
-            SET phone_e164 = COALESCE(phone_e164, $2)
-          WHERE id = $1 AND status = 'active' AND deleted_at IS NULL
-          RETURNING id, display_name, phone_e164, phone_verified_at, email, created_at`,
-        [current.id, phone],
+      await client.query("BEGIN");
+      const challengeResult = await client.query(
+        `SELECT id, phone_e164, code_hash, expires_at, attempts, consumed_at
+           FROM otp_challenges
+          WHERE id = $1
+          FOR UPDATE`,
+        [challengeId],
       );
-      response.set("Cache-Control", "no-store").json({ user: serializeUser(result.rows[0]) });
+      const challenge = challengeResult.rows[0];
+      if (!challenge || challenge.consumed_at || new Date(challenge.expires_at) <= new Date()
+        || challenge.attempts >= config.sms.maxAttempts) {
+        throw Object.assign(new Error("invalid_or_expired_code"), { code: "invalid_or_expired_code" });
+      }
+
+      const valid = verifyOtpCode({
+        secret: config.session.secret,
+        challengeId: challenge.id,
+        phone: challenge.phone_e164,
+        code,
+        expectedHash: challenge.code_hash,
+      });
+      if (!valid) {
+        await client.query(
+          `UPDATE otp_challenges
+              SET attempts = attempts + 1,
+                  consumed_at = CASE WHEN attempts + 1 >= $2 THEN NOW() ELSE consumed_at END
+            WHERE id = $1`,
+          [challenge.id, config.sms.maxAttempts],
+        );
+        await client.query("COMMIT");
+        response.status(400).json({ error: "invalid_code" });
+        return;
+      }
+
+      const user = await findOrCreatePhoneUser({ client, phone: challenge.phone_e164 });
+
+      const phoneIdentity = await client.query(
+        `SELECT user_id
+           FROM auth_identities
+          WHERE provider = 'phone' AND provider_subject = $1
+          FOR UPDATE`,
+        [challenge.phone_e164],
+      );
+      if (phoneIdentity.rowCount && phoneIdentity.rows[0].user_id !== user.id) {
+        throw Object.assign(new Error("phone_conflict"), { code: "phone_conflict" });
+      }
+      if (phoneIdentity.rowCount) {
+        await client.query(
+          `UPDATE auth_identities SET last_login_at = NOW()
+            WHERE provider = 'phone' AND provider_subject = $1`,
+          [challenge.phone_e164],
+        );
+      } else {
+        await client.query(
+          `INSERT INTO auth_identities (user_id, provider, provider_subject, profile, last_login_at)
+           VALUES ($1, 'phone', $2, '{}'::JSONB, NOW())`,
+          [user.id, challenge.phone_e164],
+        );
+      }
+
+      await client.query("UPDATE otp_challenges SET consumed_at = NOW() WHERE id = $1", [challenge.id]);
+      const existingToken = readCookie(request.get("cookie"), config.session.cookieName);
+      if (existingToken) {
+        await client.query(
+          "UPDATE sessions SET revoked_at = COALESCE(revoked_at, NOW()) WHERE token_hash = $1",
+          [hashSessionToken(existingToken)],
+        );
+      }
+      await client.query(
+        `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, details, ip_address)
+         VALUES ($1, 'auth.phone_verified', 'user', $1::TEXT, $2::JSONB, $3)`,
+        [user.id, JSON.stringify({ purpose: "login" }), request.ip || null],
+      );
+      const session = await createSession({ pool: client, config, userId: user.id, request });
+      await client.query("COMMIT");
+
+      setSessionCookie(response, config, session.token, session.expiresAt);
+      response.set("Cache-Control", "no-store").json({
+        authenticated: true,
+        user: serializeUser(user),
+      });
     } catch (error) {
-      if (error?.code === "23505") {
-        response.status(409).json({ error: "phone_in_use" });
+      await client.query("ROLLBACK").catch(() => {});
+      if (["invalid_or_expired_code", "invalid_code"].includes(error?.code)) {
+        response.status(400).json({ error: error.code });
+        return;
+      }
+      if (error?.code === "phone_conflict" || error?.code === "23505") {
+        response.status(409).json({ error: "phone_conflict" });
         return;
       }
       next(error);
+    } finally {
+      client.release();
     }
   });
 

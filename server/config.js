@@ -23,12 +23,23 @@ export function loadConfig() {
   const sessionSecret = required("SESSION_SECRET");
   const yandexClientId = readString("YANDEX_CLIENT_ID");
   const yandexClientSecret = readString("YANDEX_CLIENT_SECRET");
+  const smsProvider = readString("SMS_PROVIDER", nodeEnv === "production" ? "disabled" : "console").toLowerCase();
+  const smsRuApiKey = readString("SMS_RU_API_KEY");
 
   if (sessionSecret.length < 32) {
     throw new Error("SESSION_SECRET must contain at least 32 characters");
   }
   if (Boolean(yandexClientId) !== Boolean(yandexClientSecret)) {
     throw new Error("YANDEX_CLIENT_ID and YANDEX_CLIENT_SECRET must be set together");
+  }
+  if (!["disabled", "console", "smsru"].includes(smsProvider)) {
+    throw new Error("SMS_PROVIDER must be disabled, console, or smsru");
+  }
+  if (nodeEnv === "production" && smsProvider === "console") {
+    throw new Error("SMS_PROVIDER=console is forbidden in production");
+  }
+  if (smsProvider === "smsru" && !smsRuApiKey) {
+    throw new Error("SMS_RU_API_KEY is required when SMS_PROVIDER=smsru");
   }
 
   return Object.freeze({
@@ -59,6 +70,17 @@ export function loadConfig() {
           ? "https://fluide-atelier.ru/api/auth/yandex/callback"
           : "http://127.0.0.1:3000/api/auth/yandex/callback",
       ),
+    }),
+    sms: Object.freeze({
+      enabled: smsProvider === "console" || (smsProvider === "smsru" && Boolean(smsRuApiKey)),
+      provider: smsProvider,
+      apiKey: smsRuApiKey,
+      sender: readString("SMS_SENDER"),
+      codeTtlMinutes: readInteger("SMS_CODE_TTL_MINUTES", 10, { min: 2, max: 30 }),
+      maxAttempts: readInteger("SMS_CODE_MAX_ATTEMPTS", 5, { min: 3, max: 10 }),
+      resendSeconds: readInteger("SMS_RESEND_SECONDS", 60, { min: 30, max: 600 }),
+      dailyPerPhone: readInteger("SMS_DAILY_PER_PHONE", 5, { min: 1, max: 20 }),
+      dailyPerIp: readInteger("SMS_DAILY_PER_IP", 30, { min: 5, max: 200 }),
     }),
     allowedOrigins: Object.freeze([
       "https://fluide-atelier.ru",

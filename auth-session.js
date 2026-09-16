@@ -8,22 +8,12 @@
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
   })[char]);
 
-  function readLocalAccount() {
-    try {
-      const value = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      return value && typeof value === "object" && value.phone ? value : null;
-    } catch {
-      return null;
-    }
-  }
-
   function readAccount() {
     return currentAccount ?? null;
   }
 
   function saveAccount(account) {
     currentAccount = account;
-    if (account?.source !== "server") localStorage.setItem(STORAGE_KEY, JSON.stringify(account));
     updateHeaderAuth();
   }
 
@@ -37,7 +27,6 @@
   }
 
   function serverAccount(user) {
-    const local = readLocalAccount();
     return {
       source: "server",
       id: user.id,
@@ -47,7 +36,8 @@
       phoneRequired: Boolean(user.phoneRequired),
       email: user.email || "",
       createdAt: user.createdAt || new Date().toISOString(),
-      loyalty: local?.loyalty || { balance: 300, welcomeBonus: 300, currencyRate: 1, awardedAt: new Date().toISOString() },
+      loyalty: currentAccount?.loyalty
+        || { balance: 300, welcomeBonus: 300, currencyRate: 1, awardedAt: new Date().toISOString() },
     };
   }
 
@@ -58,19 +48,18 @@
         headers: { Accept: "application/json" },
       });
       const payload = response.ok ? await response.json() : null;
-      currentAccount = payload?.authenticated ? serverAccount(payload.user) : readLocalAccount();
+      currentAccount = payload?.authenticated ? serverAccount(payload.user) : null;
     } catch {
-      currentAccount = readLocalAccount();
+      currentAccount = null;
     }
+    localStorage.removeItem(STORAGE_KEY);
     updateHeaderAuth();
     return currentAccount;
   }
 
   async function updateProfile({ name, email }) {
     if (currentAccount?.source !== "server") {
-      const updated = { ...currentAccount, name, email };
-      saveAccount(updated);
-      return updated;
+      throw new Error("not_authenticated");
     }
 
     const response = await fetch("/api/auth/profile", {
@@ -86,20 +75,32 @@
     return currentAccount;
   }
 
-  async function addRequiredPhone(phone) {
+  async function requestPhoneCode(phone) {
     const digits = phoneDigits(phone);
-    const normalized = /^\d{8,15}$/.test(digits) ? `+${digits}` : "";
+    const normalized = /^7\d{10}$/.test(digits) ? `+${digits}` : "";
     if (!normalized) throw new Error("invalid_phone");
 
-    const response = await fetch("/api/auth/phone", {
-      method: "PATCH",
+    const response = await fetch("/api/auth/phone/request", {
+      method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ phone: normalized }),
     });
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(payload.error || "phone_update_failed");
-    currentAccount = { ...serverAccount(payload.user), loyalty: currentAccount?.loyalty };
+    if (!response.ok) throw Object.assign(new Error(payload.error || "phone_request_failed"), { payload });
+    return { ...payload, phone: formatPhone(digits) };
+  }
+
+  async function verifyPhoneCode({ challengeId, code }) {
+    const response = await fetch("/api/auth/phone/verify", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ challengeId, code }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "phone_verify_failed");
+    currentAccount = serverAccount(payload.user);
     updateHeaderAuth();
     return currentAccount;
   }
@@ -146,56 +147,30 @@
       <button class="auth-back" type="button" data-auth-back-main><span aria-hidden="true">←</span> Назад</button>
       <p class="auth-kicker">Вход по номеру телефона</p>
       <h3 class="auth-title">Введите номер</h3>
-      <p class="auth-subtitle">На следующем шаге введите любые шесть цифр. Настоящее SMS в прототипе не отправляется.</p>
+      <p class="auth-subtitle">Мы отправим одноразовый код подтверждения в SMS.</p>
       <form data-fluide-phone-form novalidate>
         <label for="auth-phone">Номер телефона</label>
         <input id="auth-phone" name="phone" type="tel" value="+7 " placeholder="+7 999 000-00-00" autocomplete="tel" inputmode="tel">
         <button class="auth-phone-button" type="submit">Получить код</button>
         <p id="auth-phone-status" role="status"></p>
       </form>
-    </div><p class="auth-legal">Продолжая, вы соглашаетесь на локальную обработку данных в демонстрационной версии сайта.</p></div>`;
+    </div><p class="auth-legal">Продолжая, вы подтверждаете принадлежность указанного номера телефона.</p></div>`;
     requestAnimationFrame(() => body.querySelector("#auth-phone")?.focus());
   }
 
-  function renderRequiredPhone(body) {
-    body.innerHTML = `<div class="auth-panel auth-panel--phone"><div class="auth-content">
-      <p class="auth-kicker">Завершение регистрации</p>
-      <h3 class="auth-title">Укажите телефон</h3>
-      <p class="auth-subtitle">Яндекс не передал номер. Он нужен для аккаунта FLUIDE.</p>
-      <form data-fluide-required-phone-form novalidate>
-        <label for="required-phone">Номер телефона</label>
-        <input id="required-phone" name="phone" type="tel" value="+7 " placeholder="+7 999 000-00-00" autocomplete="tel" inputmode="tel">
-        <button class="auth-phone-button" type="submit">Сохранить номер</button>
-        <p id="required-phone-status" role="status"></p>
-      </form>
-    </div><p class="auth-legal">До подключения SMS номер будет сохранён как неподтверждённый.</p></div>`;
-    requestAnimationFrame(() => body.querySelector("#required-phone")?.focus());
-  }
-
-  function openRequiredPhone() {
-    const host = authHost();
-    if (!host?.dialog) return;
-    const title = document.querySelector("#panel-title");
-    if (title) title.textContent = "Завершите регистрацию";
-    renderRequiredPhone(host.body);
-    if (!host.dialog.open) host.dialog.showModal();
-    document.body.classList.add("is-locked");
-    document.body.style.overflow = "hidden";
-  }
-
-  function renderCode(body, phone) {
+  function renderCode(body, { phone, challengeId, developmentCode = "" }) {
     body.innerHTML = `<div class="auth-panel auth-panel--phone auth-panel--code"><div class="auth-content">
       <button class="auth-back" type="button" data-auth-change-phone><span aria-hidden="true">←</span> Изменить номер</button>
       <p class="auth-kicker">Код подтверждения</p>
       <h3 class="auth-title">Введите код</h3>
-      <p class="auth-subtitle">Для прототипа подойдет любая комбинация из шести цифр.<br><strong>${escapeHtml(phone)}</strong></p>
-      <form data-fluide-code-form data-phone="${escapeHtml(phone)}" novalidate>
+      <p class="auth-subtitle">Код отправлен на номер<br><strong>${escapeHtml(phone)}</strong></p>
+      <form data-fluide-code-form data-challenge-id="${escapeHtml(challengeId)}" novalidate>
         <label for="auth-code">Шестизначный код</label>
         <input class="auth-code-input" id="auth-code" name="code" type="text" maxlength="6" placeholder="000000" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}">
         <button class="auth-phone-button" type="submit" disabled>Войти в кабинет</button>
-        <p id="auth-code-status" role="status">SMS не отправляется — введите любые 6 цифр.</p>
+        <p id="auth-code-status" role="status">${developmentCode ? `Код для локальной разработки: ${escapeHtml(developmentCode)}` : "Код действует 10 минут."}</p>
       </form>
-    </div><p class="auth-legal">После входа профиль останется доступен только на этом устройстве.</p></div>`;
+    </div><p class="auth-legal">Никому не сообщайте код подтверждения.</p></div>`;
     requestAnimationFrame(() => body.querySelector("#auth-code")?.focus());
   }
 
@@ -280,22 +255,6 @@
   });
 
   document.addEventListener("submit", (event) => {
-    const requiredPhoneForm = event.target.closest("[data-fluide-required-phone-form]");
-    if (requiredPhoneForm) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      const status = requiredPhoneForm.querySelector("#required-phone-status");
-      status.textContent = "Сохраняем…";
-      addRequiredPhone(new FormData(requiredPhoneForm).get("phone"))
-        .then(() => { window.location.href = "/account.html"; })
-        .catch((error) => {
-          status.textContent = error.message === "phone_in_use"
-            ? "Этот номер уже используется в другом аккаунте."
-            : "Введите номер в международном формате.";
-        });
-      return;
-    }
-
     const phoneForm = event.target.closest("[data-fluide-phone-form]");
     if (phoneForm) {
       event.preventDefault();
@@ -306,7 +265,23 @@
         phoneForm.querySelector("#auth-phone-status").textContent = "Введите российский номер из 10 цифр после +7.";
         return;
       }
-      renderCode(authHost().body, formatted);
+      const status = phoneForm.querySelector("#auth-phone-status");
+      const submitButton = phoneForm.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+      status.textContent = "Отправляем код…";
+      requestPhoneCode(formatted)
+        .then((challenge) => renderCode(authHost().body, challenge))
+        .catch((error) => {
+          submitButton.disabled = false;
+          const messages = {
+            code_recently_sent: "Код уже отправлен. Подождите немного перед повторной отправкой.",
+            too_many_requests: "Слишком много попыток. Попробуйте позднее.",
+            daily_limit_reached: "Дневной лимит отправки достигнут. Попробуйте завтра.",
+            sms_not_configured: "Отправка SMS пока не настроена.",
+            sms_delivery_failed: "Не удалось отправить SMS. Попробуйте позднее.",
+          };
+          status.textContent = messages[error.message] || "Не удалось отправить код.";
+        });
       return;
     }
 
@@ -319,17 +294,18 @@
       codeForm.querySelector("#auth-code-status").textContent = "Введите ровно шесть цифр.";
       return;
     }
-    const previous = readAccount();
-    const now = new Date().toISOString();
-    saveAccount({
-      phone: codeForm.dataset.phone,
-      name: previous?.name || "",
-      email: previous?.email || "",
-      createdAt: previous?.createdAt || now,
-      lastLoginAt: now,
-      loyalty: previous?.loyalty || { balance: 300, welcomeBonus: 300, currencyRate: 1, awardedAt: now },
-    });
-    window.location.href = "account.html";
+    const status = codeForm.querySelector("#auth-code-status");
+    const button = codeForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    status.textContent = "Проверяем код…";
+    verifyPhoneCode({ challengeId: codeForm.dataset.challengeId, code })
+      .then(() => { window.location.href = "/account.html"; })
+      .catch((error) => {
+        button.disabled = false;
+        status.textContent = ["invalid_code", "invalid_or_expired_code"].includes(error.message)
+          ? "Неверный или просроченный код."
+          : "Не удалось подтвердить номер. Попробуйте ещё раз.";
+      });
   }, true);
 
   function init() {
@@ -344,9 +320,7 @@
     ready.then(() => {
       const params = new URLSearchParams(window.location.search);
       const authError = params.get("auth_error");
-      if (currentAccount?.source === "server" && currentAccount.phoneRequired) {
-        requestAnimationFrame(openRequiredPhone);
-      } else if (authError) {
+      if (authError) {
         const messages = {
           access_denied: "Вход через Яндекс был отменён.",
           invalid_state: "Сессия входа устарела. Попробуйте ещё раз.",
@@ -379,7 +353,8 @@
     format: formatPhone,
     formatPhone,
     ready,
-    addRequiredPhone,
+    requestPhoneCode,
+    verifyPhoneCode,
     updateProfile,
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
