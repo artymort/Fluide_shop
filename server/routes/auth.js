@@ -141,8 +141,8 @@ async function signInWithProvider({ pool, config, request, provider, profile }) 
 
     await client.query(
       `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, details, ip_address)
-       VALUES ($1, 'auth.login', 'user', $1::TEXT, $2::JSONB, $3)`,
-      [user.id, JSON.stringify({ provider, eventId: randomUUID() }), request.ip || null],
+       VALUES ($1, 'auth.login', 'user', $2, $3::JSONB, $4)`,
+      [user.id, String(user.id), JSON.stringify({ provider, eventId: randomUUID() }), request.ip || null],
     );
     const session = await createSession({ pool: client, config, userId: user.id, request });
     await client.query("COMMIT");
@@ -540,8 +540,8 @@ export function createAuthRouter({ pool, config, fetchImpl = globalThis.fetch, s
       }
       await client.query(
         `INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, details, ip_address)
-         VALUES ($1, 'auth.phone_verified', 'user', $1::TEXT, $2::JSONB, $3)`,
-        [user.id, JSON.stringify({ purpose: "login" }), request.ip || null],
+         VALUES ($1, 'auth.phone_verified', 'user', $2, $3::JSONB, $4)`,
+        [user.id, String(user.id), JSON.stringify({ purpose: "login" }), request.ip || null],
       );
       const session = await createSession({ pool: client, config, userId: user.id, request });
       await client.query("COMMIT");
