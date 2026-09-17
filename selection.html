@@ -8,10 +8,13 @@
   <link rel="stylesheet" href="catalog-page.css?v=phone-notice-v2">
   <link rel="stylesheet" href="selection-page.css?v=header-unified-v1">
   <link rel="stylesheet" href="site-colors.css?v=neutral-text-v14">
+  <link rel="stylesheet" href="checkout.css?v=checkout-items-v1">
   <script src="selection-engine.js?v=selection-v1" defer></script>
   <script src="auth-session.js?v=vk-auth-v1" defer></script>
   <script src="catalog-data.js?v=postgres-v1" defer></script>
-  <script src="selection-page.js?v=postgres-v1" defer></script>
+  <script src="promotion.js?v=cart-footer-v2" defer></script>
+  <script src="selection-page.js?v=side-sheets-v2" defer></script>
+  <script src="checkout.js?v=checkout-items-v1" defer></script>
   <script src="analytics.js?v=analytics-v2" defer></script>
 </head>
 <body class="selection-page">
@@ -91,7 +94,7 @@
   </footer>
 
   <div class="drawer-backdrop"></div>
-  <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина"><div class="drawer-head"><h2>Корзина</h2><button class="drawer-close" type="button" aria-label="Закрыть корзину"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="cart-items"></div><div class="cart-footer" hidden><div><span>Итого</span><strong class="cart-total"></strong></div><button type="button">Оформить заказ</button></div></aside>
+  <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина"><div class="drawer-head"><h2>Корзина</h2><button class="drawer-close" type="button" aria-label="Закрыть корзину"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="cart-items"></div><div class="cart-footer" hidden><div><span>Итого</span><strong class="cart-total"></strong></div><button class="checkout-button" type="button">Оформить заказ</button></div></aside>
   <dialog class="info-dialog" id="info-dialog"><div class="dialog-head"><h2 class="info-title"></h2><button class="info-close" type="button" aria-label="Закрыть"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="info-content"></div></dialog>
   <dialog class="account-dialog" id="account-dialog"><div class="account-dialog-head"><h2>Личный кабинет</h2><button type="button" data-account-close aria-label="Закрыть"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="account-dialog-body" id="account-dialog-body"></div></dialog>
   <div class="cookie" hidden><p>Используем cookie для корзины<br>и анонимной статистики.</p><button type="button" data-cookie-accept>Хорошо</button></div>

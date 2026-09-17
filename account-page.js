@@ -150,7 +150,8 @@ function initAccountPage(initialAccount) {
   }
 
   function cartAmount() {
-    return cart.reduce((sum, item) => sum + (Number(item?.product?.price) || 0) * (Number(item?.quantity) || 0), 0);
+    return window.FluidePromotions?.calculate(cart).total
+      ?? cart.reduce((sum, item) => sum + (Number(item?.product?.price) || 0) * (Number(item?.quantity) || 0), 0);
   }
 
   function showToast(message) {
@@ -268,14 +269,18 @@ function initAccountPage(initialAccount) {
 
   function renderCartDrawer() {
     const detailed = cart.map((item, index) => ({ item, index })).filter(({ item }) => item?.product);
+    const promotion = window.FluidePromotions?.calculate(cart) || { total: cartAmount(), discount: 0, giftItemIds: [] };
     const items = document.querySelector(".cart-items");
     const footer = document.querySelector(".cart-footer");
-    footer.hidden = true;
-    items.innerHTML = detailed.length ? `${detailed.map(({ item, index }) => `<div class="cart-row">
+    footer.hidden = detailed.length === 0;
+    items.innerHTML = detailed.length ? `${window.FluidePromotions?.bannerMarkup() || ""}${detailed.map(({ item, index }) => `<div class="cart-row">
       <img src="${escapeHtml(item.product.image || "assets/brand/logo-blue.svg")}" alt="${escapeHtml(item.product.name || "Аромат FLUIDE")}">
-      <div><h3>${escapeHtml(item.product.name || "Аромат FLUIDE")}</h3><p>${money(Number(item.product.price) || 0)}</p><div class="cart-quantity"><button type="button" data-cart-index="${index}" data-cart-delta="-1" aria-label="Уменьшить количество"><svg><use href="assets/icons/lucide.svg#minus"></use></svg></button><span>${Number(item.quantity) || 1}</span><button type="button" data-cart-index="${index}" data-cart-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"></use></svg></button></div></div>
-      <button type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#trash-2"></use></svg></button>
-    </div>`).join("")}<div class="cart-total"><span>Итого</span><span>${money(cartAmount())}</span></div><p class="cart-note">Товары сохранены в корзине. Онлайн-оформление заказа пока не подключено.</p><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a>` : `<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
+      <div class="cart-row-copy"><h3>${escapeHtml(item.product.name || "Аромат FLUIDE")}</h3>${promotion.giftItemCounts?.[String(item.id)] ? `<span class="cart-gift-label">Подарок по акции 3+1</span>` : ""}</div>
+      <button type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#x"></use></svg></button>
+      <div class="cart-quantity"><button type="button" data-cart-index="${index}" data-cart-delta="-1" aria-label="Уменьшить количество" ${(Number(item.quantity)||1)<=1?"disabled":""}><svg><use href="assets/icons/lucide.svg#minus"></use></svg></button><span>${Number(item.quantity) || 1}</span><button type="button" data-cart-index="${index}" data-cart-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"></use></svg></button></div>
+      <div class="cart-row-total">${promotion.giftItemCounts?.[String(item.id)] ? `<del>${money((Number(item.product.price)||0)*(Number(item.quantity)||1))}</del><strong>${money((Number(item.product.price)||0)*((Number(item.quantity)||1)-promotion.giftItemCounts[String(item.id)]))}</strong>` : `<strong>${money((Number(item.product.price)||0)*(Number(item.quantity)||1))}</strong>`}</div>
+    </div>`).join("")}<a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a>${window.FluidePromotions?.totalsMarkup(promotion, money) || `<div class="cart-total"><span>Итого</span><span>${money(promotion.total)}</span></div>`}` : `<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
+    if(detailed.length) window.FluidePromotions?.setupCompactFooter(items, footer, promotion, money);
   }
 
   function openCart() {

@@ -48,6 +48,11 @@ const paymentStatusLabels = {
   failed: "Ошибка оплаты",
   cancelled: "Оплата отменена",
 };
+const deliveryMethodLabels = {
+  russian_post: "Почта России",
+  cdek: "СДЭК",
+  pickup: "Самовывоз",
+};
 const providerLabels = { yandex: "Яндекс ID", vk: "VK ID", phone: "Телефон" };
 const roleLabels = { owner: "Владелец", admin: "Администратор", editor: "Редактор", orders: "Заказы", analyst: "Аналитика" };
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
@@ -553,7 +558,7 @@ function orderDetailItem(label, value) {
 
 function formatDeliveryAddress(address = {}) {
   if (typeof address === "string") return address || "Не указан";
-  return [address.postalCode || address.postal_code, address.city, address.street, address.house, address.apartment]
+  return [address.postalCode || address.postal_code, address.city, address.address, address.street, address.house, address.apartment]
     .filter(Boolean)
     .join(", ") || "Не указан";
 }
@@ -614,7 +619,7 @@ function renderOrderDetail(order, items = [], payments = [], history = []) {
   deliveryTitle.textContent = "Доставка";
   delivery.append(
     deliveryTitle,
-    orderDetailItem("Способ", order.delivery_method),
+    orderDetailItem("Способ", deliveryMethodLabels[order.delivery_method] || order.delivery_method),
     orderDetailItem("Адрес", formatDeliveryAddress(order.delivery_address)),
   );
   info.append(buyer, delivery);

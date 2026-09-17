@@ -8,10 +8,13 @@
   <link rel="stylesheet" href="catalog-page.css?v=phone-notice-v2">
   <link rel="stylesheet" href="account-page.css?v=account-v55">
   <link rel="stylesheet" href="site-colors.css?v=neutral-text-v15">
+  <link rel="stylesheet" href="checkout.css?v=checkout-items-v1">
   <script src="auth-session.js?v=vk-auth-v1" defer></script>
   <script src="selection-engine.js?v=selection-v2" defer></script>
   <script src="catalog-data.js?v=postgres-v1" defer></script>
-  <script src="account-page.js?v=postgres-v1" defer></script>
+  <script src="promotion.js?v=cart-footer-v2" defer></script>
+  <script src="account-page.js?v=side-sheets-v2" defer></script>
+  <script src="checkout.js?v=checkout-items-v1" defer></script>
   <script src="analytics.js?v=analytics-v2" defer></script>
 </head>
 <body class="account-page">
@@ -193,7 +196,7 @@
   <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина">
     <div class="drawer-head"><h2>Корзина</h2><button class="drawer-close" type="button" aria-label="Закрыть корзину"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div>
     <div class="cart-items"></div>
-    <div class="cart-footer" hidden><div><span>Итого</span><strong class="cart-total"></strong></div><button type="button">Оформить заказ</button></div>
+    <div class="cart-footer" hidden><div><span>Итого</span><strong class="cart-total"></strong></div><button class="checkout-button" type="button">Оформить заказ</button></div>
   </aside>
   <div class="account-toast" id="account-toast" role="status" aria-live="polite"></div>
 </body>

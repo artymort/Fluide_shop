@@ -526,12 +526,13 @@ function addCatalogProduct(id){
 function renderCart(){
   const detailed=cart.map((item,index)=>({item,index,product:item.product||HOME_PRODUCT_SNAPSHOTS[item.id]||null})).filter(row=>row.product);
   const quantity=cart.reduce((sum,item)=>sum+(Number(item.quantity)||0),0);
-  const total=detailed.reduce((sum,row)=>sum+row.product.price*row.item.quantity,0);
+  const promotion=window.FluidePromotions?.calculate(cart)||{total:detailed.reduce((sum,row)=>sum+row.product.price*row.item.quantity,0),discount:0,giftItemIds:[]};
   cartCount.textContent=quantity||"";
   cartCount.hidden=quantity===0;
-  cartFooter.hidden=true;
-  cartTotal.innerHTML=formatPriceMarkup(total);
-  cartItems.innerHTML=detailed.length?`${detailed.map(({item,index,product})=>`<div class="cart-row"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div><h3>${escapeHtml(product.name)}</h3><p>${formatPriceMarkup(product.price)}</p><div class="cart-quantity"><button type="button" data-cart-index="${index}" data-cart-delta="-1" aria-label="Уменьшить количество"><svg><use href="assets/icons/lucide.svg#minus"></use></svg></button><span>${item.quantity}</span><button type="button" data-cart-index="${index}" data-cart-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"></use></svg></button></div></div><button type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить ${escapeHtml(product.name)}"><svg><use href="assets/icons/lucide.svg#trash-2"></use></svg></button></div>`).join("")}<div class="cart-total"><span>Итого</span><span>${formatPriceMarkup(total)}</span></div><p class="cart-note">Товары сохранены в корзине. Онлайн-оформление заказа пока не подключено.</p><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a>`:`<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
+  cartFooter.hidden=detailed.length===0;
+  cartTotal.innerHTML=formatPriceMarkup(promotion.total);
+  cartItems.innerHTML=detailed.length?`${window.FluidePromotions?.bannerMarkup()||""}${detailed.map(({item,index,product})=>`<div class="cart-row"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}"><div class="cart-row-copy"><h3>${escapeHtml(product.name)}</h3>${promotion.giftItemCounts?.[String(item.id)]?`<span class="cart-gift-label">Подарок по акции 3+1</span>`:""}</div><button type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить ${escapeHtml(product.name)}"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button><div class="cart-quantity"><button type="button" data-cart-index="${index}" data-cart-delta="-1" aria-label="Уменьшить количество" ${Number(item.quantity)<=1?"disabled":""}><svg><use href="assets/icons/lucide.svg#minus"></use></svg></button><span>${item.quantity}</span><button type="button" data-cart-index="${index}" data-cart-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"></use></svg></button></div><div class="cart-row-total">${promotion.giftItemCounts?.[String(item.id)]?`<del>${formatPriceMarkup(Number(product.price)*Number(item.quantity))}</del><strong>${formatPriceMarkup(Number(product.price)*(Number(item.quantity)-promotion.giftItemCounts[String(item.id)]))}</strong>`:`<strong>${formatPriceMarkup(Number(product.price)*Number(item.quantity))}</strong>`}</div></div>`).join("")}<a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a>${window.FluidePromotions?.totalsMarkup(promotion,formatPriceMarkup)||`<div class="cart-total"><span>Итого</span><span>${formatPriceMarkup(promotion.total)}</span></div>`}`:`<div class="cart-empty"><div class="cart-empty-content"><p>В корзине пока пусто</p><small>Добавьте аромат из коллекции</small><a class="cart-continue" href="catalog.html"><span>Продолжить выбор</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#move-right"></use></svg></a></div></div>`;
+  if(detailed.length)window.FluidePromotions?.setupCompactFooter(cartItems,cartFooter,promotion,formatPriceMarkup);
 }
 
 function openCart(){
@@ -544,9 +545,9 @@ function closeFilter(){filterPanel.classList.remove("is-open");filterPanel.setAt
 
 function openInfo(type){
   const content={
-    delivery:{title:"Доставка и оплата",html:"<p>Доставка по России. Условия, сроки и способы оплаты уточняются при оформлении заказа.</p><p>Онлайн-оформление пока не подключено.</p>"},
+    delivery:{title:"Доставка и оплата",html:"<p>Заказ можно оформить с доставкой по России или самовывозом во Владимире.</p><p>Стоимость доставки и способ оплаты менеджер подтвердит после оформления.</p>"},
     contacts:{title:"Связаться с FLUIDE",html:"<p>FLUIDE Atelier — парфюмерный бренд из Владимира.</p><p>Контакты и часы работы будут добавлены после подтверждения командой бренда.</p>"},
-    privacy:{title:"Персональные данные",html:"<p>Корзина, избранное и выбор cookie сохраняются локально в вашем браузере.</p><p>Полная политика обработки персональных данных будет добавлена перед запуском онлайн-заказов.</p>"}
+    privacy:{title:"Персональные данные",html:"<p>Корзина, избранное и выбор cookie сохраняются локально в вашем браузере.</p><p>Контакты и адрес из формы используются только для обработки и доставки заказа.</p>"}
   }[type];
   if(!content)return;
   infoTitle.textContent=content.title;
