@@ -232,12 +232,12 @@ document.querySelector(".announcement-prev")?.addEventListener("click",()=>showA
 document.querySelector(".announcement-next")?.addEventListener("click",()=>showAnnouncement(announcementIndex+1));
 
 const storyData = [
-  {title:"Cherry 33",text:"Сочная вишня, теплое дерево и мягкий шлейф новой композиции.",image:"assets/media/category-perfume-studio-v1.png",href:"catalog.html",label:"Смотреть аромат"},
-  {title:"Наборы 2+1",text:"Соберите три композиции и меняйте аромат вместе с настроением.",image:"assets/product-line/fragrance-hayati.png",href:"catalog.html",label:"Собрать набор",color:"#9fb6de"},
-  {title:"Подарки FLUIDE",text:"Готовые наборы, Discovery Set и сертификаты для личного подарка.",image:"assets/product-line/solid-perfume-matsukita.png",href:"#gifts",label:"Выбрать подарок",color:"#eab6a8"},
-  {title:"Мисты",text:"Легкий аромат для волос и тела — знакомое звучание в новом формате.",image:"assets/media/category-care-studio-v1.png",href:"catalog.html",label:"Перейти к мистам"},
-  {title:"Ароматы для дома",text:"Диффузоры, свечи и спреи, которые собирают пространство вокруг вас.",image:"assets/media/category-home-studio-v1.png",href:"catalog.html",label:"Смотреть коллекцию"},
-  {title:"Мастер-классы",text:"Встречаемся во Владимире, знакомимся с нотами и создаем аромат вместе.",image:"IMG_7434.PNG",href:"about.html",label:"Узнать подробнее"}
+  {title:"Cherry 33",text:"Сочная вишня, теплое дерево и мягкий шлейф новой композиции.",image:"assets/media/category-perfume-studio-v1.webp?v=1",href:"catalog.html",label:"Смотреть аромат"},
+  {title:"Наборы 2+1",text:"Соберите три композиции и меняйте аромат вместе с настроением.",image:"assets/product-line/fragrance-hayati.webp?v=1",href:"catalog.html",label:"Собрать набор",color:"#9fb6de"},
+  {title:"Подарки FLUIDE",text:"Готовые наборы, Discovery Set и сертификаты для личного подарка.",image:"assets/product-line/solid-perfume-matsukita.webp?v=1",href:"#gifts",label:"Выбрать подарок",color:"#eab6a8"},
+  {title:"Мисты",text:"Легкий аромат для волос и тела — знакомое звучание в новом формате.",image:"assets/media/category-care-studio-v1.webp?v=1",href:"catalog.html",label:"Перейти к мистам"},
+  {title:"Ароматы для дома",text:"Диффузоры, свечи и спреи, которые собирают пространство вокруг вас.",image:"assets/media/category-home-studio-v1.webp?v=1",href:"catalog.html",label:"Смотреть коллекцию"},
+  {title:"Мастер-классы",text:"Встречаемся во Владимире, знакомимся с нотами и создаем аромат вместе.",image:"IMG_7434.webp?v=1",href:"about.html",label:"Узнать подробнее"}
 ];
 const storyViewer = document.querySelector(".story-viewer");
 const storyContent = document.querySelector(".story-content");

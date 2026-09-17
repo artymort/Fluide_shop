@@ -110,12 +110,12 @@ window.addEventListener("scroll",()=>$(".header").classList.toggle("scrolled",sc
 const notices=["Доставка по России · бесплатно от 5 000 ₽","Три любимых аромата по цене двух","Откройте свой аромат с FLUIDE"];let notice=0;
 $$("[data-service]").forEach(b=>b.onclick=()=>{notice=(notice+Number(b.dataset.service)+notices.length)%notices.length;$("#service-message").textContent=notices[notice]});
 const stories=[
- ["Cherry 33","Спелая вишня, яркое начало и теплый след.","assets/media/fluide-editorial-stilllife-v1.jpg","catalog.html","Открыть коллекцию"],
- ["Три аромата. Ваш выбор.","Соберите личный набор по предложению 2+1.","assets/media/category-perfume-studio-v1.png","catalog.html","Выбрать ароматы"],
- ["Дарить чувства","Сертификаты и наборы для новых впечатлений.","assets/media/fluide-editorial-stilllife-v1.jpg","#gifts","О подарках"],
- ["Легкое прикосновение","Парфюмированные мисты для ежедневного ритуала.","assets/media/category-care-studio-v1.png","#contacts","Узнать больше"],
- ["Атмосфера дома","Теплый свет, любимое место и аромат Cashmere.","assets/media/category-home-studio-v1.png","#contacts","Узнать больше"],
- ["Встречаемся во Владимире","Знакомство с нотами и парфюмерные мастер-классы.","IMG_7434.PNG","about.html","О пространстве"]
+ ["Cherry 33","Спелая вишня, яркое начало и теплый след.","assets/media/fluide-editorial-stilllife-v1.webp?v=1","catalog.html","Открыть коллекцию"],
+ ["Три аромата. Ваш выбор.","Соберите личный набор по предложению 2+1.","assets/media/category-perfume-studio-v1.webp?v=1","catalog.html","Выбрать ароматы"],
+ ["Дарить чувства","Сертификаты и наборы для новых впечатлений.","assets/media/fluide-editorial-stilllife-v1.webp?v=1","#gifts","О подарках"],
+ ["Легкое прикосновение","Парфюмированные мисты для ежедневного ритуала.","assets/media/category-care-studio-v1.webp?v=1","#contacts","Узнать больше"],
+ ["Атмосфера дома","Теплый свет, любимое место и аромат Cashmere.","assets/media/category-home-studio-v1.webp?v=1","#contacts","Узнать больше"],
+ ["Встречаемся во Владимире","Знакомство с нотами и парфюмерные мастер-классы.","IMG_7434.webp?v=1","about.html","О пространстве"]
 ];
 let storyIndex=0,storyElapsed=0,storyLast=0,storyFrame=0,storyPaused=false;
 function showStory(index){if(index>=stories.length){$("#story").close();return}storyIndex=Math.max(0,index);storyElapsed=0;const [title,copy,image,url,cta]=stories[storyIndex];$("#story-body").innerHTML=`<img src="${image}" alt=""><div><h2>${title}</h2><p>${copy}</p><a class="pill light" href="${url}" data-close>${cta}</a></div>`;$(".story-progress").innerHTML=stories.map((_,i)=>`<span class="${i<storyIndex?"done":i===storyIndex?"current":""}"></span>`).join("");$("[data-story='"+storyIndex+"'] span").classList.add("seen");$(".story-back").disabled=storyIndex===0}

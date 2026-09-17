@@ -77,7 +77,7 @@ h1,h2,h3{font-weight:400!important}
 .hero h1 span{display:block;white-space:nowrap}
 .hero-text{max-width:520px;margin-top:28px;font-size:17px;line-height:1.55;color:var(--ink-2)}
 .hero-actions{display:flex;gap:12px;margin-top:34px;flex-wrap:wrap}
-.hero-stage{position:absolute;inset:0;background:url("assets/media/hero-shop-v2-4k.jpg") center/cover no-repeat;z-index:0}
+.hero-stage{position:absolute;inset:0;background:url("assets/media/hero-shop-v2-4k.webp?v=1") center/cover no-repeat;z-index:0}
 .hero-stage:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(244,240,230,.72) 0%,rgba(244,240,230,.32) 31%,rgba(244,240,230,0) 51%);pointer-events:none}
 
 .benefits{padding-block:28px;border-bottom:1px solid var(--line)}

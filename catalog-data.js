@@ -1,6 +1,6 @@
 (function exposeCatalogData(global) {
   async function fetchJson(url) {
-    const response = await fetch(url, { cache: "no-cache" });
+    const response = await fetch(url, { cache: "default" });
     if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
     return response.json();
   }

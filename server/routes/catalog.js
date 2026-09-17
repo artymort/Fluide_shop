@@ -22,7 +22,7 @@ export function createCatalogRouter(pool) {
         `),
       ]);
       const catalog = serializePublicCatalog(productsResult.rows, variantsResult.rows, mediaResult.rows);
-      response.set("Cache-Control", "public, no-cache");
+      response.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
       response.json({ ...catalog, generatedAt: new Date().toISOString() });
     } catch (error) {
       next(error);

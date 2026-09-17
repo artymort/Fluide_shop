@@ -63,7 +63,7 @@ fieldset{border:0;padding:0;margin:0}
 .mobile-nav{display:none}
 
 /* Full-width catalogue banner using the generated light-blue striped artwork. */
-.catalog-intro{min-height:250px;padding:0;background:#bfd2e8 url("assets/media/catalog-banner-blue-stripes-v1.png") center/cover no-repeat;color:var(--blue)}
+.catalog-intro{min-height:250px;padding:0;background:#bfd2e8 url("assets/media/catalog-banner-blue-stripes-v1.webp?v=1") center/cover no-repeat;color:var(--blue)}
 .catalog-intro-inner{display:flex;min-height:250px;align-items:center}
 .catalog-intro-grid{display:grid;width:100%;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:80px;align-items:start}
 .catalog-intro h1{color:var(--blue);font-size:clamp(42px,4vw,62px);font-weight:500;line-height:1.02;letter-spacing:-.045em}

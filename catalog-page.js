@@ -7,18 +7,18 @@ const SEASON_LABELS = {spring:"Весна",summer:"Лето",autumn:"Осень"
 const GENDER_LABELS = {женский:"Для нее",мужской:"Для него",унисекс:"Унисекс"};
 const FILTER_LABELS = {...OCCASION_LABELS,...SEASON_LABELS,женский:"Для нее",мужской:"Для него",унисекс:"Унисекс"};
 const HOME_PRODUCT_SNAPSHOTS = {
-  matsukita:{name:"Matsukita",price:1990,image:"assets/product-line/fragrance-matsukita-card.png"},
-  cashmere:{name:"Cashmere",price:1350,image:"assets/product-line/diffuser-cashmere.png"},
-  "devils-intrigue":{name:"Devils Intrigue",price:650,image:"assets/product-line/hair-spray-devils-intrigue.png"},
-  auto:{name:"Car Scent",price:300,image:"assets/product-line/car-fragrance.png"},
-  cherry:{name:"Cherry",price:1990,image:"assets/product-line/fragrance-cherry.png"},
-  hayati:{name:"Hayati",price:3490,image:"assets/product-line/fragrance-hayati.png"},
-  "musk-kashmir":{name:"Musk Kashmir",price:3490,image:"assets/product-line/fragrance-musk-kashmir.png"},
-  "sea-salt":{name:"Sea Salt",price:550,image:"assets/product-line/home-perfume-sea-salt.png"},
-  "matsukita-solid":{name:"Matsukita Solid",price:990,image:"assets/product-line/solid-perfume-matsukita.png"},
-  ballerina:{name:"Ballerina",price:890,image:"assets/product-line/candle-ballerina.png"},
-  "black-pepper":{name:"Black Pepper",price:3490,image:"assets/product-line/fragrance-black-pepper.png"},
-  white:{name:"White",price:1990,image:"assets/product-line/fragrance-white.png"}
+  matsukita:{name:"Matsukita",price:1990,image:"assets/product-line/fragrance-matsukita-card.webp?v=1"},
+  cashmere:{name:"Cashmere",price:1350,image:"assets/product-line/diffuser-cashmere.webp?v=1"},
+  "devils-intrigue":{name:"Devils Intrigue",price:650,image:"assets/product-line/hair-spray-devils-intrigue.webp?v=1"},
+  auto:{name:"Car Scent",price:300,image:"assets/product-line/car-fragrance.webp?v=1"},
+  cherry:{name:"Cherry",price:1990,image:"assets/product-line/fragrance-cherry.webp?v=1"},
+  hayati:{name:"Hayati",price:3490,image:"assets/product-line/fragrance-hayati.webp?v=1"},
+  "musk-kashmir":{name:"Musk Kashmir",price:3490,image:"assets/product-line/fragrance-musk-kashmir.webp?v=1"},
+  "sea-salt":{name:"Sea Salt",price:550,image:"assets/product-line/home-perfume-sea-salt.webp?v=1"},
+  "matsukita-solid":{name:"Matsukita Solid",price:990,image:"assets/product-line/solid-perfume-matsukita.webp?v=1"},
+  ballerina:{name:"Ballerina",price:890,image:"assets/product-line/candle-ballerina.webp?v=1"},
+  "black-pepper":{name:"Black Pepper",price:3490,image:"assets/product-line/fragrance-black-pepper.webp?v=1"},
+  white:{name:"White",price:1990,image:"assets/product-line/fragrance-white.webp?v=1"}
 };
 const CATALOG_SECTIONS = {
   all:null,
