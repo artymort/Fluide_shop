@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Каталог FLUIDE Atelier: парфюм, твердые духи, ароматы для дома, свечи и уход.">
   <title>Каталог FLUIDE Atelier</title>
-  <link rel="stylesheet" href="catalog-page.css?v=card-actions-v1">
+  <link rel="stylesheet" href="catalog-page.css?v=category-pills-v18">
   <link rel="stylesheet" href="site-colors.css?v=neutral-text-v14">
   <script src="selection-engine.js?v=selection-v1" defer></script>
   <script src="auth-session.js?v=vk-auth-v1" defer></script>
@@ -57,12 +57,30 @@
 
     <section class="catalog-shell shell" aria-labelledby="catalog-heading">
       <nav class="catalog-categories" aria-label="Категории товаров">
-        <button class="catalog-category is-active" type="button" data-catalog-section="all" aria-pressed="true"><span>Все товары</span><small data-section-count="all"></small></button>
-        <button class="catalog-category" type="button" data-catalog-section="perfume" aria-pressed="false"><span>Парфюм</span><small data-section-count="perfume"></small></button>
-        <button class="catalog-category" type="button" data-catalog-section="solid" aria-pressed="false"><span>Твердый парфюм</span><small data-section-count="solid"></small></button>
-        <button class="catalog-category" type="button" data-catalog-section="home" aria-pressed="false"><span>Для дома</span><small data-section-count="home"></small></button>
-        <button class="catalog-category" type="button" data-catalog-section="care" aria-pressed="false"><span>Уход</span><small data-section-count="care"></small></button>
-        <button class="catalog-category" type="button" data-catalog-section="car" aria-pressed="false"><span>Автопарфюм</span><small data-section-count="car"></small></button>
+        <button class="catalog-category is-active" type="button" data-catalog-section="all" aria-pressed="true">
+          <span class="catalog-category-visual" aria-hidden="true"><img src="assets/media/category-all-assortment-v2.png" alt=""></span>
+          <span class="catalog-category-copy"><span>Все товары</span><small data-section-count="all"></small></span>
+        </button>
+        <button class="catalog-category" type="button" data-catalog-section="perfume" aria-pressed="false">
+          <span class="catalog-category-visual" aria-hidden="true"><img src="assets/product-line/fragrance-hayati.png" alt=""></span>
+          <span class="catalog-category-copy"><span>Парфюм</span><small data-section-count="perfume"></small></span>
+        </button>
+        <button class="catalog-category" type="button" data-catalog-section="solid" aria-pressed="false">
+          <span class="catalog-category-visual" aria-hidden="true"><img src="images/products/solid-perfume-matsukita.webp" alt=""></span>
+          <span class="catalog-category-copy"><span>Твердый парфюм</span><small data-section-count="solid"></small></span>
+        </button>
+        <button class="catalog-category" type="button" data-catalog-section="home" aria-pressed="false">
+          <span class="catalog-category-visual" aria-hidden="true"><img src="images/products/diffuser-black-pepper.webp" alt=""></span>
+          <span class="catalog-category-copy"><span>Для дома</span><small data-section-count="home"></small></span>
+        </button>
+        <button class="catalog-category" type="button" data-catalog-section="care" aria-pressed="false">
+          <span class="catalog-category-visual" aria-hidden="true"><img src="images/products/body-cream-la-sultan.webp" alt=""></span>
+          <span class="catalog-category-copy"><span>Уход</span><small data-section-count="care"></small></span>
+        </button>
+        <button class="catalog-category" type="button" data-catalog-section="car" aria-pressed="false">
+          <span class="catalog-category-visual" aria-hidden="true"><img src="images/products/car-fragrance.webp" alt=""></span>
+          <span class="catalog-category-copy"><span>Автопарфюм</span><small data-section-count="car"></small></span>
+        </button>
       </nav>
       <div class="catalog-toolbar">
         <label class="catalog-search"><svg><use href="assets/icons/lucide.svg#search"></use></svg><span class="catalog-search-caption">Поиск по каталогу</span><input id="catalog-search" type="search" placeholder="Название, номер или категория" autocomplete="off"></label>

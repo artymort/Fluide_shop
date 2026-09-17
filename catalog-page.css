@@ -72,12 +72,21 @@ fieldset{border:0;padding:0;margin:0}
 .total-fragrances{font-size:14px;color:var(--blue)}
 
 .catalog-shell{padding-bottom:150px}
-.catalog-categories{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:32px;background:transparent}
+.catalog-categories{display:flex;gap:10px;margin-top:32px;padding-bottom:2px;overflow-x:auto;background:transparent;scrollbar-width:none;scroll-snap-type:x proximity}
+.catalog-categories::-webkit-scrollbar{display:none}
 .catalog-categories[hidden]{display:none!important}
-.catalog-category{display:flex;min-width:0;min-height:54px;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:14px;text-align:left;transition:background-color .18s,color .18s}
-.catalog-category:hover,.catalog-category:focus-visible{background:#edf2f8;outline:0}
-.catalog-category.is-active{background:var(--catalog-action,#373863);color:#fff}
-.catalog-category small{flex:0 0 auto;color:inherit;font-size:11px;opacity:.7}
+.catalog-category{display:flex;min-width:max-content;height:82px;flex:1 0 180px;align-items:center;gap:12px;padding:6px 18px 6px 6px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font-size:14px;text-align:left;scroll-snap-align:start;transition:border-color .18s,background-color .18s,color .18s,transform .18s}
+.catalog-category:hover,.catalog-category:focus-visible{border-color:#aeb2c4;background:#f7f8fb;outline:0}
+.catalog-category.is-active{border-color:var(--catalog-action,#373863);background:var(--catalog-action,#373863);color:#fff}
+.catalog-category-visual{position:relative;width:68px;height:68px;flex:0 0 68px;overflow:hidden;border-radius:50%;background:#f1f1ef}
+.catalog-category-visual>img{position:absolute;top:calc(6% + 5px);left:50%;width:auto;max-width:none;height:126%;padding:0;object-fit:initial;transform:translateX(-50%);transform-origin:top center}
+.catalog-category[data-catalog-section="all"] .catalog-category-visual>img{top:8%;width:138%;height:138%;object-fit:cover}
+.catalog-category[data-catalog-section="solid"] .catalog-category-visual>img{top:10%;height:100%}
+.catalog-category[data-catalog-section="home"] .catalog-category-visual>img{top:-60%;height:210%}
+.catalog-category[data-catalog-section="car"] .catalog-category-visual>img{top:auto;bottom:10%;height:126%}
+.catalog-category-copy{display:flex;min-width:0;flex:1;align-items:center;justify-content:space-between;gap:12px;font-size:14px;font-weight:500;line-height:1.2;white-space:nowrap}
+.catalog-category small{flex:0 0 auto;color:inherit;font-size:12px;font-weight:400;opacity:.65}
+.catalog-category.is-active small{opacity:.75}
 .catalog-toolbar{display:grid;grid-template-columns:minmax(300px,1fr) auto;align-items:center;gap:48px;min-height:94px;margin:0;padding:22px 0 18px;background:#fff;color:var(--ink)}
 .catalog-search{display:flex;width:min(560px,100%);height:50px;align-items:center;gap:12px;padding:0 16px;border:1px solid rgba(67,72,101,.46);background:#fff;color:var(--blue);transition:border-color .18s}
 .catalog-search:focus-within{border-color:var(--blue)}
@@ -230,7 +239,7 @@ fieldset{border:0;padding:0;margin:0}
 @keyframes account-dialog-in{from{transform:translateX(100%)}to{transform:translateX(0)}}
 
 @media(max-width:1280px){
-  .catalog-categories{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .catalog-category{flex-basis:190px}
   .catalog-layout{grid-template-columns:225px minmax(0,1fr);gap:6px}
   .fragrance-media{height:370px}
 }
@@ -257,7 +266,7 @@ fieldset{border:0;padding:0;margin:0}
   .catalog-header{height:70px}.mobile-nav{top:70px}
   .header-actions{gap:1px}.login-button{width:32px;min-height:36px;padding:0}.login-button span,.favorites-button{display:none}.header-icon,.menu-toggle{width:32px}.cart-count{right:-4px;top:-2px}
   .catalog-intro,.catalog-intro-inner{min-height:235px}.catalog-intro h1{font-size:38px}.catalog-intro-copy p{font-size:14px}
-  .catalog-shell{padding-bottom:90px}.catalog-categories{display:flex;gap:8px;margin-top:18px;overflow-x:auto;scrollbar-width:none}.catalog-categories::-webkit-scrollbar{display:none}.catalog-category{min-width:178px;min-height:50px;flex:0 0 178px;padding:9px 13px}.catalog-toolbar{grid-template-columns:1fr auto;gap:12px;padding-top:18px}.catalog-search{grid-column:1/-1;width:100%}.filter-toggle{height:46px;padding-left:0}.sort-control{width:auto;min-width:240px;height:46px;padding-left:14px;gap:10px}.sort-trigger{padding-right:14px}.sort-menu{right:-1px;width:calc(100% + 2px)}.active-filters{overflow:auto;flex-wrap:nowrap}.active-chip{white-space:nowrap}
+  .catalog-shell{padding-bottom:90px}.catalog-categories{gap:8px;margin-top:18px}.catalog-category{height:70px;min-width:max-content;flex:0 0 172px;padding:5px 14px 5px 5px}.catalog-category-visual{width:58px;height:58px;flex-basis:58px}.catalog-category-copy{font-size:14px}.catalog-category small{font-size:12px}.catalog-toolbar{grid-template-columns:1fr auto;gap:12px;padding-top:18px}.catalog-search{grid-column:1/-1;width:100%}.filter-toggle{height:46px;padding-left:0}.sort-control{width:auto;min-width:240px;height:46px;padding-left:14px;gap:10px}.sort-trigger{padding-right:14px}.sort-menu{right:-1px;width:calc(100% + 2px)}.active-filters{overflow:auto;flex-wrap:nowrap}.active-chip{white-space:nowrap}
   .results-heading{margin-bottom:20px}.results-heading h2{font-size:30px}.result-count{font-size:14px}
   .fragrance-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.fragrance-media{height:220px;padding:44px 16px 22px}.fragrance-media img{max-height:160px}.fragrance-badge{left:9px;top:9px;padding:6px 7px;font-size:8px}.favorite-toggle{right:5px;top:4px;width:32px;height:32px}.favorite-toggle svg{width:16px;height:16px}
   .fragrance-info{min-height:158px;padding:14px 12px 12px}.fragrance-title-row h3{font-size:15px}.fragrance-original{margin-top:7px;font-size:12px}.card-actions{padding-top:12px}.card-price{margin-bottom:10px;font-size:13px}.card-action-buttons{gap:7px}.details-button,.add-button{height:38px;padding:0 7px;font-size:12px}
