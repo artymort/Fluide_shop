@@ -66,7 +66,7 @@ const starMarkup=(filled=false)=>`<svg aria-hidden="true" class="${filled?"is-fi
 const ratingButtonsMarkup=(value=0,attribute="data-review-star")=>Array.from({length:5},(_,index)=>`<button type="button" ${attribute}="${index+1}" class="${index<value?"is-filled":""}" aria-label="${index+1} из 5">${starMarkup(index<value)}</button>`).join("");
 
 function productVisual(item,context="main"){
-  if(item.image)return `<img src="${escapeHtml(item.image)}" alt="${isCatalogProduct(item)?escapeHtml(item.title):`Флакон FLUIDE ${escapeHtml(prettyTitle(item.title))}`}">`;
+  if(item.image)return `<img src="${escapeHtml(item.image)}" alt="${isCatalogProduct(item)?escapeHtml(item.title):`Флакон FLUIDE ${escapeHtml(prettyTitle(item.title))}`}" loading="${context==="related"?"lazy":"eager"}" decoding="async">`;
   return `<div class="fragrance-placeholder ${context==="related"?"is-related":""}" role="img" aria-label="Изображение аромата готовится"><img src="assets/brand/logo-blue.svg" alt="" aria-hidden="true"><strong>№ ${escapeHtml(item.id)}</strong><span>Изображение готовится</span></div>`;
 }
 
@@ -82,10 +82,10 @@ function galleryMarkup(images,title){
   const hasGallery=images.length>1;
   return `<div class="product-gallery-stage">
     ${hasGallery?`<button class="gallery-arrow gallery-arrow--prev" type="button" data-gallery-step="-1" aria-label="Предыдущее изображение"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg></button>`:""}
-    <img class="product-main-image" data-gallery-main src="${escapeHtml(images[0])}" alt="${escapeHtml(title)}">
+    <img class="product-main-image" data-gallery-main src="${escapeHtml(images[0])}" alt="${escapeHtml(title)}" fetchpriority="high" decoding="async">
     ${hasGallery?`<button class="gallery-arrow gallery-arrow--next" type="button" data-gallery-step="1" aria-label="Следующее изображение"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></button>`:""}
   </div>
-  ${hasGallery?`<div class="product-thumbnails" aria-label="Фотографии товара"><button class="product-thumbnails-arrow product-thumbnails-arrow--prev" type="button" data-gallery-step="-1" aria-label="Предыдущее изображение в галерее"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg></button><div class="product-thumbnails-viewport"><div class="product-thumbnail-track">${images.map((image,index)=>`<button class="product-thumbnail ${index===0?"is-active":""}" type="button" data-gallery-index="${index}" style="background-image:url('${escapeHtml(image)}')" aria-label="${index===0?"Основное изображение":`Дополнительное изображение ${index}`}"><img src="${escapeHtml(image)}" alt=""></button>`).join("")}</div></div><button class="product-thumbnails-arrow product-thumbnails-arrow--next" type="button" data-gallery-step="1" aria-label="Следующее изображение в галерее"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></button></div>`:""}`;
+  ${hasGallery?`<div class="product-thumbnails" aria-label="Фотографии товара"><button class="product-thumbnails-arrow product-thumbnails-arrow--prev" type="button" data-gallery-step="-1" aria-label="Предыдущее изображение в галерее"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg></button><div class="product-thumbnails-viewport"><div class="product-thumbnail-track">${images.map((image,index)=>`<button class="product-thumbnail ${index===0?"is-active":""}" type="button" data-gallery-index="${index}" style="background-image:url('${escapeHtml(image)}')" aria-label="${index===0?"Основное изображение":`Дополнительное изображение ${index}`}"><img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async"></button>`).join("")}</div></div><button class="product-thumbnails-arrow product-thumbnails-arrow--next" type="button" data-gallery-step="1" aria-label="Следующее изображение в галерее"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-right"></use></svg></button></div>`:""}`;
 }
 
 function bindGallery(images){

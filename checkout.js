@@ -41,7 +41,7 @@
       const rowTotal = price * quantity;
       const paidTotal = price * Math.max(0, quantity - giftCount);
       return `<div class="checkout-product-row" data-cart-key="${escapeHtml(item.id)}">
-        <img src="${escapeHtml(item.product?.image || "assets/brand/logo-blue.svg")}" alt="">
+        <img src="${escapeHtml(item.product?.image || "assets/brand/logo-blue.svg")}" alt="" loading="lazy" decoding="async">
         <div class="checkout-product-copy"><strong>${escapeHtml(item.product?.name || "Товар FLUIDE")}</strong>${giftLabel}</div>
         <button class="checkout-product-remove" type="button" data-cart-action="remove" aria-label="Удалить ${escapeHtml(item.product?.name || "товар")}"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button>
         <div class="checkout-product-quantity"><button type="button" data-cart-action="decrease" aria-label="Уменьшить количество" ${quantity <= 1 ? "disabled" : ""}><svg><use href="assets/icons/lucide.svg#minus"></use></svg></button><span>${quantity}</span><button type="button" data-cart-action="increase" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"></use></svg></button></div>

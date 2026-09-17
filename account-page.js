@@ -2,6 +2,8 @@
 
 const accountReady = window.FluideAccount?.ready
   || Promise.resolve(window.FluideAccount?.read());
+const accountCatalogReady = window.FluideCatalogData?.load()
+  || Promise.reject(new Error("catalog_loader_unavailable"));
 
 accountReady.then((account) => {
   if (!account) {
@@ -246,7 +248,7 @@ function initAccountPage(initialAccount) {
     container.innerHTML = ranked.slice(0, 6).map((item) => {
       const title = String(item.title || item.name || "Аромат").replace(/^\d+\s*/, "");
       return `<a href="product.html?id=${encodeURIComponent(item.id)}">
-        <img src="${escapeHtml(item.thumbnail || item.image || "assets/brand/logo-blue.svg")}" alt="${escapeHtml(title)}">
+        <img src="${escapeHtml(item.thumbnail || item.image || "assets/brand/logo-blue.svg")}" alt="${escapeHtml(title)}" loading="lazy" decoding="async">
         <span>FLUIDE ${Number(item.id)}</span>
         <strong>${escapeHtml(title)}</strong>
       </a>`;
@@ -261,7 +263,7 @@ function initAccountPage(initialAccount) {
     if (title) title.textContent = cartUnits ? `${cartUnits} шт. · ${money(cartAmount())}` : "Пока пусто";
     if (!container) return;
     container.innerHTML = detailed.map((item) => `<div class="account-cart-item">
-      <img src="${escapeHtml(item.product.image || "assets/brand/logo-blue.svg")}" alt="">
+      <img src="${escapeHtml(item.product.image || "assets/brand/logo-blue.svg")}" alt="" loading="lazy" decoding="async">
       <div><strong>${escapeHtml(item.product.name || "Аромат FLUIDE")}</strong><span>${Number(item.quantity) || 1} шт. · ${money((Number(item.product.price) || 0) * (Number(item.quantity) || 1))}</span></div>
     </div>`).join("");
     if (!detailed.length) container.innerHTML = '<p class="account-card-copy">Добавленные ароматы появятся здесь.</p>';
@@ -274,7 +276,7 @@ function initAccountPage(initialAccount) {
     const footer = document.querySelector(".cart-footer");
     footer.hidden = detailed.length === 0;
     items.innerHTML = detailed.length ? `${window.FluidePromotions?.bannerMarkup() || ""}${detailed.map(({ item, index }) => `<div class="cart-row">
-      <img src="${escapeHtml(item.product.image || "assets/brand/logo-blue.svg")}" alt="${escapeHtml(item.product.name || "Аромат FLUIDE")}">
+      <img src="${escapeHtml(item.product.image || "assets/brand/logo-blue.svg")}" alt="${escapeHtml(item.product.name || "Аромат FLUIDE")}" loading="lazy" decoding="async">
       <div class="cart-row-copy"><h3>${escapeHtml(item.product.name || "Аромат FLUIDE")}</h3>${promotion.giftItemCounts?.[String(item.id)] ? `<span class="cart-gift-label">Подарок по акции 3+1</span>` : ""}</div>
       <button type="button" data-remove-cart="${escapeHtml(item.id)}" aria-label="Удалить товар"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#x"></use></svg></button>
       <div class="cart-quantity"><button type="button" data-cart-index="${index}" data-cart-delta="-1" aria-label="Уменьшить количество" ${(Number(item.quantity)||1)<=1?"disabled":""}><svg><use href="assets/icons/lucide.svg#minus"></use></svg></button><span>${Number(item.quantity) || 1}</span><button type="button" data-cart-index="${index}" data-cart-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"></use></svg></button></div>
@@ -313,7 +315,7 @@ function initAccountPage(initialAccount) {
     grid.innerHTML = items.map((item) => {
       const title = String(item.title || item.name || "Аромат").replace(/^\d+\s*/, "");
       return `<a class="account-fragrance" href="product.html?id=${encodeURIComponent(item.id)}">
-        <span class="account-fragrance-visual"><img src="${escapeHtml(item.image || "assets/brand/logo-blue.svg")}" alt="Флакон ${escapeHtml(title)}"></span>
+        <span class="account-fragrance-visual"><img src="${escapeHtml(item.image || "assets/brand/logo-blue.svg")}" alt="Флакон ${escapeHtml(title)}" loading="lazy" decoding="async"></span>
         <span class="account-fragrance-copy"><span>${escapeHtml(item.category || "Парфюм")}</span><h3>FLUIDE ${Number(item.id)} ${escapeHtml(title)}</h3><p>По мотивам ${escapeHtml(item.original || "авторской композиции")}</p></span>
       </a>`;
     }).join("");
@@ -326,7 +328,7 @@ function initAccountPage(initialAccount) {
   renderCartPreview();
   renderCartDrawer();
 
-  window.FluideCatalogData.load()
+  accountCatalogReady
     .then((catalog) => {
       renderFavorites(catalog.fragrances);
       renderSelectionRecommendations(catalog.fragrances);

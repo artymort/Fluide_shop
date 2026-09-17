@@ -1,0 +1,28 @@
+@supports (content-visibility: auto) {
+  .perf-defer,
+  .home-page #bestsellers,
+  .home-page #offers,
+  .home-page #finder,
+  .home-page #gifts,
+  .home-page #brand,
+  .home-page #voices,
+  .home-page #club,
+  .home-page > .footer,
+  .about-page-story,
+  .about-page-gallery,
+  .related-section,
+  .catalog-footer,
+  .loyalty-history {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 760px;
+  }
+
+  .catalog-card,
+  .related-card,
+  .account-order-card,
+  .account-fragrance,
+  .checkout-order-item {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 360px;
+  }
+}

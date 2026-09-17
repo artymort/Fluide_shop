@@ -147,7 +147,7 @@ function noteSummary(fragrance){
 function productVisual(fragrance,loading="lazy"){
   const title=prettyTitle(fragrance.title);
   if(fragrance.image){
-    return `<img src="${escapeHtml(fragrance.image)}" alt="Флакон FLUIDE ${escapeHtml(title)}" loading="${loading}">`;
+    return `<img src="${escapeHtml(fragrance.image)}" alt="Флакон FLUIDE ${escapeHtml(title)}" loading="${loading}" decoding="async">`;
   }
   return `<div class="fragrance-placeholder" role="img" aria-label="Изображение аромата FLUIDE ${escapeHtml(title)} готовится">
     <img src="assets/brand/logo-blue.svg" alt="" aria-hidden="true">
@@ -270,9 +270,10 @@ function currentFiltered(){
   return sorted;
 }
 
-function cardTemplate(fragrance){
+function cardTemplate(fragrance,index){
   const id = catalogItemKey(fragrance);
   const active = favorites.includes(id);
+  const imageLoading=index<4?"eager":"lazy";
   if(isCatalogProduct(fragrance)){
     const productMeta=[fragrance.typeLabel,fragrance.volume].filter(Boolean).join(" · ");
     const productHref=`product.html?id=${encodeURIComponent(fragrance.id)}`;
@@ -280,7 +281,7 @@ function cardTemplate(fragrance){
       <div class="fragrance-media-shell">
         <span class="fragrance-badge">${escapeHtml(fragrance.typeLabel)}</span>
         <a class="fragrance-media" href="${productHref}" aria-label="Открыть страницу товара ${escapeHtml(fragrance.title)}">
-          <img src="${escapeHtml(fragrance.image)}" alt="${escapeHtml(fragrance.title)}" loading="lazy">
+          <img src="${escapeHtml(fragrance.image)}" alt="${escapeHtml(fragrance.title)}" loading="${imageLoading}" decoding="async">
         </a>
         <button class="favorite-toggle ${active?"is-active":""}" type="button" data-favorite="${escapeHtml(id)}" aria-label="${active?"Удалить из избранного":"Добавить в избранное"}">
           <svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg>
@@ -299,7 +300,7 @@ function cardTemplate(fragrance){
     <div class="fragrance-media-shell">
       <span class="fragrance-badge">${escapeHtml(fragrance.isNew?"Новинка":fragrance.category)}</span>
       <a class="fragrance-media" href="product.html?id=${encodeURIComponent(fragrance.id)}" aria-label="Открыть страницу аромата ${escapeHtml(title)}">
-        ${productVisual(fragrance)}
+        ${productVisual(fragrance,imageLoading)}
       </a>
       <button class="favorite-toggle ${active?"is-active":""}" type="button" data-favorite="${escapeHtml(id)}" aria-label="${active?"Удалить из избранного":"Добавить в избранное"}">
         <svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg>

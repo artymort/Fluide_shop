@@ -33,7 +33,7 @@ function renderProducts(){
    <div class="product-visual">
     <span class="product-badge">${p.isNew?"Новинка":p.badge}</span>
     <button class="favorite ${favorites.includes(p.id)?"selected":""}" data-favorite="${p.id}" aria-label="В избранное: ${p.name}" aria-pressed="${favorites.includes(p.id)}"><svg><use href="#heart"/></svg></button>
-    <a class="product-image" href="${href(p)}"><img src="${p.image}" alt="${cardName}" loading="lazy"></a>
+    <a class="product-image" href="${href(p)}"><img src="${p.image}" alt="${cardName}" loading="lazy" decoding="async"></a>
    </div>
    <div class="product-copy">
     <h3 class="product-name"><a href="${href(p)}">${cardName}</a></h3>
@@ -51,7 +51,7 @@ function updateCart(){save("fluide-cart",cart);const quantity=cart.reduce((n,p)=
 function openSizeSelector(id){selectedProductId=id;openPanel("volume","Выберите объём")}
 function addToCart(id,size){const p=products.find(product=>product.id===id);if(!p)return;const variant=variantsFor(p).find(item=>item.size===size);if(!variant)return;const key=`${id}-${size}`;const snapshot={...p,name:`FLUIDE ${Number(p.id.replace("fragrance-",""))} ${p.name} · ${variant.volume}`,price:variant.price,volume:variant.volume,categoryLabel:`Парфюм · ${variant.volume}`};const row=cart.find(item=>item.id===key);if(row){row.quantity++;row.product=snapshot}else cart.push({id:key,quantity:1,product:snapshot});updateCart();toast(`${p.name}, ${variant.volume} — в корзине`)}
 function toggleFavorite(id){favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];save("fluide-favorites",favorites);renderProducts();if(panelMode==="favorites"&&$("#panel").open)renderPanel()}
-function resultRow(p){return `<a class="search-result" href="${href(p)}"><img src="${p.image}" alt=""><span>${escapeHtml(p.name)}</span><small>от ${money(minPrice(p))}</small></a>`}
+function resultRow(p){return `<a class="search-result" href="${href(p)}"><img src="${p.image}" alt="" loading="lazy" decoding="async"><span>${escapeHtml(p.name)}</span><small>от ${money(minPrice(p))}</small></a>`}
 function openPanel(mode,title){panelMode=mode;$("#panel-title").textContent=title||({login:"Личный кабинет",search:"Найти аромат",favorites:"Избранное",cart:"Корзина",menu:"FLUIDE"}[mode]||mode);renderPanel();if(!$("#panel").open)$("#panel").showModal();if(mode==="search")$("#home-search").focus()}
 function renderPanel(){
  const body=$("#panel-body");

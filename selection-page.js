@@ -276,7 +276,7 @@ function renderCart() {
   footer.hidden = detailed.length === 0;
   document.querySelector(".cart-total").innerHTML = formatPriceMarkup(promotion.total);
   items.innerHTML = detailed.length ? `${window.FluidePromotions?.bannerMarkup() || ""}${detailed.map(({ row, index }) => `<div class="cart-row">
-    <img src="${escapeHtml(row.product.image || "assets/brand/logo-blue.svg")}" alt="${escapeHtml(row.product.name)}">
+    <img src="${escapeHtml(row.product.image || "assets/brand/logo-blue.svg")}" alt="${escapeHtml(row.product.name)}" loading="lazy" decoding="async">
     <div class="cart-row-copy"><h3>${escapeHtml(row.product.name)}</h3>${promotion.giftItemCounts?.[String(row.id)] ? `<span class="cart-gift-label">Подарок по акции 3+1</span>` : ""}</div>
     <button type="button" data-remove-cart="${escapeHtml(row.id)}" aria-label="Удалить ${escapeHtml(row.product.name)}"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#x"></use></svg></button>
     <div class="cart-quantity"><button type="button" data-cart-index="${index}" data-cart-delta="-1" aria-label="Уменьшить количество" ${(Number(row.quantity)||1)<=1?"disabled":""}><svg><use href="assets/icons/lucide.svg#minus"></use></svg></button><span>${Number(row.quantity) || 1}</span><button type="button" data-cart-index="${index}" data-cart-delta="1" aria-label="Увеличить количество"><svg><use href="assets/icons/lucide.svg#plus"></use></svg></button></div>
