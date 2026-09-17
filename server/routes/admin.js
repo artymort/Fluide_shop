@@ -20,6 +20,10 @@ import { slugify } from "../catalog/source-catalog.js";
 
 const PRODUCT_EDIT_ROLES = new Set(["owner", "admin", "editor"]);
 const CUSTOMER_ROLES = new Set(["owner", "admin", "orders"]);
+const ORDER_ROLES = new Set(["owner", "admin", "orders"]);
+const ANALYTICS_ROLES = new Set(["owner", "admin", "analyst"]);
+const ORDER_STATUSES = new Set(["new", "confirmed", "assembling", "ready", "shipped", "delivered", "cancelled", "refunded"]);
+const PAYMENT_STATUSES = new Set(["unpaid", "pending", "paid", "partially_refunded", "refunded", "failed", "cancelled"]);
 const STAFF_MANAGE_ROLES = new Set(["owner", "admin"]);
 const STAFF_ROLES = new Set(["owner", "admin", "editor", "orders", "analyst"]);
 const PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
@@ -366,6 +370,263 @@ export function createAdminRouter({ pool, config }) {
         [request.params.id],
       );
       response.json({ customer: result.rows[0], identities: identities.rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/orders", async (request, response, next) => {
+    if (!ORDER_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    const search = String(request.query.q || "").trim().slice(0, 120);
+    const status = String(request.query.status || "");
+    const payment = String(request.query.payment || "");
+    if ((status && !ORDER_STATUSES.has(status)) || (payment && !PAYMENT_STATUSES.has(payment))) {
+      response.status(400).json({ error: "order_filter_invalid" });
+      return;
+    }
+    try {
+      const result = await pool.query(
+        `SELECT o.id, o.order_number, o.user_id, o.status, o.payment_status,
+                o.customer_name, o.customer_email, o.customer_phone_e164,
+                o.total_minor, o.currency, o.created_at, o.updated_at,
+                COUNT(oi.id)::INT AS item_count,
+                COALESCE((
+                  SELECT jsonb_agg(jsonb_build_object(
+                    'product_name', preview.product_name,
+                    'variant_name', preview.variant_name,
+                    'sku', preview.sku,
+                    'image_url', preview.image_url
+                  ) ORDER BY preview.created_at, preview.id)
+                    FROM (
+                      SELECT oi_preview.id, oi_preview.product_name, oi_preview.variant_name,
+                             oi_preview.sku, oi_preview.image_url, oi_preview.created_at
+                        FROM commerce_order_items oi_preview
+                       WHERE oi_preview.order_id = o.id
+                       ORDER BY oi_preview.created_at, oi_preview.id
+                       LIMIT 2
+                    ) preview
+                ), '[]'::JSONB) AS items_preview
+           FROM commerce_orders o
+           LEFT JOIN commerce_order_items oi ON oi.order_id = o.id
+          WHERE ($1 = '' OR o.order_number ILIKE '%' || $1 || '%'
+            OR o.customer_name ILIKE '%' || $1 || '%'
+            OR o.customer_email ILIKE '%' || $1 || '%'
+            OR o.customer_phone_e164 ILIKE '%' || $1 || '%')
+            AND ($2 = '' OR o.status = $2)
+            AND ($3 = '' OR o.payment_status = $3)
+          GROUP BY o.id
+          ORDER BY o.created_at DESC
+          LIMIT 300`,
+        [search, status, payment],
+      );
+      response.json({ orders: result.rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get("/orders/:id", async (request, response, next) => {
+    if (!ORDER_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    if (!/^[0-9a-f-]{36}$/i.test(request.params.id)) {
+      response.status(404).json({ error: "order_not_found" });
+      return;
+    }
+    try {
+      const [orderResult, itemsResult, paymentsResult, historyResult] = await Promise.all([
+        pool.query("SELECT * FROM commerce_orders WHERE id = $1 LIMIT 1", [request.params.id]),
+        pool.query(
+          `SELECT id, product_id, variant_id, product_name, variant_name, sku,
+                  image_url, quantity, unit_price_minor, total_price_minor, created_at
+             FROM commerce_order_items
+            WHERE order_id = $1
+            ORDER BY created_at, id`,
+          [request.params.id],
+        ),
+        pool.query(
+          `SELECT id, operation, status, provider, provider_transaction_id,
+                  amount_minor, currency, failure_reason, created_at, updated_at
+             FROM commerce_payments
+            WHERE order_id = $1
+            ORDER BY created_at DESC, id`,
+          [request.params.id],
+        ),
+        pool.query(
+          `SELECT h.id, h.status, h.comment, h.created_at,
+                  a.display_name AS admin_name
+             FROM commerce_order_status_history h
+             LEFT JOIN admin_users a ON a.id = h.admin_user_id
+            WHERE h.order_id = $1
+            ORDER BY h.created_at DESC, h.id DESC`,
+          [request.params.id],
+        ),
+      ]);
+      if (!orderResult.rowCount) {
+        response.status(404).json({ error: "order_not_found" });
+        return;
+      }
+      response.json({
+        order: orderResult.rows[0],
+        items: itemsResult.rows,
+        payments: paymentsResult.rows,
+        history: historyResult.rows,
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.patch("/orders/:id/status", async (request, response, next) => {
+    if (!ORDER_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    const status = String(request.body?.status || "");
+    if (!/^[0-9a-f-]{36}$/i.test(request.params.id) || !ORDER_STATUSES.has(status)) {
+      response.status(400).json({ error: "order_status_invalid" });
+      return;
+    }
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const result = await client.query(
+        `UPDATE commerce_orders
+            SET status = $2,
+                shipped_at = CASE WHEN $2 = 'shipped' THEN COALESCE(shipped_at, NOW()) ELSE shipped_at END,
+                delivered_at = CASE WHEN $2 = 'delivered' THEN COALESCE(delivered_at, NOW()) ELSE delivered_at END,
+                cancelled_at = CASE WHEN $2 = 'cancelled' THEN COALESCE(cancelled_at, NOW()) ELSE cancelled_at END
+          WHERE id = $1
+          RETURNING *`,
+        [request.params.id, status],
+      );
+      if (!result.rowCount) {
+        await client.query("ROLLBACK");
+        response.status(404).json({ error: "order_not_found" });
+        return;
+      }
+      await client.query(
+        `INSERT INTO commerce_order_status_history (order_id, status, admin_user_id)
+         VALUES ($1, $2, $3)`,
+        [request.params.id, status, request.admin.id],
+      );
+      await audit(client, request, "order.status_updated", "commerce_order", request.params.id, { status });
+      await client.query("COMMIT");
+      response.json({ order: result.rows[0] });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      next(error);
+    } finally {
+      client.release();
+    }
+  });
+
+  router.get("/analytics", async (request, response, next) => {
+    if (!ANALYTICS_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    const period = Number(request.query.period || 30);
+    if (![7, 30, 90].includes(period)) {
+      response.status(400).json({ error: "analytics_period_invalid" });
+      return;
+    }
+    try {
+      const [eventsResult, ordersResult, revenueResult, dailyResult, funnelResult, productsResult, sourcesResult] = await Promise.all([
+        pool.query(
+          `SELECT COUNT(*) FILTER (WHERE event_name = 'page_view')::INT AS page_views,
+                  COUNT(DISTINCT visitor_id) FILTER (WHERE event_name = 'page_view')::INT AS visitors,
+                  COUNT(*) FILTER (WHERE event_name = 'product_view')::INT AS product_views,
+                  COUNT(*) FILTER (WHERE event_name = 'add_to_cart')::INT AS add_to_cart
+             FROM analytics_events
+            WHERE occurred_at >= NOW() - ($1::INT * INTERVAL '1 day')`,
+          [period],
+        ),
+        pool.query(
+          `SELECT COUNT(*)::INT AS orders
+             FROM commerce_orders
+            WHERE created_at >= NOW() - ($1::INT * INTERVAL '1 day')
+              AND status NOT IN ('cancelled', 'refunded')`,
+          [period],
+        ),
+        pool.query(
+          `SELECT COALESCE(SUM(CASE WHEN operation = 'payment' THEN amount_minor ELSE -amount_minor END), 0)::BIGINT AS revenue_minor
+             FROM commerce_payments
+            WHERE status = 'succeeded'
+              AND created_at >= NOW() - ($1::INT * INTERVAL '1 day')`,
+          [period],
+        ),
+        pool.query(
+          `WITH days AS (
+             SELECT generate_series(CURRENT_DATE - ($1::INT - 1), CURRENT_DATE, INTERVAL '1 day')::DATE AS day
+           )
+           SELECT days.day,
+                  COUNT(e.id) FILTER (WHERE e.event_name = 'page_view')::INT AS page_views,
+                  COUNT(DISTINCT e.visitor_id) FILTER (WHERE e.event_name = 'page_view')::INT AS visitors
+             FROM days
+             LEFT JOIN analytics_events e ON e.occurred_at >= days.day
+              AND e.occurred_at < days.day + INTERVAL '1 day'
+            GROUP BY days.day
+            ORDER BY days.day`,
+          [period],
+        ),
+        pool.query(
+          `SELECT event_name, COUNT(*)::INT AS event_count
+             FROM analytics_events
+            WHERE occurred_at >= NOW() - ($1::INT * INTERVAL '1 day')
+              AND event_name IN ('product_view', 'add_to_cart', 'checkout_start')
+            GROUP BY event_name`,
+          [period],
+        ),
+        pool.query(
+          `SELECT product_key,
+                  COALESCE(MAX(NULLIF(metadata->>'productName', '')), product_key) AS product_name,
+                  COUNT(*) FILTER (WHERE event_name = 'product_view')::INT AS views,
+                  COUNT(*) FILTER (WHERE event_name = 'add_to_cart')::INT AS cart_adds
+             FROM analytics_events
+            WHERE occurred_at >= NOW() - ($1::INT * INTERVAL '1 day')
+              AND product_key IS NOT NULL
+              AND event_name IN ('product_view', 'add_to_cart')
+            GROUP BY product_key
+            ORDER BY views DESC, cart_adds DESC, product_key
+            LIMIT 8`,
+          [period],
+        ),
+        pool.query(
+          `SELECT COALESCE(NULLIF(referrer_host, ''), 'Прямые заходы') AS source,
+                  COUNT(*)::INT AS visits
+             FROM analytics_events
+            WHERE occurred_at >= NOW() - ($1::INT * INTERVAL '1 day')
+              AND event_name = 'page_view'
+            GROUP BY source
+            ORDER BY visits DESC, source
+            LIMIT 8`,
+          [period],
+        ),
+      ]);
+      const funnelCounts = Object.fromEntries(funnelResult.rows.map((row) => [row.event_name, row.event_count]));
+      const orders = ordersResult.rows[0]?.orders || 0;
+      response.json({
+        period,
+        summary: {
+          ...eventsResult.rows[0],
+          orders,
+          revenue_minor: revenueResult.rows[0]?.revenue_minor || 0,
+        },
+        daily: dailyResult.rows,
+        funnel: [
+          { key: "product_view", label: "Просмотр товара", value: funnelCounts.product_view || 0 },
+          { key: "add_to_cart", label: "Добавление в корзину", value: funnelCounts.add_to_cart || 0 },
+          { key: "checkout_start", label: "Начало оформления", value: funnelCounts.checkout_start || 0 },
+          { key: "purchase", label: "Заказ", value: orders },
+        ],
+        products: productsResult.rows,
+        sources: sourcesResult.rows,
+      });
     } catch (error) {
       next(error);
     }

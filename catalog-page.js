@@ -289,7 +289,7 @@ function cardTemplate(fragrance){
       <div class="fragrance-info">
         <div class="fragrance-title-row"><h3><a href="${productHref}">${escapeHtml(fragrance.title)}</a></h3></div>
         <p class="fragrance-original">${escapeHtml(productMeta||"Продукция FLUIDE Atelier")}</p>
-        <div class="card-actions"><strong class="card-price">${formatPriceMarkup(getPrice(fragrance))}</strong><button class="add-button" type="button" data-add-product="${escapeHtml(fragrance.id)}" aria-label="Добавить ${escapeHtml(fragrance.title)} в корзину">В корзину</button></div>
+        <div class="card-actions"><strong class="card-price">${formatPriceMarkup(getPrice(fragrance))}</strong><div class="card-action-buttons"><a class="details-button" href="${productHref}">Подробнее</a><button class="add-button" type="button" data-add-product="${escapeHtml(fragrance.id)}" data-analytics-add data-product-key="${escapeHtml(fragrance.id)}" aria-label="Добавить ${escapeHtml(fragrance.title)} в корзину">В корзину</button></div></div>
       </div>
     </article>`;
   }
@@ -309,7 +309,7 @@ function cardTemplate(fragrance){
       <div class="fragrance-title-row"><h3><a href="product.html?id=${encodeURIComponent(fragrance.id)}">${escapeHtml(cardName)}</a></h3></div>
       <p class="fragrance-original">По мотивам ${escapeHtml(fragrance.original)}</p>
       <p class="fragrance-notes">${escapeHtml(noteSummary(fragrance))}</p>
-      <div class="card-actions"><strong class="card-price">от ${formatPriceMarkup(getPrice(fragrance))}</strong><button class="add-button" type="button" data-add="${escapeHtml(fragrance.id)}" aria-label="Выбрать объем ${escapeHtml(title)}">Выбрать</button></div>
+      <div class="card-actions"><strong class="card-price">от ${formatPriceMarkup(getPrice(fragrance))}</strong><div class="card-action-buttons"><a class="details-button" href="product.html?id=${encodeURIComponent(fragrance.id)}">Подробнее</a><button class="add-button" type="button" data-add="${escapeHtml(fragrance.id)}" aria-label="Добавить ${escapeHtml(title)} в корзину">В корзину</button></div></div>
     </div>
   </article>`;
 }
@@ -496,7 +496,7 @@ function openVolumeSelector(id){
   selectedFragranceId=id;
   const title=prettyTitle(fragrance.title);
   const cardName=`FLUIDE ${Number(fragrance.id)} ${title}`;
-  volumeContent.innerHTML=`<div class="volume-product"><img src="${escapeHtml(fragrance.image||"assets/brand/logo-blue.svg")}" alt="${escapeHtml(cardName)}"><div><h3>${escapeHtml(cardName)}</h3><p>По мотивам ${escapeHtml(fragrance.original)}</p></div></div><p class="volume-label">Доступные объемы</p><div class="volume-options">${variantsFor(fragrance).map(variant=>`<button class="volume-option" type="button" data-volume="${variant.size}"><span><strong>${variant.volume}</strong><small>В наличии</small></span><b>${formatPriceMarkup(variant.price)}</b></button>`).join("")}</div>`;
+  volumeContent.innerHTML=`<div class="volume-product"><img src="${escapeHtml(fragrance.image||"assets/brand/logo-blue.svg")}" alt="${escapeHtml(cardName)}"><div><h3>${escapeHtml(cardName)}</h3><p>По мотивам ${escapeHtml(fragrance.original)}</p></div></div><p class="volume-label">Доступные объёмы</p><div class="volume-options">${variantsFor(fragrance).map(variant=>`<button class="volume-option" type="button" data-volume="${variant.size}" data-analytics-add data-product-key="${escapeHtml(fragrance.id)}"><span><strong>${variant.volume}</strong><small>В наличии</small></span><b>${formatPriceMarkup(variant.price)}</b></button>`).join("")}</div>`;
   volumeDialog.showModal();
 }
 

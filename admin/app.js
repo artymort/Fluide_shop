@@ -15,6 +15,10 @@ const elements = Object.fromEntries([
   "catalog-search", "catalog-status", "catalog-type", "catalog-sort", "catalog-rows",
   "customer-search", "customer-rows", "new-product-button", "product-dialog", "product-form",
   "customer-dialog", "customer-dialog-title", "customer-detail",
+  "order-search", "order-status", "order-payment", "order-rows",
+  "order-dialog", "order-dialog-title", "order-detail", "order-status-form",
+  "analytics-period", "analytics-stats", "analytics-chart", "analytics-funnel",
+  "analytics-products", "analytics-sources",
   "product-dialog-title", "product-message", "add-variant-button", "variant-rows",
   "primary-media-row", "gallery-media-rows",
   "product-main-image-upload", "product-image-upload", "cancel-product", "catalog-import", "import-dialog", "import-preview",
@@ -25,9 +29,31 @@ const elements = Object.fromEntries([
 ].map((id) => [id, document.getElementById(id)]));
 
 const statusLabels = { published: "Опубликован", draft: "Черновик", archived: "Архив" };
+const orderStatusLabels = {
+  new: "Новый",
+  confirmed: "Подтверждён",
+  assembling: "Собирается",
+  ready: "Готов к отправке",
+  shipped: "Отправлен",
+  delivered: "Доставлен",
+  cancelled: "Отменён",
+  refunded: "Возвращён",
+};
+const paymentStatusLabels = {
+  unpaid: "Не оплачен",
+  pending: "Ожидает оплаты",
+  paid: "Оплачен",
+  partially_refunded: "Частичный возврат",
+  refunded: "Возвращён",
+  failed: "Ошибка оплаты",
+  cancelled: "Оплата отменена",
+};
 const providerLabels = { yandex: "Яндекс ID", vk: "VK ID", phone: "Телефон" };
 const roleLabels = { owner: "Владелец", admin: "Администратор", editor: "Редактор", orders: "Заказы", analyst: "Аналитика" };
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
+const orderDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+});
 const priceFormatter = new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 });
 const dayFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "long" });
 
@@ -73,6 +99,12 @@ function formatDate(value) {
   return Number.isNaN(date.getTime()) ? "—" : dateFormatter.format(date);
 }
 
+function formatOrderDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : orderDateFormatter.format(date).replace(",", " ·");
+}
+
 function formatDay(value) {
   if (!value) return "Не указана";
   const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
@@ -96,6 +128,21 @@ function badge(status) {
   const node = document.createElement("span");
   node.className = `badge ${status}`;
   node.textContent = statusLabels[status] || status;
+  return node;
+}
+
+function formatMinor(value, currency = "RUB") {
+  const amount = Number(value || 0) / 100;
+  if (currency === "RUB") return priceFormatter.format(amount);
+  return new Intl.NumberFormat("ru-RU", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
+}
+
+function orderBadge(status, type = "order") {
+  const node = document.createElement("span");
+  node.className = `order-badge ${type}-status-${status}`;
+  node.textContent = type === "payment"
+    ? paymentStatusLabels[status] || status
+    : orderStatusLabels[status] || status;
   return node;
 }
 
@@ -392,6 +439,497 @@ async function openCustomer(id) {
   }
 }
 
+async function loadOrders() {
+  try {
+    const params = new URLSearchParams({
+      q: elements["order-search"].value.trim(),
+      status: elements["order-status"].value,
+      payment: elements["order-payment"].value,
+    });
+    const { orders } = await api(`/orders?${params}`);
+    if (!orders.length) {
+      const row = document.createElement("tr");
+      const cell = makeCell("Заказы не найдены", "empty-cell");
+      cell.colSpan = 6;
+      row.append(cell);
+      elements["order-rows"].replaceChildren(row);
+      return;
+    }
+    elements["order-rows"].replaceChildren(...orders.map((order) => {
+      const row = document.createElement("tr");
+      row.addEventListener("click", () => openOrder(order.id));
+
+      const numberCell = document.createElement("td");
+      const number = document.createElement("strong");
+      const created = document.createElement("span");
+      number.textContent = order.order_number;
+      created.className = "order-secondary";
+      created.textContent = formatOrderDate(order.created_at);
+      numberCell.append(number, created);
+
+      const compositionCell = document.createElement("td");
+      compositionCell.className = "order-composition-cell";
+      const composition = document.createElement("div");
+      composition.className = "order-composition";
+      const itemCount = Number(order.item_count || 0);
+      const previewItems = Array.isArray(order.items_preview)
+        ? order.items_preview
+        : Array.isArray(order.items) ? order.items.slice(0, 2) : [];
+      const shownItems = itemCount > 2 ? previewItems.slice(0, 1) : previewItems.slice(0, 2);
+      shownItems.forEach((item) => {
+        const itemRow = document.createElement("div");
+        itemRow.className = "order-composition-item";
+        const image = document.createElement("img");
+        image.src = item.image_url || "../assets/brand/logo-blue.svg";
+        image.alt = "";
+        const copy = document.createElement("span");
+        const itemName = document.createElement("strong");
+        const variant = document.createElement("small");
+        itemName.textContent = item.product_name || "Товар";
+        variant.textContent = [item.variant_name, item.sku].filter(Boolean).join(" · ");
+        copy.append(itemName, variant);
+        itemRow.append(image, copy);
+        composition.append(itemRow);
+      });
+      if (!shownItems.length) {
+        const empty = document.createElement("span");
+        empty.className = "order-secondary";
+        empty.textContent = `${itemCount} ${itemCount === 1 ? "позиция" : itemCount < 5 ? "позиции" : "позиций"}`;
+        composition.append(empty);
+      } else if (itemCount > shownItems.length) {
+        const more = document.createElement("span");
+        more.className = "order-composition-more";
+        const remaining = itemCount - shownItems.length;
+        more.textContent = `+ ещё ${remaining} ${remaining === 1 ? "позиция" : remaining < 5 ? "позиции" : "позиций"}`;
+        composition.append(more);
+      }
+      compositionCell.append(composition);
+
+      const customerCell = document.createElement("td");
+      const customer = document.createElement("strong");
+      const contact = document.createElement("span");
+      customer.textContent = order.customer_name || "Без имени";
+      contact.className = "order-secondary";
+      contact.textContent = order.customer_phone_e164 || order.customer_email || "—";
+      customerCell.append(customer, contact);
+
+      const paymentCell = document.createElement("td");
+      paymentCell.append(orderBadge(order.payment_status, "payment"));
+      const statusCell = document.createElement("td");
+      statusCell.append(orderBadge(order.status));
+      row.append(
+        numberCell,
+        compositionCell,
+        customerCell,
+        paymentCell,
+        makeCell(formatMinor(order.total_minor, order.currency)),
+        statusCell,
+      );
+      return row;
+    }));
+  } catch (error) {
+    if (error.status === 403) {
+      const row = document.createElement("tr");
+      const cell = makeCell("У вашей роли нет доступа к заказам", "empty-cell");
+      cell.colSpan = 6;
+      row.append(cell);
+      elements["order-rows"].replaceChildren(row);
+      return;
+    }
+    throw error;
+  }
+}
+
+function orderDetailItem(label, value) {
+  const item = document.createElement("div");
+  item.className = "order-info-item";
+  const caption = document.createElement("span");
+  const content = document.createElement("strong");
+  caption.textContent = label;
+  content.textContent = value || "—";
+  item.append(caption, content);
+  return item;
+}
+
+function formatDeliveryAddress(address = {}) {
+  if (typeof address === "string") return address || "Не указан";
+  return [address.postalCode || address.postal_code, address.city, address.street, address.house, address.apartment]
+    .filter(Boolean)
+    .join(", ") || "Не указан";
+}
+
+function renderOrderDetail(order, items = [], payments = [], history = []) {
+  const overview = document.createElement("section");
+  overview.className = "order-overview";
+  const status = document.createElement("article");
+  status.append(orderDetailItem("Статус", orderStatusLabels[order.status] || order.status));
+  const created = document.createElement("article");
+  created.append(orderDetailItem("Создан", formatDate(order.created_at)));
+  const total = document.createElement("article");
+  total.append(orderDetailItem("Сумма", formatMinor(order.total_minor, order.currency)));
+  overview.append(status, created, total);
+
+  const itemsSection = document.createElement("section");
+  itemsSection.className = "order-section";
+  const itemsTitle = document.createElement("h3");
+  itemsTitle.textContent = "Товары";
+  const itemsList = document.createElement("div");
+  itemsList.className = "order-items";
+  items.forEach((item) => {
+    const row = document.createElement("article");
+    row.className = "order-item";
+    const image = document.createElement("img");
+    image.src = item.image_url || "../assets/brand/logo-blue.svg";
+    image.alt = "";
+    const copy = document.createElement("div");
+    const name = document.createElement("strong");
+    const variant = document.createElement("span");
+    name.textContent = item.product_name;
+    variant.textContent = [item.variant_name, item.sku].filter(Boolean).join(" · ");
+    copy.append(name, variant);
+    const quantity = document.createElement("span");
+    quantity.textContent = `${item.quantity} шт.`;
+    const amount = document.createElement("strong");
+    amount.textContent = formatMinor(item.total_price_minor, order.currency);
+    row.append(image, copy, quantity, amount);
+    itemsList.append(row);
+  });
+  if (!items.length) itemsList.textContent = "Состав заказа не найден";
+  itemsSection.append(itemsTitle, itemsList);
+
+  const info = document.createElement("section");
+  info.className = "order-info-grid";
+  const buyer = document.createElement("article");
+  const buyerTitle = document.createElement("h3");
+  buyerTitle.textContent = "Покупатель";
+  buyer.append(
+    buyerTitle,
+    orderDetailItem("Имя", order.customer_name),
+    orderDetailItem("Телефон", order.customer_phone_e164),
+    orderDetailItem("Email", order.customer_email),
+    orderDetailItem("Комментарий", order.customer_comment),
+  );
+  const delivery = document.createElement("article");
+  const deliveryTitle = document.createElement("h3");
+  deliveryTitle.textContent = "Доставка";
+  delivery.append(
+    deliveryTitle,
+    orderDetailItem("Способ", order.delivery_method),
+    orderDetailItem("Адрес", formatDeliveryAddress(order.delivery_address)),
+  );
+  info.append(buyer, delivery);
+
+  const paymentSection = document.createElement("section");
+  paymentSection.className = "order-section order-payment-detail";
+  const paymentTitle = document.createElement("h3");
+  paymentTitle.textContent = "Оплата";
+  const paymentGrid = document.createElement("div");
+  paymentGrid.className = "order-info-grid compact";
+  const paymentInfo = document.createElement("article");
+  const paymentBadge = document.createElement("div");
+  paymentBadge.append(orderBadge(order.payment_status, "payment"));
+  paymentInfo.append(
+    paymentBadge,
+    orderDetailItem("Оператор", order.payment_provider),
+    orderDetailItem("ID транзакции", order.payment_transaction_id),
+  );
+  const operations = document.createElement("article");
+  const operationsTitle = document.createElement("strong");
+  operationsTitle.textContent = "Операции";
+  operations.append(operationsTitle);
+  payments.forEach((payment) => {
+    const operation = document.createElement("div");
+    operation.className = "order-payment-operation";
+    operation.textContent = `${payment.operation === "refund" ? "Возврат" : "Оплата"} · ${formatMinor(payment.amount_minor, payment.currency)} · ${formatDate(payment.created_at)}`;
+    operations.append(operation);
+  });
+  if (!payments.length) {
+    const empty = document.createElement("span");
+    empty.className = "order-secondary";
+    empty.textContent = "Операций пока нет";
+    operations.append(empty);
+  }
+  const note = document.createElement("p");
+  note.className = "order-payment-note";
+  note.textContent = "Возврат оформляется у платёжного оператора. В CMS автоматически появится его результат.";
+  paymentGrid.append(paymentInfo, operations);
+  paymentSection.append(paymentTitle, paymentGrid, note);
+
+  const historySection = document.createElement("section");
+  historySection.className = "order-section";
+  const historyTitle = document.createElement("h3");
+  historyTitle.textContent = "История";
+  const historyList = document.createElement("div");
+  historyList.className = "order-history";
+  history.forEach((entry) => {
+    const row = document.createElement("div");
+    const label = document.createElement("strong");
+    const meta = document.createElement("span");
+    label.textContent = orderStatusLabels[entry.status] || entry.status;
+    meta.textContent = [formatDate(entry.created_at), entry.admin_name].filter(Boolean).join(" · ");
+    row.append(label, meta);
+    historyList.append(row);
+  });
+  if (!history.length) historyList.textContent = "История пока пуста";
+  historySection.append(historyTitle, historyList);
+
+  elements["order-detail"].replaceChildren(overview, itemsSection, info, paymentSection, historySection);
+}
+
+async function openOrder(id) {
+  elements["order-dialog-title"].textContent = "Заказ";
+  elements["order-detail"].textContent = "Загружаем данные…";
+  elements["order-status-form"].hidden = true;
+  if (!elements["order-dialog"].open) elements["order-dialog"].showModal();
+  try {
+    const { order, items, payments, history } = await api(`/orders/${id}`);
+    elements["order-dialog-title"].textContent = `Заказ ${order.order_number}`;
+    renderOrderDetail(order, items || [], payments || [], history || []);
+    elements["order-status-form"].elements.id.value = order.id;
+    elements["order-status-form"].elements.status.value = order.status;
+    elements["order-status-form"].hidden = false;
+  } catch (error) {
+    elements["order-detail"].textContent = error.status === 404
+      ? "Заказ не найден"
+      : "Не удалось загрузить заказ";
+  }
+}
+
+function analyticsEmpty(text) {
+  const node = document.createElement("p");
+  node.className = "analytics-empty";
+  node.textContent = text;
+  return node;
+}
+
+function analyticsLineChart(daily) {
+  if (!daily.length || !daily.some((item) => Number(item.page_views) || Number(item.visitors))) {
+    return analyticsEmpty("Данные начнут появляться после первых посещений сайта.");
+  }
+  const width = 760;
+  const height = 250;
+  const padding = { top: 14, right: 12, bottom: 34, left: 52 };
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+  const rawMaximum = Math.max(1, ...daily.flatMap((item) => [Number(item.page_views) || 0, Number(item.visitors) || 0]));
+  const roughStep = rawMaximum / 4;
+  const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+  const fraction = roughStep / magnitude;
+  const niceFraction = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
+  const step = niceFraction * magnitude;
+  const maximum = Math.ceil(rawMaximum / step) * step;
+  const point = (value, index) => {
+    const x = padding.left + (daily.length === 1 ? innerWidth / 2 : index / (daily.length - 1) * innerWidth);
+    const y = padding.top + innerHeight - (Number(value) || 0) / maximum * innerHeight;
+    return { x, y };
+  };
+  const wrapper = document.createElement("div");
+  wrapper.className = "analytics-chart-shell";
+  const tooltip = document.createElement("div");
+  tooltip.className = "analytics-chart-tooltip";
+  tooltip.hidden = true;
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Просмотры страниц и уникальные посетители по дням");
+  [0, 1, 2, 3, 4].forEach((tick) => {
+    const value = maximum * (4 - tick) / 4;
+    const y = padding.top + innerHeight * tick / 4;
+    const line = document.createElementNS(svg.namespaceURI, "line");
+    line.setAttribute("x1", padding.left);
+    line.setAttribute("x2", width - padding.right);
+    line.setAttribute("y1", y);
+    line.setAttribute("y2", y);
+    line.setAttribute("class", "analytics-grid-line");
+    svg.append(line);
+    const label = document.createElementNS(svg.namespaceURI, "text");
+    label.setAttribute("x", padding.left - 10);
+    label.setAttribute("y", y + 4);
+    label.setAttribute("class", "analytics-y-label");
+    label.textContent = String(Math.max(0, Math.round(value)));
+    svg.append(label);
+  });
+  const views = document.createElementNS(svg.namespaceURI, "polyline");
+  views.setAttribute("points", daily.map((item, index) => {
+    const { x, y } = point(item.page_views, index);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" "));
+  views.setAttribute("class", "analytics-line views");
+  const visitors = document.createElementNS(svg.namespaceURI, "polyline");
+  visitors.setAttribute("points", daily.map((item, index) => {
+    const { x, y } = point(item.visitors, index);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" "));
+  visitors.setAttribute("class", "analytics-line visitors");
+  svg.append(views, visitors);
+
+  const dateFormatter = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" });
+  const showTooltip = (event, item, index, group) => {
+    const date = new Date(`${String(item.day).slice(0, 10)}T00:00:00`);
+    tooltip.replaceChildren();
+    const dateNode = document.createElement("strong");
+    const viewsNode = document.createElement("span");
+    const visitorsNode = document.createElement("span");
+    dateNode.textContent = dateFormatter.format(date);
+    viewsNode.textContent = `Просмотры страниц: ${Number(item.page_views) || 0}`;
+    visitorsNode.textContent = `Посетители: ${Number(item.visitors) || 0}`;
+    tooltip.append(dateNode, viewsNode, visitorsNode);
+    const { x } = point(item.page_views, index);
+    tooltip.style.left = `${x / width * 100}%`;
+    tooltip.classList.toggle("align-right", x > width * 0.72);
+    tooltip.hidden = false;
+    svg.querySelectorAll(".analytics-hover-target.active").forEach((node) => node.classList.remove("active"));
+    group.classList.add("active");
+    if (event?.type === "focus") tooltip.classList.add("keyboard");
+    else tooltip.classList.remove("keyboard");
+  };
+  const hideTooltip = (group) => {
+    group.classList.remove("active");
+    tooltip.hidden = true;
+  };
+
+  daily.forEach((item, index) => {
+    const viewPoint = point(item.page_views, index);
+    const visitorPoint = point(item.visitors, index);
+    const slice = daily.length === 1 ? innerWidth : innerWidth / (daily.length - 1);
+    const group = document.createElementNS(svg.namespaceURI, "g");
+    group.setAttribute("class", "analytics-hover-target");
+    group.setAttribute("tabindex", "0");
+    group.setAttribute("role", "button");
+    const date = new Date(`${String(item.day).slice(0, 10)}T00:00:00`);
+    group.setAttribute("aria-label", `${dateFormatter.format(date)}: ${Number(item.page_views) || 0} просмотров страниц, ${Number(item.visitors) || 0} посетителей`);
+    const guide = document.createElementNS(svg.namespaceURI, "line");
+    guide.setAttribute("x1", viewPoint.x);
+    guide.setAttribute("x2", viewPoint.x);
+    guide.setAttribute("y1", padding.top);
+    guide.setAttribute("y2", padding.top + innerHeight);
+    guide.setAttribute("class", "analytics-hover-line");
+    const viewDot = document.createElementNS(svg.namespaceURI, "circle");
+    viewDot.setAttribute("cx", viewPoint.x);
+    viewDot.setAttribute("cy", viewPoint.y);
+    viewDot.setAttribute("r", "5");
+    viewDot.setAttribute("class", "analytics-point views");
+    const visitorDot = document.createElementNS(svg.namespaceURI, "circle");
+    visitorDot.setAttribute("cx", visitorPoint.x);
+    visitorDot.setAttribute("cy", visitorPoint.y);
+    visitorDot.setAttribute("r", "5");
+    visitorDot.setAttribute("class", "analytics-point visitors");
+    const hitArea = document.createElementNS(svg.namespaceURI, "rect");
+    hitArea.setAttribute("x", Math.max(padding.left, viewPoint.x - slice / 2));
+    hitArea.setAttribute("y", padding.top);
+    hitArea.setAttribute("width", Math.min(slice, width - padding.right - Math.max(padding.left, viewPoint.x - slice / 2)));
+    hitArea.setAttribute("height", innerHeight);
+    hitArea.setAttribute("class", "analytics-hit-area");
+    group.append(guide, viewDot, visitorDot, hitArea);
+    group.addEventListener("mouseenter", (event) => showTooltip(event, item, index, group));
+    group.addEventListener("focus", (event) => showTooltip(event, item, index, group));
+    group.addEventListener("mouseleave", () => hideTooltip(group));
+    group.addEventListener("blur", () => hideTooltip(group));
+    svg.append(group);
+  });
+
+  [0, Math.floor((daily.length - 1) / 4), Math.floor((daily.length - 1) / 2), Math.floor((daily.length - 1) * 3 / 4), daily.length - 1].filter((value, index, array) => array.indexOf(value) === index).forEach((index) => {
+    const date = new Date(`${String(daily[index].day).slice(0, 10)}T00:00:00`);
+    const label = document.createElementNS(svg.namespaceURI, "text");
+    label.setAttribute("x", point(0, index).x);
+    label.setAttribute("y", height - 8);
+    label.setAttribute("class", "analytics-axis-label");
+    label.textContent = new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "short" }).format(date);
+    svg.append(label);
+  });
+  wrapper.append(svg, tooltip);
+  return wrapper;
+}
+
+function renderAnalytics(data) {
+  const summary = data.summary || {};
+  const cards = [
+    ["Просмотры страниц", summary.page_views || 0],
+    ["Посетители", summary.visitors || 0],
+    ["Заказы", summary.orders || 0],
+    ["Выручка", formatMinor(summary.revenue_minor || 0)],
+  ];
+  elements["analytics-stats"].replaceChildren(...cards.map(([labelText, value]) => {
+    const card = document.createElement("article");
+    const label = document.createElement("span");
+    const number = document.createElement("strong");
+    label.textContent = labelText;
+    number.textContent = value;
+    card.append(label, number);
+    return card;
+  }));
+
+  elements["analytics-chart"].replaceChildren(analyticsLineChart(data.daily || []));
+
+  const funnel = data.funnel || [];
+  const funnelMax = Math.max(1, ...funnel.map((item) => Number(item.value) || 0));
+  elements["analytics-funnel"].replaceChildren(...funnel.map((item, index) => {
+    const row = document.createElement("div");
+    row.className = "analytics-funnel-row";
+    const heading = document.createElement("span");
+    const label = document.createElement("strong");
+    const value = document.createElement("b");
+    const track = document.createElement("span");
+    const fill = document.createElement("i");
+    label.textContent = item.label;
+    const current = Number(item.value) || 0;
+    const previous = index ? Number(funnel[index - 1].value) || 0 : 0;
+    const conversion = previous ? Math.round(current / previous * 100) : null;
+    value.textContent = conversion === null ? String(current) : `${current} · ${conversion}%`;
+    if (conversion !== null) value.title = `${conversion}% от предыдущего шага`;
+    fill.style.width = `${Math.max(3, (Number(item.value) || 0) / funnelMax * 100)}%`;
+    heading.append(label, value);
+    track.append(fill);
+    row.append(heading, track);
+    return row;
+  }));
+
+  const products = data.products || [];
+  if (!products.length) {
+    elements["analytics-products"].replaceChildren(analyticsEmpty("Просмотров товаров пока нет."));
+  } else {
+    elements["analytics-products"].replaceChildren(...products.map((product) => {
+      const row = document.createElement("div");
+      row.className = "analytics-rank-row";
+      const name = document.createElement("strong");
+      const values = document.createElement("span");
+      name.textContent = product.product_name || product.product_key;
+      values.textContent = `${product.views || 0} просмотров · ${product.cart_adds || 0} в корзину`;
+      row.append(name, values);
+      return row;
+    }));
+  }
+
+  const sources = data.sources || [];
+  if (!sources.length) {
+    elements["analytics-sources"].replaceChildren(analyticsEmpty("Источники переходов пока не определены."));
+  } else {
+    elements["analytics-sources"].replaceChildren(...sources.map((source) => {
+      const row = document.createElement("div");
+      row.className = "analytics-source-row";
+      const name = document.createElement("span");
+      const value = document.createElement("strong");
+      name.textContent = source.source;
+      value.textContent = source.visits;
+      row.append(name, value);
+      return row;
+    }));
+  }
+}
+
+async function loadAnalytics() {
+  try {
+    const data = await api(`/analytics?period=${elements["analytics-period"].value}`);
+    renderAnalytics(data);
+  } catch (error) {
+    if (error.status === 403) {
+      elements["analytics-chart"].replaceChildren(analyticsEmpty("У вашей роли нет доступа к аналитике."));
+      return;
+    }
+    throw error;
+  }
+}
+
 async function updateStaff(id, role, status) {
   await api(`/staff/${id}`, { method: "PATCH", body: { role, status } });
   await loadStaff();
@@ -452,6 +990,8 @@ async function switchSection(section) {
   if (section === "dashboard") await loadDashboard();
   if (section === "catalog") await loadCatalog();
   if (section === "customers") await loadCustomers();
+  if (section === "orders") await loadOrders();
+  if (section === "analytics") await loadAnalytics();
   if (section === "staff") await loadStaff();
 }
 
@@ -785,6 +1325,10 @@ elements["catalog-status"].addEventListener("change", () => loadCatalog().catch(
 elements["catalog-type"].addEventListener("change", () => loadCatalog().catch(console.error));
 elements["catalog-sort"].addEventListener("change", () => loadCatalog().catch(console.error));
 elements["customer-search"].addEventListener("input", debounce(() => loadCustomers().catch(console.error)));
+elements["order-search"].addEventListener("input", debounce(() => loadOrders().catch(console.error)));
+elements["order-status"].addEventListener("change", () => loadOrders().catch(console.error));
+elements["order-payment"].addEventListener("change", () => loadOrders().catch(console.error));
+elements["analytics-period"].addEventListener("change", () => loadAnalytics().catch(console.error));
 elements["dashboard-new-product"].addEventListener("click", () => openProduct().catch(console.error));
 elements["dashboard-action-import"].addEventListener("click", () => elements["catalog-import"].click());
 elements["new-product-button"].addEventListener("click", () => openProduct().catch(console.error));
@@ -904,11 +1448,25 @@ elements["password-form"].addEventListener("submit", async (event) => {
   }
 });
 
+elements["order-status-form"].addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const id = event.currentTarget.elements.id.value;
+  const status = event.currentTarget.elements.status.value;
+  const submit = event.currentTarget.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  try {
+    await api(`/orders/${id}/status`, { method: "PATCH", body: { status } });
+    await Promise.all([openOrder(id), loadOrders()]);
+  } finally {
+    submit.disabled = false;
+  }
+});
+
 async function bootstrap() {
   try {
     const { admin } = await api("/session");
     showCms(admin);
-    const initial = ["dashboard", "catalog", "customers", "staff"].includes(location.hash.slice(1))
+    const initial = ["dashboard", "catalog", "customers", "orders", "analytics", "staff"].includes(location.hash.slice(1))
       ? location.hash.slice(1)
       : "dashboard";
     await switchSection(initial);

@@ -195,9 +195,13 @@ svg{stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .product-name a{display:inline-block}
 .product-copy p.product-inspiration{margin:7px 0 18px;color:#687087;font-size:14px;font-weight:400;line-height:1.4}
 .product-notes{display:none}
-.product-purchase{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:auto;padding-top:16px;border-top:1px solid rgba(67,72,101,.22)}
-.product-price{display:block;margin:0;color:var(--blue);font-size:15px;font-weight:600;white-space:nowrap}
-.product-add{position:static;display:flex;align-items:center;justify-content:center;width:auto;min-width:128px;height:42px;padding:0 14px;border:1px solid #434865;background:#434865;color:#fff;font-size:14px;font-weight:400;line-height:1;text-align:center}
+.product-purchase{display:block;margin-top:auto;padding-top:16px;border-top:1px solid rgba(67,72,101,.22)}
+.product-price{display:block;margin:0 0 12px;color:var(--blue);font-size:15px;font-weight:600;white-space:nowrap}
+.product-action-buttons{display:grid;width:100%;grid-template-columns:1fr 1fr;gap:8px}
+.product-details,.product-add{position:static;display:flex;min-width:0;height:42px;align-items:center;justify-content:center;padding:0 10px;font-size:14px;font-weight:400;line-height:1;text-align:center;text-decoration:none}
+.product-details{border:1px solid #dedfe3;background:#f1f1ef;color:var(--blue)}
+.product-details:hover,.product-details:focus-visible{border-color:var(--blue);background:#fff}
+.product-add{width:auto;border:1px solid #434865;background:#434865;color:#fff}
 .product-add span{font-size:14px;font-weight:400;line-height:1}
 .product-add b{font-size:18px;font-weight:400}
 .product-add:hover,.product-add:focus-visible{border-color:var(--blue);background:#fff;color:var(--blue)}
@@ -240,7 +244,8 @@ svg{stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .product-copy p.product-inspiration{margin-top:7px;font-size:12px}.product-notes{font-size:10px;margin:6px 0 15px}
 .product-purchase{display:block;padding-top:12px}
 .product-price{font-size:13px;margin-bottom:10px}
-.product-add{width:100%;min-width:0;height:38px;font-size:12px}.product-add span{font-size:12px}
+.product-action-buttons{width:100%;min-width:0;gap:7px}
+.product-details,.product-add{width:100%;height:38px;padding:0 7px;font-size:12px}.product-add span{font-size:12px}
 }
 
 /* Unified homepage rhythm: every gap starts at the visible content edge. */

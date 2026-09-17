@@ -81,6 +81,114 @@
       identities: [{ provider: "vk", provider_subject: "42424242", created_at: "2026-09-10T10:00:00Z", last_login_at: "2026-09-15T09:00:00Z" }],
     },
   ];
+  const orders = [
+    {
+      id: "demo-order-1042", order_number: "FA-2026-1042", user_id: "c1", status: "new", payment_status: "paid",
+      customer_name: "Анна Касаткина", customer_email: "anna@example.ru", customer_phone_e164: "+79990000000",
+      subtotal_minor: 585000, discount_minor: 0, delivery_minor: 0, total_minor: 585000, currency: "RUB",
+      payment_provider: "ЮKassa", payment_transaction_id: "yk_2f84a1042", delivery_method: "СДЭК до пункта выдачи",
+      delivery_address: { postalCode: "620014", city: "Екатеринбург", street: "8 Марта", house: "46" },
+      customer_comment: "Позвонить перед отправкой", created_at: "2026-09-17T07:35:00Z", updated_at: "2026-09-17T07:36:00Z",
+      items: [
+        { id: "oi-1042-1", product_name: "FLUIDE 11 AMOR AMOR", variant_name: "30 мл", sku: "FL-011-30", image_url: "../images/fragrances/thumbs/011.webp", quantity: 1, unit_price_minor: 199000, total_price_minor: 199000 },
+        { id: "oi-1042-2", product_name: "Свеча La Sultan", variant_name: "200 мл", sku: "FL-P-CANDLE-01", image_url: "../images/products/thumbs/candle-shell.webp", quantity: 1, unit_price_minor: 149000, total_price_minor: 149000 },
+        { id: "oi-1042-3", product_name: "Парфюм для дома La Sultan", variant_name: "300 мл", sku: "FL-P-01", image_url: "../images/products/perfume-home-la-sultan.webp", quantity: 1, unit_price_minor: 49000, total_price_minor: 49000 },
+        { id: "oi-1042-4", product_name: "Крем для тела La Sultan", variant_name: "300 мл", sku: "FL-P-04", image_url: "../images/products/body-cream-la-sultan.webp", quantity: 1, unit_price_minor: 89000, total_price_minor: 89000 },
+        { id: "oi-1042-5", product_name: "MATSUKITA", variant_name: "15 г", sku: "FL-P-MATSUKITA", image_url: "../images/products/solid-perfume-matsukita.webp", quantity: 1, unit_price_minor: 99000, total_price_minor: 99000 },
+      ],
+      payments: [{ id: "pay-1042", operation: "payment", status: "succeeded", provider: "ЮKassa", provider_transaction_id: "yk_2f84a1042", amount_minor: 585000, currency: "RUB", created_at: "2026-09-17T07:36:00Z" }],
+      history: [{ id: 1, status: "new", admin_name: null, created_at: "2026-09-17T07:35:00Z" }],
+    },
+    {
+      id: "demo-order-1041", order_number: "FA-2026-1041", user_id: "c2", status: "assembling", payment_status: "paid",
+      customer_name: "Мария Иванова", customer_email: "maria@example.ru", customer_phone_e164: "+79876543210",
+      subtotal_minor: 299000, discount_minor: 0, delivery_minor: 39000, total_minor: 338000, currency: "RUB",
+      payment_provider: "ЮKassa", payment_transaction_id: "yk_31de41041", delivery_method: "Курьер",
+      delivery_address: { city: "Москва", street: "Тверская", house: "12", apartment: "8" }, customer_comment: null,
+      created_at: "2026-09-16T13:10:00Z", updated_at: "2026-09-17T06:20:00Z",
+      items: [{ id: "oi-1041-1", product_name: "FLUIDE 100 BLOOMING", variant_name: "50 мл", sku: "FL-100-50", image_url: "../images/fragrances/thumbs/100.webp", quantity: 1, unit_price_minor: 299000, total_price_minor: 299000 }],
+      payments: [{ id: "pay-1041", operation: "payment", status: "succeeded", provider: "ЮKassa", provider_transaction_id: "yk_31de41041", amount_minor: 338000, currency: "RUB", created_at: "2026-09-16T13:12:00Z" }],
+      history: [
+        { id: 2, status: "assembling", admin_name: "Владелец FLUIDE", created_at: "2026-09-17T06:20:00Z" },
+        { id: 1, status: "new", admin_name: null, created_at: "2026-09-16T13:10:00Z" },
+      ],
+    },
+    {
+      id: "demo-order-1040", order_number: "FA-2026-1040", user_id: null, status: "shipped", payment_status: "paid",
+      customer_name: "Елена Соколова", customer_email: "elena@example.ru", customer_phone_e164: "+79112223344",
+      subtotal_minor: 398000, discount_minor: 0, delivery_minor: 0, total_minor: 398000, currency: "RUB",
+      payment_provider: "ЮKassa", payment_transaction_id: "yk_991b1040", delivery_method: "СДЭК до пункта выдачи",
+      delivery_address: { city: "Санкт-Петербург", street: "Лиговский проспект", house: "50" }, customer_comment: null,
+      created_at: "2026-09-15T09:45:00Z", updated_at: "2026-09-16T11:15:00Z",
+      items: [{ id: "oi-1040-1", product_name: "FLUIDE 46 BOMBSHELL", variant_name: "30 мл", sku: "FL-046-30", image_url: "../images/fragrances/thumbs/046.webp", quantity: 2, unit_price_minor: 199000, total_price_minor: 398000 }],
+      payments: [{ id: "pay-1040", operation: "payment", status: "succeeded", provider: "ЮKassa", provider_transaction_id: "yk_991b1040", amount_minor: 398000, currency: "RUB", created_at: "2026-09-15T09:47:00Z" }],
+      history: [
+        { id: 3, status: "shipped", admin_name: "Владелец FLUIDE", created_at: "2026-09-16T11:15:00Z" },
+        { id: 2, status: "ready", admin_name: "Владелец FLUIDE", created_at: "2026-09-16T08:30:00Z" },
+        { id: 1, status: "new", admin_name: null, created_at: "2026-09-15T09:45:00Z" },
+      ],
+    },
+    {
+      id: "demo-order-1039", order_number: "FA-2026-1039", user_id: "c1", status: "delivered", payment_status: "paid",
+      customer_name: "Анна Касаткина", customer_email: "anna@example.ru", customer_phone_e164: "+79990000000",
+      subtotal_minor: 199000, discount_minor: 20000, delivery_minor: 0, total_minor: 179000, currency: "RUB",
+      payment_provider: "ЮKassa", payment_transaction_id: "yk_88cd1039", delivery_method: "Самовывоз",
+      delivery_address: { city: "Екатеринбург" }, customer_comment: null,
+      created_at: "2026-09-11T08:20:00Z", updated_at: "2026-09-14T15:30:00Z",
+      items: [{ id: "oi-1039-1", product_name: "FLUIDE 19 CHERRY", variant_name: "30 мл", sku: "FL-019-30", image_url: "../images/fragrances/thumbs/019.webp", quantity: 1, unit_price_minor: 199000, total_price_minor: 199000 }],
+      payments: [{ id: "pay-1039", operation: "payment", status: "succeeded", provider: "ЮKassa", provider_transaction_id: "yk_88cd1039", amount_minor: 179000, currency: "RUB", created_at: "2026-09-11T08:22:00Z" }],
+      history: [{ id: 2, status: "delivered", admin_name: "Владелец FLUIDE", created_at: "2026-09-14T15:30:00Z" }, { id: 1, status: "new", admin_name: null, created_at: "2026-09-11T08:20:00Z" }],
+    },
+    {
+      id: "demo-order-1038", order_number: "FA-2026-1038", user_id: null, status: "refunded", payment_status: "refunded",
+      customer_name: "Ольга Петрова", customer_email: "olga@example.ru", customer_phone_e164: "+79210001122",
+      subtotal_minor: 299000, discount_minor: 0, delivery_minor: 0, total_minor: 299000, currency: "RUB",
+      payment_provider: "ЮKassa", payment_transaction_id: "yk_74ab1038", delivery_method: "СДЭК до пункта выдачи",
+      delivery_address: { city: "Казань", street: "Баумана", house: "21" }, customer_comment: null,
+      created_at: "2026-09-09T12:00:00Z", updated_at: "2026-09-10T09:15:00Z",
+      items: [{ id: "oi-1038-1", product_name: "FLUIDE 49 DARK OPIUM", variant_name: "50 мл", sku: "FL-049-50", image_url: "../images/fragrances/thumbs/049.webp", quantity: 1, unit_price_minor: 299000, total_price_minor: 299000 }],
+      payments: [
+        { id: "refund-1038", operation: "refund", status: "succeeded", provider: "ЮKassa", provider_transaction_id: "rf_74ab1038", amount_minor: 299000, currency: "RUB", created_at: "2026-09-10T09:15:00Z" },
+        { id: "pay-1038", operation: "payment", status: "succeeded", provider: "ЮKassa", provider_transaction_id: "yk_74ab1038", amount_minor: 299000, currency: "RUB", created_at: "2026-09-09T12:02:00Z" },
+      ],
+      history: [{ id: 2, status: "refunded", admin_name: "Владелец FLUIDE", created_at: "2026-09-10T09:15:00Z" }, { id: 1, status: "new", admin_name: null, created_at: "2026-09-09T12:00:00Z" }],
+    },
+  ];
+  const analyticsPreview = (period) => {
+    const factor = period === 7 ? 0.27 : period === 90 ? 2.72 : 1;
+    const daily = Array.from({ length: period }, (_, index) => {
+      const day = new Date();
+      day.setHours(0, 0, 0, 0);
+      day.setDate(day.getDate() - (period - index - 1));
+      const pageViews = 42 + ((index * 11) % 29) + (index % 6 === 0 ? 18 : 0);
+      return { day: day.toISOString().slice(0, 10), page_views: pageViews, visitors: Math.round(pageViews * 0.58) };
+    });
+    const count = (value) => Math.round(value * factor);
+    return {
+      period,
+      summary: { page_views: count(1842), visitors: count(936), product_views: count(1280), add_to_cart: count(214), orders: count(42), revenue_minor: count(11860000) },
+      daily,
+      funnel: [
+        { key: "product_view", label: "Просмотр товара", value: count(1280) },
+        { key: "add_to_cart", label: "Добавление в корзину", value: count(214) },
+        { key: "checkout_start", label: "Начало оформления", value: count(76) },
+        { key: "purchase", label: "Заказ", value: count(42) },
+      ],
+      products: [
+        { product_key: "fragrance-11", product_name: "FLUIDE 11 AMOR AMOR", views: count(186), cart_adds: count(34) },
+        { product_key: "fragrance-100", product_name: "FLUIDE 100 BLOOMING", views: count(162), cart_adds: count(29) },
+        { product_key: "fragrance-46", product_name: "FLUIDE 46 BOMBSHELL", views: count(148), cart_adds: count(25) },
+        { product_key: "fragrance-19", product_name: "FLUIDE 19 CHERRY", views: count(137), cart_adds: count(21) },
+        { product_key: "solid-perfume-matsukita", product_name: "MATSUKITA", views: count(119), cart_adds: count(18) },
+      ],
+      sources: [
+        { source: "Прямые заходы", visits: count(486) },
+        { source: "yandex.ru", visits: count(274) },
+        { source: "vk.com", visits: count(156) },
+        { source: "google.com", visits: count(92) },
+      ],
+    };
+  };
   const json = (data, status = 200) => Promise.resolve(new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } }));
   const body = (options) => options?.body && typeof options.body === "string" ? JSON.parse(options.body) : {};
 
@@ -115,6 +223,10 @@
         categories,
         recent_products: products.slice(0, 5).map((product) => ({ ...product, updatedAt: product.updatedAt || now() })),
       });
+    }
+    if (path === "/analytics" && method === "GET") {
+      const period = [7, 30, 90].includes(Number(url.searchParams.get("period"))) ? Number(url.searchParams.get("period")) : 30;
+      return json(analyticsPreview(period));
     }
     if (path === "/products" && method === "GET") {
       await catalogReady;
@@ -163,6 +275,37 @@
       const payload = body(options);
       products[index] = { ...products[index], ...payload, variantCount: payload.variants.length, minPrice: Math.min(...payload.variants.map((row) => row.price)), minVolume: Math.min(...payload.variants.map((row) => row.volumeMl).filter(Number.isFinite)), imageUrl: payload.media[0]?.url || null, variants: payload.variants, media: payload.media };
       return json({ product: products[index] });
+    }
+    if (path === "/orders" && method === "GET") {
+      const q = (url.searchParams.get("q") || "").toLocaleLowerCase("ru-RU");
+      const status = url.searchParams.get("status") || "";
+      const payment = url.searchParams.get("payment") || "";
+      const rows = orders.filter((order) => {
+        const searchable = [order.order_number, order.customer_name, order.customer_email, order.customer_phone_e164]
+          .filter(Boolean)
+          .join(" ")
+          .toLocaleLowerCase("ru-RU");
+        return (!q || searchable.includes(q))
+          && (!status || order.status === status)
+          && (!payment || order.payment_status === payment);
+      }).map((order) => ({ ...order, item_count: order.items.length, items_preview: order.items.slice(0, 2) }));
+      return json({ orders: rows });
+    }
+    const orderMatch = path.match(/^\/orders\/([^/]+)$/);
+    if (orderMatch && method === "GET") {
+      const order = orders.find((item) => item.id === orderMatch[1]);
+      return order
+        ? json({ order, items: order.items, payments: order.payments, history: order.history })
+        : json({ error: "order_not_found" }, 404);
+    }
+    const orderStatusMatch = path.match(/^\/orders\/([^/]+)\/status$/);
+    if (orderStatusMatch && method === "PATCH") {
+      const order = orders.find((item) => item.id === orderStatusMatch[1]);
+      if (!order) return json({ error: "order_not_found" }, 404);
+      order.status = body(options).status;
+      order.updated_at = now();
+      order.history.unshift({ id: Date.now(), status: order.status, admin_name: "Владелец FLUIDE", created_at: order.updated_at });
+      return json({ order });
     }
     if (path === "/customers") return json({ customers });
     const customerMatch = path.match(/^\/customers\/([^/]+)$/);

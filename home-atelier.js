@@ -39,7 +39,7 @@ function renderProducts(){
     <h3 class="product-name"><a href="${href(p)}">${cardName}</a></h3>
     <p class="product-inspiration">По мотивам ${p.inspiredBy}</p>
     <p class="product-notes">${p.notes}</p>
-    <div class="product-purchase"><strong class="product-price">от ${money(minPrice(p))}</strong><button class="product-add" data-buy="${p.id}" aria-label="Выбрать объем ${p.name}"><span>Выбрать</span></button></div>
+    <div class="product-purchase"><strong class="product-price">от ${money(minPrice(p))}</strong><div class="product-action-buttons"><a class="product-details" href="${href(p)}">Подробнее</a><button class="product-add" data-buy="${p.id}" aria-label="Добавить ${p.name} в корзину"><span>В корзину</span></button></div></div>
    </div>
   </article>`}).join("")||'<p class="no-products">В этой категории пока нет ароматов.</p>';
  $("#product-count").textContent=`${Math.min(visible,list.length)} из ${list.length} ароматов`;
@@ -48,7 +48,7 @@ function renderProducts(){
  more.textContent=expanded?'Скрыть':'Показать еще';
 }
 function updateCart(){save("fluide-cart",cart);const quantity=cart.reduce((n,p)=>n+(Number(p.quantity)||1),0);const badge=$("#cart-count");badge.textContent=quantity||"";badge.hidden=quantity===0}
-function openSizeSelector(id){selectedProductId=id;openPanel("volume","Выберите объем")}
+function openSizeSelector(id){selectedProductId=id;openPanel("volume","Выберите объём")}
 function addToCart(id,size){const p=products.find(product=>product.id===id);if(!p)return;const variant=variantsFor(p).find(item=>item.size===size);if(!variant)return;const key=`${id}-${size}`;const snapshot={...p,name:`FLUIDE ${Number(p.id.replace("fragrance-",""))} ${p.name} · ${variant.volume}`,price:variant.price,volume:variant.volume,categoryLabel:`Парфюм · ${variant.volume}`};const row=cart.find(item=>item.id===key);if(row){row.quantity++;row.product=snapshot}else cart.push({id:key,quantity:1,product:snapshot});updateCart();toast(`${p.name}, ${variant.volume} — в корзине`)}
 function toggleFavorite(id){favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];save("fluide-favorites",favorites);renderProducts();if(panelMode==="favorites"&&$("#panel").open)renderPanel()}
 function resultRow(p){return `<a class="search-result" href="${href(p)}"><img src="${p.image}" alt=""><span>${escapeHtml(p.name)}</span><small>от ${money(minPrice(p))}</small></a>`}
@@ -71,7 +71,7 @@ function renderPanel(){
   </div>
   <p class="auth-legal">Продолжая, вы соглашаетесь на обработку персональных данных в соответствии с <button data-info="privacy">политикой обработки персональных данных</button>.</p>
  </div>`;
- if(panelMode==="volume"){const p=products.find(product=>product.id===selectedProductId);if(!p){body.innerHTML="<p>Аромат не найден.</p>";return}const cardName=`FLUIDE ${Number(p.id.replace("fragrance-",""))} ${p.name}`;body.innerHTML=`<div class="volume-picker"><div class="volume-product"><img src="${escapeHtml(p.image)}" alt="${escapeHtml(cardName)}"><div><h3>${escapeHtml(cardName)}</h3><p>${escapeHtml(p.inspiredBy)}</p></div></div><p class="volume-label">Доступные объемы</p><div class="volume-options">${variantsFor(p).map(variant=>`<button class="volume-option" data-volume="${variant.size}"><span><strong>${variant.volume}</strong><small>В наличии</small></span><b>${money(variant.price)}</b></button>`).join("")}</div></div>`;}
+ if(panelMode==="volume"){const p=products.find(product=>product.id===selectedProductId);if(!p){body.innerHTML="<p>Аромат не найден.</p>";return}const cardName=`FLUIDE ${Number(p.id.replace("fragrance-",""))} ${p.name}`;body.innerHTML=`<div class="volume-picker"><div class="volume-product"><img src="${escapeHtml(p.image)}" alt="${escapeHtml(cardName)}"><div><h3>${escapeHtml(cardName)}</h3><p>${escapeHtml(p.inspiredBy)}</p></div></div><p class="volume-label">Доступные объёмы</p><div class="volume-options">${variantsFor(p).map(variant=>`<button class="volume-option" data-volume="${variant.size}" data-analytics-add data-product-key="${p.id}"><span><strong>${variant.volume}</strong><small>В наличии</small></span><b>${money(variant.price)}</b></button>`).join("")}</div></div>`;}
  if(panelMode==="search"){body.innerHTML='<label for="home-search">Название или любимые ноты</label><input id="home-search" type="search" placeholder="Например, мускус"><div id="search-results"></div>';$("#home-search").addEventListener("input",()=>{const q=$("#home-search").value.trim().toLowerCase();$("#search-results").innerHTML=products.filter(p=>(p.name+" "+p.notes).toLowerCase().includes(q)).map(resultRow).join("")||'<p>В подборке не найдено. Посмотрите полный каталог.</p><a class="pill outline" href="catalog.html">Перейти в каталог ↗</a>'});$("#home-search").dispatchEvent(new Event("input"));}
  if(panelMode==="favorites"){const list=products.filter(p=>favorites.includes(p.id));body.innerHTML=list.length?list.map(p=>`<div class="favorite-row">${resultRow(p)}<button class="buy" data-favorite="${p.id}">Убрать из избранного</button></div>`).join(""):'<p>Сохраняйте ароматы с помощью сердечка на карточке.</p>';if(favorites.some(id=>!products.some(p=>p.id===id)))body.innerHTML+='<p>Остальные сохраненные ароматы доступны в каталоге.</p><a class="pill outline" href="catalog.html">Открыть каталог</a>';}
  if(panelMode==="cart"){
