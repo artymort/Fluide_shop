@@ -106,6 +106,7 @@ export function loadConfig() {
     allowedOrigins: Object.freeze([
       "https://fluide-atelier.ru",
       "https://www.fluide-atelier.ru",
+      "https://cms.fluide-atelier.ru",
       ...(nodeEnv === "production" ? [] : ["http://127.0.0.1:8765", "http://localhost:8765"]),
     ]),
   });
