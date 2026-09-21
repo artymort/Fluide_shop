@@ -6,6 +6,9 @@ const state = {
   editingProduct: null,
   media: [],
   importFile: null,
+  homeContent: null,
+  contentProducts: [],
+  selectedBestsellerIds: [],
 };
 
 const elements = Object.fromEntries([
@@ -26,6 +29,9 @@ const elements = Object.fromEntries([
   "staff-rows", "new-staff-button", "staff-dialog", "staff-form", "staff-password",
   "staff-message", "cancel-staff",
   "change-password-button", "password-dialog", "password-form", "password-message", "cancel-password",
+  "content-status", "content-form", "content-product-count", "content-selected-products",
+  "content-product-search", "content-product-list", "content-offer-list", "content-voice-list",
+  "content-save-state", "content-publish-state", "save-content-button", "publish-content-button",
 ].map((id) => [id, document.getElementById(id)]));
 
 const statusLabels = { published: "Опубликован", draft: "Черновик", archived: "Архив" };
@@ -74,7 +80,9 @@ function showCms(admin) {
   elements["cms-view"].hidden = false;
   elements["admin-name"].textContent = admin.displayName || admin.email;
   const canManageStaff = ["owner", "admin"].includes(admin.role);
+  const canManageContent = ["owner", "admin", "editor"].includes(admin.role);
   document.querySelector('[data-section="staff"]').hidden = !canManageStaff;
+  document.querySelector('[data-section="content"]').hidden = !canManageContent;
 }
 
 async function api(path, options = {}) {
@@ -985,8 +993,254 @@ async function loadStaff() {
   }));
 }
 
+const contentProductKey = (product) => String(product.legacyId || product.id || "");
+
+function setContentField(name, value, checked = false) {
+  const field = elements["content-form"].elements[name];
+  if (!field) return;
+  if (checked) field.checked = Boolean(value);
+  else field.value = value ?? "";
+}
+
+function contentPreviewUrl(value) {
+  const source = String(value || "").trim();
+  if (!source || /^(?:https?:|blob:|data:|\/)/i.test(source)) return source;
+  return `../${source.replace(/^\.\//, "")}`;
+}
+
+function contentImageMarkup(field, label) {
+  return `<div class="content-image-editor"><img data-item-preview alt=""><div><strong>${label}</strong><label>Путь к файлу<input data-field="${field}" maxlength="1000" required></label><label class="secondary content-upload">Загрузить<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" data-item-upload="${field}" hidden></label></div></div>`;
+}
+
+function renderContentItems(container, type, items) {
+  container.replaceChildren(...items.map((item, index) => {
+    const card = document.createElement("article");
+    card.className = "content-item-card";
+    card.dataset.contentItem = type;
+    card.dataset.index = String(index);
+    if (type === "offer") {
+      card.innerHTML = `<span class="content-item-number">Карточка ${index + 1}</span>${contentImageMarkup("image", "Изображение")}<label>Заголовок<input data-field="title" maxlength="160" required></label><label>Описание<textarea data-field="text" rows="3" maxlength="500" required></textarea></label><label>Текст кнопки<input data-field="buttonLabel" maxlength="100" required></label><label>Ссылка<input data-field="url" maxlength="1000" required></label><label>Описание изображения<input data-field="imageAlt" maxlength="240"></label>`;
+    } else {
+      card.innerHTML = `<span class="content-item-number">Материал ${index + 1}</span>${contentImageMarkup("image", "Изображение")}<label>Метка<input data-field="label" maxlength="120" required></label><label>Заголовок<input data-field="title" maxlength="180" required></label><label>Описание<textarea data-field="text" rows="3" maxlength="500" required></textarea></label><label>Описание изображения<input data-field="imageAlt" maxlength="240"></label>`;
+    }
+    Object.entries(item).forEach(([field, value]) => {
+      const input = card.querySelector(`[data-field="${field}"]`);
+      if (input) input.value = value ?? "";
+    });
+    const preview = card.querySelector("[data-item-preview]");
+    if (preview) preview.src = contentPreviewUrl(item.image);
+    return card;
+  }));
+}
+
+function renderSelectedBestsellers() {
+  const byKey = new Map(state.contentProducts.map((product) => [contentProductKey(product), product]));
+  elements["content-product-count"].textContent = String(state.selectedBestsellerIds.length);
+  if (!state.selectedBestsellerIds.length) {
+    const empty = document.createElement("p");
+    empty.className = "content-empty";
+    empty.textContent = "Добавьте товары из списка справа.";
+    elements["content-selected-products"].replaceChildren(empty);
+    return;
+  }
+  elements["content-selected-products"].replaceChildren(...state.selectedBestsellerIds.map((key, index) => {
+    const product = byKey.get(key);
+    const row = document.createElement("div");
+    row.className = "selected-product-row";
+    const image = document.createElement("img");
+    image.src = product?.imageUrl || "../assets/brand/logo-blue.svg";
+    image.alt = "";
+    const copy = document.createElement("div");
+    const name = document.createElement("strong");
+    const sku = document.createElement("small");
+    name.textContent = product?.name || key;
+    sku.textContent = product?.sku || key;
+    copy.append(name, sku);
+    const actions = document.createElement("div");
+    actions.className = "selected-product-actions";
+    [["↑", "Выше", -1], ["↓", "Ниже", 1]].forEach(([symbol, label, delta]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = symbol;
+      button.title = label;
+      button.dataset.moveBestseller = String(index);
+      button.dataset.delta = String(delta);
+      button.disabled = delta < 0 ? index === 0 : index === state.selectedBestsellerIds.length - 1;
+      actions.append(button);
+    });
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.textContent = "×";
+    remove.title = "Убрать";
+    remove.dataset.removeBestseller = key;
+    actions.append(remove);
+    row.append(image, copy, actions);
+    return row;
+  }));
+}
+
+function renderBestsellerCatalog() {
+  const query = elements["content-product-search"].value.trim().toLocaleLowerCase("ru-RU");
+  const selected = new Set(state.selectedBestsellerIds);
+  const products = state.contentProducts.filter((product) => {
+    if (selected.has(contentProductKey(product))) return false;
+    return !query || `${product.name} ${product.sku}`.toLocaleLowerCase("ru-RU").includes(query);
+  });
+  if (!products.length) {
+    const empty = document.createElement("p");
+    empty.className = "content-empty";
+    empty.textContent = query ? "Ничего не найдено." : "Все доступные ароматы уже выбраны.";
+    elements["content-product-list"].replaceChildren(empty);
+    return;
+  }
+  elements["content-product-list"].replaceChildren(...products.map((product) => {
+    const row = document.createElement("div");
+    row.className = "content-product-row";
+    const image = document.createElement("img");
+    image.src = product.imageUrl || "../assets/brand/logo-blue.svg";
+    image.alt = "";
+    const copy = document.createElement("div");
+    const name = document.createElement("strong");
+    const sku = document.createElement("small");
+    name.textContent = product.name;
+    sku.textContent = product.sku;
+    copy.append(name, sku);
+    const add = document.createElement("button");
+    add.type = "button";
+    add.textContent = "+";
+    add.title = "Добавить в бестселлеры";
+    add.dataset.addBestseller = contentProductKey(product);
+    row.append(image, copy, add);
+    return row;
+  }));
+}
+
+function fillContentForm(content) {
+  state.homeContent = content;
+  state.selectedBestsellerIds = [...(content.bestsellers?.productIds || [])];
+  const values = {
+    seoTitle: content.seo?.title, seoDescription: content.seo?.description,
+    heroTitle: content.hero?.title, heroSubtitle: content.hero?.subtitle,
+    heroButtonLabel: content.hero?.buttonLabel, heroButtonUrl: content.hero?.buttonUrl,
+    heroImageAlt: content.hero?.imageAlt, heroDesktopImage: content.hero?.desktopImage,
+    heroMobileImage: content.hero?.mobileImage,
+    bestsellersTitle: content.bestsellers?.title, offersTitle: content.offers?.title,
+    finderTitle: content.finder?.title, finderText: content.finder?.text,
+    finderButtonLabel: content.finder?.buttonLabel, finderButtonUrl: content.finder?.buttonUrl,
+    finderImage: content.finder?.image, finderImageAlt: content.finder?.imageAlt,
+    giftsTitle: content.gifts?.title, giftsText: content.gifts?.text,
+    giftsCardText: content.gifts?.cardText, giftsCardCaption: content.gifts?.cardCaption,
+    brandLabel: content.brand?.label, brandTitle: content.brand?.title,
+    brandText: content.brand?.text, brandSecondaryText: content.brand?.secondaryText,
+    brandButtonLabel: content.brand?.buttonLabel, brandButtonUrl: content.brand?.buttonUrl,
+    brandImage: content.brand?.image, brandImageAlt: content.brand?.imageAlt,
+    voicesTitle: content.voices?.title, voicesSubtitle: content.voices?.subtitle,
+    clubTitle: content.club?.title, clubText: content.club?.text,
+  };
+  Object.entries(values).forEach(([name, value]) => setContentField(name, value));
+  ["hero", "bestsellers", "offers", "finder", "gifts", "brand", "voices", "club"].forEach((name) => setContentField(`${name}Enabled`, content[name]?.enabled, true));
+  setContentField("bestsellersShowFilters", content.bestsellers?.showFilters, true);
+  ["heroDesktopImage", "heroMobileImage", "finderImage", "brandImage"].forEach((name) => {
+    const preview = elements["content-form"].querySelector(`[data-content-preview="${name}"]`);
+    if (preview) preview.src = contentPreviewUrl(elements["content-form"].elements[name].value);
+  });
+  renderContentItems(elements["content-offer-list"], "offer", content.offers?.items || []);
+  renderContentItems(elements["content-voice-list"], "voice", content.voices?.items || []);
+  renderSelectedBestsellers();
+  renderBestsellerCatalog();
+}
+
+function serializeContentItems(container) {
+  return [...container.querySelectorAll("[data-content-item]")].map((card) => Object.fromEntries(
+    [...card.querySelectorAll("[data-field]")].map((field) => [field.dataset.field, field.value.trim()]),
+  ));
+}
+
+function serializeContentForm() {
+  const form = elements["content-form"].elements;
+  return {
+    seo: { title: form.seoTitle.value.trim(), description: form.seoDescription.value.trim() },
+    hero: { enabled: form.heroEnabled.checked, title: form.heroTitle.value.trim(), subtitle: form.heroSubtitle.value.trim(), buttonLabel: form.heroButtonLabel.value.trim(), buttonUrl: form.heroButtonUrl.value.trim(), desktopImage: form.heroDesktopImage.value.trim(), mobileImage: form.heroMobileImage.value.trim(), imageAlt: form.heroImageAlt.value.trim() },
+    bestsellers: { enabled: form.bestsellersEnabled.checked, title: form.bestsellersTitle.value.trim(), showFilters: form.bestsellersShowFilters.checked, productIds: [...state.selectedBestsellerIds] },
+    offers: { enabled: form.offersEnabled.checked, title: form.offersTitle.value.trim(), items: serializeContentItems(elements["content-offer-list"]) },
+    finder: { enabled: form.finderEnabled.checked, title: form.finderTitle.value.trim(), text: form.finderText.value.trim(), buttonLabel: form.finderButtonLabel.value.trim(), buttonUrl: form.finderButtonUrl.value.trim(), image: form.finderImage.value.trim(), imageAlt: form.finderImageAlt.value.trim() },
+    gifts: { enabled: form.giftsEnabled.checked, title: form.giftsTitle.value.trim(), text: form.giftsText.value.trim(), cardText: form.giftsCardText.value.trim(), cardCaption: form.giftsCardCaption.value.trim() },
+    brand: { enabled: form.brandEnabled.checked, label: form.brandLabel.value.trim(), title: form.brandTitle.value.trim(), text: form.brandText.value.trim(), secondaryText: form.brandSecondaryText.value.trim(), buttonLabel: form.brandButtonLabel.value.trim(), buttonUrl: form.brandButtonUrl.value.trim(), image: form.brandImage.value.trim(), imageAlt: form.brandImageAlt.value.trim() },
+    voices: { enabled: form.voicesEnabled.checked, title: form.voicesTitle.value.trim(), subtitle: form.voicesSubtitle.value.trim(), items: serializeContentItems(elements["content-voice-list"]) },
+    club: { enabled: form.clubEnabled.checked, title: form.clubTitle.value.trim(), text: form.clubText.value.trim() },
+  };
+}
+
+function updateContentStatus(page, message = "") {
+  elements["content-status"].className = `content-status ${page.hasUnpublishedChanges ? "is-dirty" : page.publishedAt ? "is-published" : ""}`;
+  elements["content-status"].textContent = message || (page.hasUnpublishedChanges
+    ? `Есть изменения, которые ещё не опубликованы. Черновик сохранён ${formatDate(page.updatedAt)}.`
+    : page.publishedAt ? `Страница опубликована ${formatDate(page.publishedAt)}.` : "Страница ещё не публиковалась.");
+  elements["content-save-state"].textContent = page.hasUnpublishedChanges ? "Черновик сохранён" : "Все изменения опубликованы";
+  elements["content-publish-state"].textContent = page.publishedAt ? `Последняя публикация: ${formatDate(page.publishedAt)}` : "Публикаций пока нет";
+}
+
+async function loadContentPage() {
+  elements["content-status"].textContent = "Загружаем страницу…";
+  const [page, catalog] = await Promise.all([
+    api("/content/pages/home"),
+    api("/products?status=published&sort=name-asc"),
+  ]);
+  state.contentProducts = (catalog.products || []).filter((product) => product.kind === "fragrance");
+  fillContentForm(page.content);
+  updateContentStatus(page);
+}
+
+async function saveContentDraft() {
+  if (!elements["content-form"].reportValidity()) return null;
+  const content = serializeContentForm();
+  if (content.bestsellers.enabled && !content.bestsellers.productIds.length) {
+    updateContentStatus({ hasUnpublishedChanges: true }, "Выберите хотя бы один товар для блока «Бестселлеры».");
+    return null;
+  }
+  elements["content-form"].classList.add("is-saving");
+  elements["content-save-state"].textContent = "Сохраняем…";
+  try {
+    const page = await api("/content/pages/home", { method: "PUT", body: { content } });
+    state.homeContent = page.content;
+    updateContentStatus(page);
+    return page;
+  } finally {
+    elements["content-form"].classList.remove("is-saving");
+  }
+}
+
+async function publishContentPage() {
+  const saved = await saveContentDraft();
+  if (!saved) return;
+  elements["content-form"].classList.add("is-saving");
+  elements["content-save-state"].textContent = "Публикуем…";
+  try {
+    const page = await api("/content/pages/home/publish", { method: "POST" });
+    updateContentStatus(page, `Страница опубликована ${formatDate(page.publishedAt)}.`);
+  } finally {
+    elements["content-form"].classList.remove("is-saving");
+  }
+}
+
+function markContentDirty() {
+  elements["content-save-state"].textContent = "Есть несохранённые изменения";
+  elements["content-status"].className = "content-status is-dirty";
+  elements["content-status"].textContent = "Изменения пока находятся только в форме. Сохраните черновик перед предпросмотром.";
+}
+
+async function uploadContentAsset(file, input, preview) {
+  const body = new FormData();
+  body.append("file", file);
+  const uploaded = await api("/media", { method: "POST", body });
+  input.value = uploaded.url;
+  preview.src = contentPreviewUrl(uploaded.url);
+  markContentDirty();
+}
+
 async function switchSection(section) {
   if (section === "staff" && !["owner", "admin"].includes(state.admin?.role)) section = "dashboard";
+  if (section === "content" && !["owner", "admin", "editor"].includes(state.admin?.role)) section = "dashboard";
   state.section = section;
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("is-active", item.dataset.section === section));
   document.querySelectorAll(".view").forEach((view) => view.classList.toggle("is-active", view.dataset.view === section));
@@ -996,6 +1250,7 @@ async function switchSection(section) {
   if (section === "catalog") await loadCatalog();
   if (section === "customers") await loadCustomers();
   if (section === "orders") await loadOrders();
+  if (section === "content") await loadContentPage();
   if (section === "analytics") await loadAnalytics();
   if (section === "staff") await loadStaff();
 }
@@ -1334,6 +1589,71 @@ elements["order-search"].addEventListener("input", debounce(() => loadOrders().c
 elements["order-status"].addEventListener("change", () => loadOrders().catch(console.error));
 elements["order-payment"].addEventListener("change", () => loadOrders().catch(console.error));
 elements["analytics-period"].addEventListener("change", () => loadAnalytics().catch(console.error));
+elements["content-product-search"].addEventListener("input", renderBestsellerCatalog);
+elements["content-form"].addEventListener("input", (event) => {
+  if (event.target === elements["content-product-search"]) return;
+  if (event.target.name && ["heroDesktopImage", "heroMobileImage", "finderImage", "brandImage"].includes(event.target.name)) {
+    const preview = elements["content-form"].querySelector(`[data-content-preview="${event.target.name}"]`);
+    if (preview) preview.src = contentPreviewUrl(event.target.value);
+  }
+  if (event.target.dataset.field === "image") {
+    const preview = event.target.closest("[data-content-item]")?.querySelector("[data-item-preview]");
+    if (preview) preview.src = contentPreviewUrl(event.target.value);
+  }
+  markContentDirty();
+});
+elements["content-form"].addEventListener("click", (event) => {
+  const add = event.target.closest("[data-add-bestseller]");
+  const remove = event.target.closest("[data-remove-bestseller]");
+  const move = event.target.closest("[data-move-bestseller]");
+  if (add) state.selectedBestsellerIds.push(add.dataset.addBestseller);
+  if (remove) state.selectedBestsellerIds = state.selectedBestsellerIds.filter((id) => id !== remove.dataset.removeBestseller);
+  if (move) {
+    const index = Number(move.dataset.moveBestseller);
+    const target = index + Number(move.dataset.delta);
+    if (target >= 0 && target < state.selectedBestsellerIds.length) {
+      [state.selectedBestsellerIds[index], state.selectedBestsellerIds[target]] = [state.selectedBestsellerIds[target], state.selectedBestsellerIds[index]];
+    }
+  }
+  if (add || remove || move) {
+    renderSelectedBestsellers();
+    renderBestsellerCatalog();
+    markContentDirty();
+  }
+});
+elements["content-form"].addEventListener("change", async (event) => {
+  const upload = event.target.closest("[data-content-upload],[data-item-upload]");
+  if (!upload || !upload.files?.[0]) return;
+  let input;
+  let preview;
+  if (upload.dataset.contentUpload) {
+    input = elements["content-form"].elements[upload.dataset.contentUpload];
+    preview = elements["content-form"].querySelector(`[data-content-preview="${upload.dataset.contentUpload}"]`);
+  } else {
+    const card = upload.closest("[data-content-item]");
+    input = card.querySelector(`[data-field="${upload.dataset.itemUpload}"]`);
+    preview = card.querySelector("[data-item-preview]");
+  }
+  elements["content-save-state"].textContent = "Загружаем изображение…";
+  try {
+    await uploadContentAsset(upload.files[0], input, preview);
+  } catch {
+    updateContentStatus({ hasUnpublishedChanges: true }, "Не удалось загрузить изображение. Проверьте формат и размер файла.");
+  } finally {
+    upload.value = "";
+  }
+});
+elements["content-form"].addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveContentDraft().catch((error) => {
+    console.error(error);
+    updateContentStatus({ hasUnpublishedChanges: true }, "Не удалось сохранить черновик.");
+  });
+});
+elements["publish-content-button"].addEventListener("click", () => publishContentPage().catch((error) => {
+  console.error(error);
+  updateContentStatus({ hasUnpublishedChanges: true }, "Не удалось опубликовать страницу.");
+}));
 elements["dashboard-new-product"].addEventListener("click", () => openProduct().catch(console.error));
 elements["dashboard-action-import"].addEventListener("click", () => elements["catalog-import"].click());
 elements["new-product-button"].addEventListener("click", () => openProduct().catch(console.error));
@@ -1471,7 +1791,7 @@ async function bootstrap() {
   try {
     const { admin } = await api("/session");
     showCms(admin);
-    const initial = ["dashboard", "catalog", "customers", "orders", "analytics", "staff"].includes(location.hash.slice(1))
+    const initial = ["dashboard", "catalog", "customers", "orders", "content", "analytics", "staff"].includes(location.hash.slice(1))
       ? location.hash.slice(1)
       : "dashboard";
     await switchSection(initial);

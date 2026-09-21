@@ -7,6 +7,7 @@ import { createCatalogRouter } from "./routes/catalog.js";
 import { createHealthRouter } from "./routes/health.js";
 import { createAnalyticsRouter } from "./routes/analytics.js";
 import { createOrdersRouter } from "./routes/orders.js";
+import { createContentRouter } from "./routes/content.js";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
@@ -39,6 +40,7 @@ export function createApp({ pool, config }) {
   app.use("/api/health", createHealthRouter(pool));
   app.use("/api/analytics", createAnalyticsRouter(pool));
   app.use("/api/catalog", createCatalogRouter(pool));
+  app.use("/api/content", createContentRouter(pool));
   app.use("/api/orders", createOrdersRouter({ pool, config }));
   app.use("/api/auth", createAuthRouter({ pool, config }));
   app.use("/api/admin", createAdminRouter({ pool, config }));

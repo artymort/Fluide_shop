@@ -6,9 +6,9 @@
   <meta name="robots" content="noindex,nofollow">
   <title>FLUIDE CMS</title>
   <link rel="icon" href="../icon_fluide.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=27">
-  <script src="preview.js?v=12" defer></script>
-  <script src="app.js?v=19" defer></script>
+  <link rel="stylesheet" href="styles.css?v=29">
+  <script src="preview.js?v=14" defer></script>
+  <script src="app.js?v=21" defer></script>
 </head>
 <body>
   <section class="login-shell" id="login-view" hidden>
@@ -31,7 +31,7 @@
         <button class="nav-item" data-section="customers">Покупатели</button>
         <button class="nav-item" data-section="staff">Сотрудники</button>
         <button class="nav-item" data-section="orders">Заказы</button>
-        <button class="nav-item" data-section="content" disabled>Контент и блог <small>следующий этап</small></button>
+        <button class="nav-item" data-section="content">Страницы</button>
         <button class="nav-item" data-section="analytics">Аналитика</button>
       </nav>
       <div class="sidebar-footer"><span id="admin-name"></span><button id="change-password-button" type="button">Сменить пароль</button><button id="logout-button" type="button">Выйти</button></div>
@@ -142,6 +142,96 @@
           </select>
         </div>
         <div class="table-wrap"><table class="orders-table"><thead><tr><th>Заказ</th><th>Состав</th><th>Покупатель</th><th>Оплата</th><th>Сумма</th><th>Статус</th></tr></thead><tbody id="order-rows"></tbody></table></div>
+      </section>
+
+      <section class="view" data-view="content">
+        <div class="page-head content-page-head">
+          <div><span class="eyebrow">Контент сайта</span><h1>Главная страница</h1></div>
+          <a class="secondary" href="../index.html?cms-preview=1" target="_blank" rel="noopener">Открыть предпросмотр</a>
+        </div>
+        <div class="content-status" id="content-status" aria-live="polite"></div>
+
+        <form class="content-editor" id="content-form">
+          <section class="content-card">
+            <div class="content-card-head"><div><h2>Поиск и отображение</h2><p>Название страницы и описание для поисковых систем.</p></div></div>
+            <div class="form-grid">
+              <label class="wide">SEO title<input name="seoTitle" maxlength="240" required></label>
+              <label class="wide">SEO description<textarea name="seoDescription" rows="3" maxlength="500" required></textarea></label>
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="content-card-head"><div><h2>Главный баннер</h2><p>Первый экран главной страницы. Для телефона используется отдельное изображение.</p></div><label class="content-toggle"><input name="heroEnabled" type="checkbox"><span>Показывать</span></label></div>
+            <div class="form-grid">
+              <label class="wide">Заголовок<textarea name="heroTitle" rows="2" maxlength="240" required></textarea></label>
+              <label class="wide">Подзаголовок<textarea name="heroSubtitle" rows="2" maxlength="500" required></textarea></label>
+              <label>Текст кнопки<input name="heroButtonLabel" maxlength="100" required></label>
+              <label>Ссылка кнопки<input name="heroButtonUrl" maxlength="1000" required></label>
+              <label class="wide">Описание изображения<input name="heroImageAlt" maxlength="240"></label>
+            </div>
+            <div class="content-image-grid">
+              <div class="content-image-editor"><img data-content-preview="heroDesktopImage" alt=""><div><strong>Изображение для компьютера</strong><label>Путь к файлу<input name="heroDesktopImage" maxlength="1000" required></label><label class="secondary content-upload">Загрузить<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" data-content-upload="heroDesktopImage" hidden></label></div></div>
+              <div class="content-image-editor"><img data-content-preview="heroMobileImage" alt=""><div><strong>Изображение для телефона</strong><label>Путь к файлу<input name="heroMobileImage" maxlength="1000" required></label><label class="secondary content-upload">Загрузить<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" data-content-upload="heroMobileImage" hidden></label></div></div>
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="content-card-head"><div><h2>Бестселлеры</h2><p>Первые четыре товара показываются сразу. Если выбрано больше четырёх, посетитель увидит кнопку «Показать ещё».</p></div><label class="content-toggle"><input name="bestsellersEnabled" type="checkbox"><span>Показывать</span></label></div>
+            <div class="form-grid content-compact-grid">
+              <label>Заголовок блока<input name="bestsellersTitle" maxlength="160" required></label>
+              <label class="content-toggle content-toggle-field"><input name="bestsellersShowFilters" type="checkbox"><span>Показывать фильтры</span></label>
+            </div>
+            <div class="bestseller-picker">
+              <div class="bestseller-selected-panel">
+                <div class="picker-head"><strong>Выбрано: <span id="content-product-count">0</span></strong><span>Порядок на странице</span></div>
+                <div id="content-selected-products" class="selected-product-list"></div>
+              </div>
+              <div class="bestseller-catalog-panel">
+                <label>Найти товар<input id="content-product-search" type="search" placeholder="Название или SKU"></label>
+                <div id="content-product-list" class="content-product-list"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="content-card-head"><div><h2>Предложения и акции</h2><p>Три крупных промоблока после витрины товаров.</p></div><label class="content-toggle"><input name="offersEnabled" type="checkbox"><span>Показывать</span></label></div>
+            <label class="content-section-title">Заголовок блока<input name="offersTitle" maxlength="160" required></label>
+            <div class="content-offer-list" id="content-offer-list"></div>
+          </section>
+
+          <section class="content-card">
+            <div class="content-card-head"><div><h2>Подбор аромата</h2><p>Баннер, ведущий к персональному подбору.</p></div><label class="content-toggle"><input name="finderEnabled" type="checkbox"><span>Показывать</span></label></div>
+            <div class="form-grid">
+              <label>Заголовок<input name="finderTitle" maxlength="160" required></label>
+              <label>Текст кнопки<input name="finderButtonLabel" maxlength="100" required></label>
+              <label class="wide">Описание<textarea name="finderText" rows="3" maxlength="700" required></textarea></label>
+              <label>Ссылка кнопки<input name="finderButtonUrl" maxlength="1000" required></label>
+              <label>Описание изображения<input name="finderImageAlt" maxlength="240"></label>
+            </div>
+            <div class="content-image-editor content-image-editor-wide"><img data-content-preview="finderImage" alt=""><div><strong>Изображение блока</strong><label>Путь к файлу<input name="finderImage" maxlength="1000" required></label><label class="secondary content-upload">Загрузить<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" data-content-upload="finderImage" hidden></label></div></div>
+          </section>
+
+          <section class="content-card">
+            <div class="content-card-head"><div><h2>Подарки и бренд</h2><p>Два следующих смысловых блока главной страницы.</p></div></div>
+            <div class="content-split-editor">
+              <fieldset><legend>Подарки</legend><label class="content-toggle"><input name="giftsEnabled" type="checkbox"><span>Показывать блок</span></label><label>Заголовок<textarea name="giftsTitle" rows="2" maxlength="240" required></textarea></label><label>Описание<textarea name="giftsText" rows="4" maxlength="700" required></textarea></label><label>Текст на сертификате<textarea name="giftsCardText" rows="2" maxlength="180" required></textarea></label><label>Подпись сертификата<input name="giftsCardCaption" maxlength="120" required></label></fieldset>
+              <fieldset><legend>О бренде</legend><label class="content-toggle"><input name="brandEnabled" type="checkbox"><span>Показывать блок</span></label><label>Метка<input name="brandLabel" maxlength="120" required></label><label>Заголовок<textarea name="brandTitle" rows="2" maxlength="240" required></textarea></label><label>Основной текст<textarea name="brandText" rows="4" maxlength="900" required></textarea></label><label>Дополнительный текст<textarea name="brandSecondaryText" rows="3" maxlength="900" required></textarea></label><div class="form-grid"><label>Текст кнопки<input name="brandButtonLabel" maxlength="100" required></label><label>Ссылка<input name="brandButtonUrl" maxlength="1000" required></label></div><label>Описание изображения<input name="brandImageAlt" maxlength="240"></label><div class="content-image-editor content-image-editor-small"><img data-content-preview="brandImage" alt=""><div><label>Путь к файлу<input name="brandImage" maxlength="1000" required></label><label class="secondary content-upload">Загрузить<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" data-content-upload="brandImage" hidden></label></div></div></fieldset>
+            </div>
+          </section>
+
+          <section class="content-card">
+            <div class="content-card-head"><div><h2>Редакционные материалы</h2><p>Три карточки в блоке «О FLUIDE говорят».</p></div><label class="content-toggle"><input name="voicesEnabled" type="checkbox"><span>Показывать</span></label></div>
+            <div class="form-grid"><label>Заголовок<input name="voicesTitle" maxlength="160" required></label><label>Подзаголовок<input name="voicesSubtitle" maxlength="300" required></label></div>
+            <div class="content-voice-list" id="content-voice-list"></div>
+          </section>
+
+          <section class="content-card">
+            <div class="content-card-head"><div><h2>Клуб FLUIDE</h2><p>Финальный блок с формой подписки.</p></div><label class="content-toggle"><input name="clubEnabled" type="checkbox"><span>Показывать</span></label></div>
+            <div class="form-grid"><label>Заголовок<input name="clubTitle" maxlength="160" required></label><label class="wide">Описание<textarea name="clubText" rows="3" maxlength="700" required></textarea></label></div>
+          </section>
+
+          <footer class="content-actions"><div><strong id="content-save-state">Изменения не сохранены</strong><span id="content-publish-state"></span></div><button class="secondary" id="save-content-button" type="submit">Сохранить черновик</button><button class="primary" id="publish-content-button" type="button">Опубликовать</button></footer>
+        </form>
       </section>
 
       <section class="view" data-view="analytics">

@@ -17,8 +17,10 @@ import {
 import { hashSessionToken, readCookie } from "../security/sessions.js";
 import { createCatalogWorkbook, parseCatalogWorkbook } from "../catalog/workbook.js";
 import { slugify } from "../catalog/source-catalog.js";
+import { prepareHomeContent } from "../content/home-content.js";
 
 const PRODUCT_EDIT_ROLES = new Set(["owner", "admin", "editor"]);
+const CONTENT_EDIT_ROLES = new Set(["owner", "admin", "editor"]);
 const CUSTOMER_ROLES = new Set(["owner", "admin", "orders"]);
 const ORDER_ROLES = new Set(["owner", "admin", "orders"]);
 const ANALYTICS_ROLES = new Set(["owner", "admin", "analyst"]);
@@ -123,6 +125,94 @@ export function createAdminRouter({ pool, config }) {
 
   router.get("/session", (request, response) => {
     response.json({ authenticated: true, admin: publicAdmin(request.admin) });
+  });
+
+  router.get("/content/pages/home", async (request, response, next) => {
+    if (!CONTENT_EDIT_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    try {
+      await pool.query("INSERT INTO content_pages (slug) VALUES ('home') ON CONFLICT (slug) DO NOTHING");
+      const result = await pool.query(
+        `SELECT draft_content, published_content, updated_at, published_at,
+                draft_content IS DISTINCT FROM published_content AS has_unpublished_changes
+           FROM content_pages
+          WHERE slug = 'home'
+          LIMIT 1`,
+      );
+      const page = result.rows[0];
+      response.json({
+        slug: "home",
+        content: await prepareHomeContent(page?.draft_content),
+        publishedContent: page?.published_content ? await prepareHomeContent(page.published_content) : null,
+        updatedAt: page?.updated_at || null,
+        publishedAt: page?.published_at || null,
+        hasUnpublishedChanges: Boolean(page?.has_unpublished_changes),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.put("/content/pages/home", async (request, response, next) => {
+    if (!CONTENT_EDIT_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    try {
+      const content = await prepareHomeContent(request.body?.content);
+      const result = await pool.query(
+        `INSERT INTO content_pages (slug, draft_content, updated_by)
+         VALUES ('home', $1::JSONB, $2)
+         ON CONFLICT (slug) DO UPDATE
+           SET draft_content = EXCLUDED.draft_content,
+               updated_by = EXCLUDED.updated_by
+         RETURNING updated_at, published_at,
+                   draft_content IS DISTINCT FROM published_content AS has_unpublished_changes`,
+        [JSON.stringify(content), request.admin.id],
+      );
+      await audit(pool, request, "content.draft_saved", "content_page", null, { slug: "home" });
+      response.json({
+        slug: "home",
+        content,
+        updatedAt: result.rows[0].updated_at,
+        publishedAt: result.rows[0].published_at,
+        hasUnpublishedChanges: Boolean(result.rows[0].has_unpublished_changes),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/content/pages/home/publish", async (request, response, next) => {
+    if (!CONTENT_EDIT_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    try {
+      await pool.query("INSERT INTO content_pages (slug) VALUES ('home') ON CONFLICT (slug) DO NOTHING");
+      const result = await pool.query(
+        `UPDATE content_pages
+            SET published_content = draft_content,
+                published_by = $1,
+                published_at = NOW()
+          WHERE slug = 'home'
+          RETURNING published_content, updated_at, published_at`,
+        [request.admin.id],
+      );
+      const content = await prepareHomeContent(result.rows[0]?.published_content);
+      await audit(pool, request, "content.published", "content_page", null, { slug: "home" });
+      response.json({
+        slug: "home",
+        content,
+        updatedAt: result.rows[0]?.updated_at || null,
+        publishedAt: result.rows[0]?.published_at || null,
+        hasUnpublishedChanges: false,
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   router.post("/logout", async (request, response, next) => {

@@ -1,0 +1,125 @@
+{
+  "seo": {
+    "title": "FLUIDE Atelier — ароматы для жизни",
+    "description": "FLUIDE — парфюмерный бренд из Владимира. Парфюм, ароматы для дома, подарки и персональный подбор."
+  },
+  "hero": {
+    "enabled": true,
+    "title": "Чувствовать больше\nБыть собой",
+    "subtitle": "Ароматы, которые становятся частью вас",
+    "buttonLabel": "В Каталог",
+    "buttonUrl": "catalog.html",
+    "desktopImage": "assets/media/hero-fluide-product-studio-blue-desktop-v1.webp?v=1",
+    "mobileImage": "assets/media/hero-woman-product-family-blue-mobile-v1.webp?v=1",
+    "imageAlt": "Спрей для волос Devils Intrigue, аромат Matsukita и спрей для дома Citrus Rush FLUIDE"
+  },
+  "bestsellers": {
+    "enabled": true,
+    "title": "Бестселлеры",
+    "showFilters": true,
+    "productIds": [
+      "fragrance-001",
+      "fragrance-002",
+      "fragrance-006",
+      "fragrance-007",
+      "fragrance-008",
+      "fragrance-016",
+      "fragrance-021",
+      "fragrance-022",
+      "fragrance-023",
+      "fragrance-024",
+      "fragrance-025",
+      "fragrance-026"
+    ]
+  },
+  "offers": {
+    "enabled": true,
+    "title": "Предложения и акции",
+    "items": [
+      {
+        "title": "Выгодные сеты",
+        "text": "Готовые сочетания продукции FLUIDE.",
+        "buttonLabel": "Смотреть сеты",
+        "url": "catalog.html",
+        "image": "assets/media/offer-value-sets-v1.webp?v=1",
+        "imageAlt": "Выгодный набор продукции FLUIDE"
+      },
+      {
+        "title": "Акция 2+1",
+        "text": "Выберите три аромата — платите за два.",
+        "buttonLabel": "Выбрать ароматы",
+        "url": "catalog.html",
+        "image": "assets/media/offer-2plus1-matsukita-v1.webp?v=1",
+        "imageAlt": "Три флакона Matsukita по акции 2+1"
+      },
+      {
+        "title": "Мастер-классы",
+        "text": "Создайте собственный аромат во Владимире.",
+        "buttonLabel": "Узнать подробнее",
+        "url": "about.html",
+        "image": "assets/editorial/perfume-making.webp?v=1",
+        "imageAlt": "Парфюмерный мастер-класс FLUIDE"
+      }
+    ]
+  },
+  "finder": {
+    "enabled": true,
+    "title": "Персональный подбор",
+    "text": "Ответьте на несколько вопросов о нотах,\nи настроении — мы соберем персональную подборку.",
+    "buttonLabel": "Начать подбор",
+    "buttonUrl": "selection.html",
+    "image": "assets/media/finder-selection-blue-4k-v1.webp?v=1",
+    "imageAlt": "Коллекция ароматов для персонального подбора FLUIDE"
+  },
+  "gifts": {
+    "enabled": true,
+    "title": "Красиво дарить.\nПриятно выбирать.",
+    "text": "Сертификат оставляет выбор за близким человеком. Набор ароматов превращает этот выбор в маленькое открытие.",
+    "cardText": "Для ваших\nновых ощущений.",
+    "cardCaption": "Подарочный сертификат"
+  },
+  "brand": {
+    "enabled": true,
+    "label": "О FLUIDE Atelier",
+    "title": "Ближе,\nчем кажется.",
+    "text": "Мы — парфюмерный бренд из Владимира. Создаем ароматы для человека и пространства и помогаем найти тот, с которым хорошо именно вам.",
+    "secondaryText": "Приходите знакомиться, пробовать новое и открывать мир ароматов на наших мастер-классах.",
+    "buttonLabel": "Подробнее о компании",
+    "buttonUrl": "about.html",
+    "image": "IMG_7435.webp?v=1",
+    "imageAlt": "Пространство FLUIDE Atelier во Владимире"
+  },
+  "voices": {
+    "enabled": true,
+    "title": "О FLUIDE говорят",
+    "subtitle": "Люди, встречи и любовь к ароматам.",
+    "items": [
+      {
+        "label": "Личный взгляд",
+        "title": "Аромат как часть образа",
+        "text": "Разговор о нотах, впечатлениях и собственном выборе.",
+        "image": "assets/editorial/expert-perfume.webp?v=1",
+        "imageAlt": "Знакомство с парфюмом"
+      },
+      {
+        "label": "За кулисами",
+        "title": "От идеи до флакона",
+        "text": "Материалы и детали, из которых рождается композиция.",
+        "image": "assets/editorial/perfume-workshop.webp?v=1",
+        "imageAlt": "Парфюмерные материалы и ручная работа"
+      },
+      {
+        "label": "Парфюмерное сообщество",
+        "title": "Повод для знакомства",
+        "text": "Встречи, обмен опытом и новые ароматические открытия.",
+        "image": "assets/editorial/perfume-kiosk.webp?v=1",
+        "imageAlt": "Обсуждение ароматов в парфюмерном пространстве"
+      }
+    ]
+  },
+  "club": {
+    "enabled": true,
+    "title": "Будем ближе.",
+    "text": "Закрытый клуб FLUIDE: новые ароматы,\nособые предложения и приглашения на встречи."
+  }
+}

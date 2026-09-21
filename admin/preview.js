@@ -5,6 +5,38 @@
   const now = () => new Date().toISOString();
   const originalFetch = window.fetch.bind(window);
   let products = [];
+  const HOME_DRAFT_KEY = "fluide-cms-home-draft";
+  const HOME_PUBLISHED_KEY = "fluide-cms-home-published";
+  let homeContent = null;
+  let homePublishedContent = null;
+  let homeDefaults = null;
+  let homeUpdatedAt = null;
+  let homePublishedAt = null;
+  const mergeHomeDefaults = (defaults, value) => {
+    const source = value && typeof value === "object" ? value : {};
+    const merged = { ...defaults, ...source };
+    ["seo", "hero", "bestsellers", "offers", "finder", "gifts", "brand", "voices", "club"].forEach((key) => {
+      merged[key] = { ...defaults[key], ...(source[key] || {}) };
+    });
+    merged.hero.desktopImage ||= defaults.hero.desktopImage;
+    merged.hero.mobileImage ||= defaults.hero.mobileImage;
+    merged.finder.image ||= defaults.finder.image;
+    merged.brand.image ||= defaults.brand.image;
+    return merged;
+  };
+  const homeContentReady = originalFetch("../data/homepage.json", { cache: "no-cache" })
+    .then((response) => response.json())
+    .then((defaults) => {
+      homeDefaults = defaults;
+      try {
+        homeContent = mergeHomeDefaults(defaults, JSON.parse(localStorage.getItem(HOME_DRAFT_KEY) || "null"));
+        homePublishedContent = JSON.parse(localStorage.getItem(HOME_PUBLISHED_KEY) || "null");
+      } catch {
+        homeContent = structuredClone(defaults);
+        homePublishedContent = null;
+      }
+      return homeContent;
+    });
   const catalogReady = Promise.all([
     originalFetch("../data/fragrances.json", { cache: "no-cache" }).then((response) => response.json()),
     originalFetch("../data/products.json", { cache: "no-cache" }).then((response) => response.json()),
@@ -201,6 +233,31 @@
 
     if (path === "/session" || path === "/login") return json({ authenticated: true, admin: { id: "demo-owner", email: "owner@fluide-atelier.ru", displayName: "Владелец FLUIDE", role: "owner" } });
     if (path === "/logout" || path === "/password") return new Response(null, { status: 204 });
+    if (path === "/content/pages/home" && method === "GET") {
+      await homeContentReady;
+      return json({
+        slug: "home",
+        content: homeContent,
+        publishedContent: homePublishedContent,
+        updatedAt: homeUpdatedAt,
+        publishedAt: homePublishedAt,
+        hasUnpublishedChanges: JSON.stringify(homeContent) !== JSON.stringify(homePublishedContent),
+      });
+    }
+    if (path === "/content/pages/home" && method === "PUT") {
+      await homeContentReady;
+      homeContent = mergeHomeDefaults(homeDefaults, body(options).content);
+      homeUpdatedAt = now();
+      localStorage.setItem(HOME_DRAFT_KEY, JSON.stringify(homeContent));
+      return json({ slug: "home", content: homeContent, updatedAt: homeUpdatedAt, publishedAt: homePublishedAt, hasUnpublishedChanges: true });
+    }
+    if (path === "/content/pages/home/publish" && method === "POST") {
+      await homeContentReady;
+      homePublishedContent = structuredClone(homeContent);
+      homePublishedAt = now();
+      localStorage.setItem(HOME_PUBLISHED_KEY, JSON.stringify(homePublishedContent));
+      return json({ slug: "home", content: homeContent, updatedAt: homeUpdatedAt, publishedAt: homePublishedAt, hasUnpublishedChanges: false });
+    }
     if (path === "/dashboard") {
       await catalogReady;
       const categoryCounts = products.reduce((counts, product) => {
@@ -336,7 +393,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     const banner = document.createElement("div");
     banner.className = "preview-banner";
-    banner.textContent = "Демонстрация CMS · изменения сохраняются только до обновления страницы";
+    banner.textContent = "Локальная демонстрация CMS · черновик сохраняется в этом браузере";
     document.querySelector(".workspace")?.prepend(banner);
     document.querySelectorAll('a[href="/api/admin/catalog.xlsx"]').forEach((link) => {
       link.addEventListener("click", (event) => {
