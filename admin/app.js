@@ -79,7 +79,7 @@ function showCms(admin) {
   elements["login-view"].hidden = true;
   elements["cms-view"].hidden = false;
   elements["admin-name"].textContent = admin.displayName || admin.email;
-  const canManageStaff = ["owner", "admin"].includes(admin.role);
+  const canManageStaff = admin.role === "owner";
   const canManageContent = ["owner", "admin", "editor"].includes(admin.role);
   document.querySelector('[data-section="staff"]').hidden = !canManageStaff;
   document.querySelector('[data-section="content"]').hidden = !canManageContent;
@@ -1239,7 +1239,7 @@ async function uploadContentAsset(file, input, preview) {
 }
 
 async function switchSection(section) {
-  if (section === "staff" && !["owner", "admin"].includes(state.admin?.role)) section = "dashboard";
+  if (section === "staff" && state.admin?.role !== "owner") section = "dashboard";
   if (section === "content" && !["owner", "admin", "editor"].includes(state.admin?.role)) section = "dashboard";
   state.section = section;
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("is-active", item.dataset.section === section));
@@ -1726,6 +1726,11 @@ elements["cancel-staff"].addEventListener("click", () => elements["staff-dialog"
 elements["staff-form"].addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(event.currentTarget);
+  const password = String(formData.get("password") || "");
+  if (password !== String(formData.get("confirmPassword") || "")) {
+    elements["staff-message"].textContent = "Пароли не совпадают.";
+    return;
+  }
   elements["staff-message"].textContent = "Создаём сотрудника…";
   try {
     const data = await api("/staff", {
@@ -1734,11 +1739,12 @@ elements["staff-form"].addEventListener("submit", async (event) => {
         displayName: formData.get("displayName"),
         email: formData.get("email"),
         role: formData.get("role"),
+        password,
       },
     });
     elements["staff-message"].textContent = "";
     elements["staff-password"].hidden = false;
-    elements["staff-password"].textContent = `Сотрудник создан. Пароль показывается один раз:\n\n${data.initialPassword}\n\nСкопируйте и передайте его сотруднику лично.`;
+    elements["staff-password"].textContent = "Сотрудник создан. Вход доступен с паролем, который вы указали.";
     event.currentTarget.querySelector('button[type="submit"]').disabled = true;
     await loadStaff();
   } catch (error) {

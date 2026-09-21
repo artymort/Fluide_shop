@@ -375,8 +375,9 @@
     if (path === "/staff" && method === "GET") return json({ staff });
     if (path === "/staff" && method === "POST") {
       const payload = body(options);
+      if (String(payload.password || "").length < 12) return json({ error: "staff_invalid" }, 400);
       staff.push({ id: `demo-staff-${Date.now()}`, email: payload.email, display_name: payload.displayName, role: payload.role, status: "active", last_login_at: null, created_at: now() });
-      return json({ staff: staff.at(-1), initialPassword: "Preview-Only-Password-42" }, 201);
+      return json({ staff: staff.at(-1) }, 201);
     }
     if (/^\/staff\//.test(path) && method === "PATCH") {
       const person = staff.find((item) => item.id === path.split("/").at(-1));

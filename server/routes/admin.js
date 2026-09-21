@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Router } from "express";
@@ -26,14 +26,8 @@ const ORDER_ROLES = new Set(["owner", "admin", "orders"]);
 const ANALYTICS_ROLES = new Set(["owner", "admin", "analyst"]);
 const ORDER_STATUSES = new Set(["new", "confirmed", "assembling", "ready", "shipped", "delivered", "cancelled", "refunded"]);
 const PAYMENT_STATUSES = new Set(["unpaid", "pending", "paid", "partially_refunded", "refunded", "failed", "cancelled"]);
-const STAFF_MANAGE_ROLES = new Set(["owner", "admin"]);
+const STAFF_MANAGE_ROLES = new Set(["owner"]);
 const STAFF_ROLES = new Set(["owner", "admin", "editor", "orders", "analyst"]);
-const PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
-
-const generatePassword = () => [...randomBytes(22)]
-  .map((byte) => PASSWORD_ALPHABET[byte % PASSWORD_ALPHABET.length])
-  .join("");
-
 const serializeProduct = (row) => ({
   id: row.id,
   legacyId: row.legacy_id,
@@ -281,13 +275,14 @@ export function createAdminRouter({ pool, config }) {
     const email = String(request.body?.email || "").trim().toLowerCase();
     const displayName = cleanText(request.body?.displayName, 120);
     const role = String(request.body?.role || "editor");
+    const password = String(request.body?.password || "");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !displayName || !STAFF_ROLES.has(role)
+      || password.length < 12 || password.length > 256
       || (role === "owner" && request.admin.role !== "owner")) {
       response.status(400).json({ error: "staff_invalid" });
       return;
     }
     try {
-      const password = generatePassword();
       const result = await pool.query(
         `INSERT INTO admin_users (email, display_name, password_hash, role)
          VALUES ($1, $2, $3, $4)
@@ -295,7 +290,7 @@ export function createAdminRouter({ pool, config }) {
         [email, displayName, hashAdminPassword(password), role],
       );
       await audit(pool, request, "admin.staff_created", "admin_user", result.rows[0].id, { email, role });
-      response.status(201).json({ staff: result.rows[0], initialPassword: password });
+      response.status(201).json({ staff: result.rows[0] });
     } catch (error) {
       if (error?.code === "23505") {
         response.status(409).json({ error: "staff_email_exists" });
