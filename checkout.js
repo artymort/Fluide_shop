@@ -2,6 +2,7 @@
 
 (() => {
   const CART_KEY = "fluide-cart";
+  const PENDING_PAYMENT_KEY = "fluide-pending-payment";
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
   })[char]);
@@ -63,6 +64,135 @@
     return;
   }
 
+  function readPendingPayment() {
+    try {
+      const value = JSON.parse(sessionStorage.getItem(PENDING_PAYMENT_KEY) || "null");
+      return value?.orderId && value?.checkoutToken ? value : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writePendingPayment(value) {
+    sessionStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(value));
+  }
+
+  function clearPendingPayment() {
+    sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+  }
+
+  async function paymentRequest(path, pending) {
+    const response = await fetch(path, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ checkoutToken: pending.checkoutToken }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw Object.assign(new Error(payload.error || "payment_failed"), { code: payload.error });
+    return payload;
+  }
+
+  function renderPaymentResult({ title, orderNumber, message, retry = false }) {
+    page.innerHTML = `<section class="checkout-success checkout-payment-result">
+      <span class="checkout-success-icon"><svg><use href="assets/icons/lucide.svg#check"></use></svg></span>
+      <p>${escapeHtml(title)}</p>
+      <h2>${escapeHtml(orderNumber || "")}</h2>
+      <div>${escapeHtml(message)}</div>
+      <button class="checkout-payment-retry" type="button" data-payment-retry ${retry ? "" : "hidden"}>Перейти к оплате</button>
+      <a href="catalog.html">Продолжить покупки</a>
+    </section>`;
+  }
+
+  async function startPendingPayment(pending) {
+    const payload = await paymentRequest(`/api/payments/orders/${encodeURIComponent(pending.orderId)}/yookassa`, pending);
+    if (payload.payment?.status === "succeeded") {
+      localStorage.removeItem(CART_KEY);
+      clearPendingPayment();
+      window.FluideAnalytics?.track("purchase", {
+        valueMinor: Number(pending.valueMinor),
+        metadata: { orderNumber: pending.orderNumber },
+      });
+      renderPaymentResult({
+        title: "Заказ оплачен",
+        orderNumber: pending.orderNumber,
+        message: "Платёж подтверждён. Мы начали обработку заказа.",
+      });
+      return;
+    }
+    if (!payload.payment?.confirmationUrl) {
+      throw Object.assign(new Error("payment_confirmation_missing"), { code: "payment_confirmation_missing" });
+    }
+    window.location.assign(payload.payment.confirmationUrl);
+  }
+
+  async function renderPaymentReturn() {
+    const pending = readPendingPayment();
+    if (!pending) {
+      renderPaymentResult({
+        title: "Не удалось найти заказ",
+        message: "Вернитесь в каталог или свяжитесь с нами, если оплата уже была выполнена.",
+      });
+      return;
+    }
+    renderPaymentResult({
+      title: "Проверяем оплату",
+      orderNumber: pending.orderNumber,
+      message: "Подождите несколько секунд — подтверждаем статус платежа в ЮKassa.",
+    });
+    try {
+      const payload = await paymentRequest(
+        `/api/payments/orders/${encodeURIComponent(pending.orderId)}/yookassa/status`,
+        pending,
+      );
+      if (payload.payment?.status === "succeeded") {
+        localStorage.removeItem(CART_KEY);
+        clearPendingPayment();
+        window.FluideAnalytics?.track("purchase", {
+          valueMinor: Number(pending.valueMinor),
+          metadata: { orderNumber: pending.orderNumber },
+        });
+        renderPaymentResult({
+          title: "Заказ оплачен",
+          orderNumber: pending.orderNumber,
+          message: "Платёж подтверждён. Мы начали обработку заказа.",
+        });
+      } else if (payload.payment?.status === "cancelled") {
+        renderPaymentResult({
+          title: "Платёж не завершён",
+          orderNumber: pending.orderNumber,
+          message: "Деньги не списаны. Можно попробовать оплатить заказ ещё раз.",
+          retry: true,
+        });
+      } else {
+        renderPaymentResult({
+          title: "Платёж обрабатывается",
+          orderNumber: pending.orderNumber,
+          message: "Подтверждение ещё не получено. Обновите страницу через минуту.",
+        });
+      }
+    } catch {
+      renderPaymentResult({
+        title: "Проверка временно недоступна",
+        orderNumber: pending.orderNumber,
+        message: "Заказ сохранён. Попробуйте обновить страницу немного позже.",
+      });
+    }
+  }
+
+  if (new URLSearchParams(window.location.search).get("payment") === "return") {
+    page.addEventListener("click", (event) => {
+      const retry = event.target.closest("[data-payment-retry]");
+      if (!retry) return;
+      const pending = readPendingPayment();
+      if (!pending) return;
+      retry.disabled = true;
+      startPendingPayment(pending).catch(() => { retry.disabled = false; });
+    });
+    renderPaymentReturn();
+    return;
+  }
+
   let activeCart = readCart();
   if (!activeCart.length) {
     page.innerHTML = `<section class="checkout-empty"><h1>Корзина пуста</h1><p>Добавьте товары, чтобы перейти к оформлению заказа.</p><a href="catalog.html">Перейти в каталог</a></section>`;
@@ -102,7 +232,7 @@
           <div class="checkout-summary-row checkout-summary-row--discount"><span>Скидка 3+1</span><i></i><strong data-checkout-discount>${pricing.discount ? `− ${money(pricing.discount)}` : "—"}</strong></div>
         </div><div class="checkout-total"><span>Итого</span><span class="checkout-total-prices"><del data-checkout-original-total ${pricing.discount ? "" : "hidden"}>${money(pricing.subtotal)}</del><strong data-checkout-grand-total>${money(total)}</strong></span></div><small data-checkout-delivery-note>Итог изменится после автоматического расчёта доставки.</small></section></aside>
     </div>
-    <div class="checkout-success" hidden><span class="checkout-success-icon"><svg><use href="assets/icons/lucide.svg#check"></use></svg></span><p>Заказ принят</p><h2 data-order-number></h2><div>Мы свяжемся с вами, чтобы подтвердить состав, доставку и оплату.</div><a href="catalog.html">Продолжить покупки</a></div>
+    <div class="checkout-success" hidden><span class="checkout-success-icon"><svg><use href="assets/icons/lucide.svg#check"></use></svg></span><p data-order-result-title>Заказ принят</p><h2 data-order-number></h2><div data-order-result-message>Мы свяжемся с вами, чтобы подтвердить состав, доставку и оплату.</div><button class="checkout-payment-retry" type="button" data-payment-retry hidden>Перейти к оплате</button><a href="catalog.html">Продолжить покупки</a></div>
   </div>`;
 
   const form = page.querySelector("#checkout-form");
@@ -115,7 +245,19 @@
     delivery_postal_code_required: "Для Почты России укажите шестизначный индекс.",
     catalog_item_unavailable: "Один из товаров больше недоступен. Обновите корзину.",
     order_items_invalid: "Корзина пуста или повреждена.",
+    payment_provider_disabled: "Онлайн-оплата временно недоступна. Заказ сохранён.",
+    payment_provider_unavailable: "ЮKassa временно недоступна. Заказ сохранён — попробуйте оплатить его ещё раз.",
+    payment_provider_rejected: "ЮKassa не приняла запрос. Заказ сохранён — попробуйте оплатить его ещё раз.",
   };
+
+  function showCreatedOrder(orderNumber, message, retry = false) {
+    page.querySelector(".checkout-body").hidden = true;
+    page.querySelector(".checkout-success").hidden = false;
+    page.querySelector("[data-order-number]").textContent = orderNumber;
+    page.querySelector("[data-order-result-message]").textContent = message;
+    page.querySelector("[data-payment-retry]").hidden = !retry;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   async function prefillAccount() {
     if (!window.FluideAccount) return;
@@ -189,6 +331,8 @@
     submit.classList.add("is-loading");
     errorNode.hidden = true;
     const data = new FormData(form);
+    let createdOrder = null;
+    let pendingPayment = null;
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
@@ -209,17 +353,35 @@
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw Object.assign(new Error(payload.error || "order_create_failed"), { code: payload.error });
 
+      createdOrder = payload.order;
+      window.dispatchEvent(new CustomEvent("fluide:order-created", { detail: payload.order }));
+      if (payload.payment?.available) {
+        pendingPayment = {
+          orderId: payload.order.id,
+          orderNumber: payload.order.order_number,
+          checkoutToken: payload.checkoutToken,
+          valueMinor: Number(payload.order.total_minor),
+        };
+        writePendingPayment(pendingPayment);
+        await startPendingPayment(pendingPayment);
+        return;
+      }
+
       localStorage.removeItem(CART_KEY);
       window.FluideAnalytics?.track("purchase", {
         valueMinor: Number(payload.order.total_minor),
         metadata: { orderNumber: payload.order.order_number },
       });
-      page.querySelector(".checkout-body").hidden = true;
-      page.querySelector(".checkout-success").hidden = false;
-      page.querySelector("[data-order-number]").textContent = payload.order.order_number;
-      window.dispatchEvent(new CustomEvent("fluide:order-created", { detail: payload.order }));
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      showCreatedOrder(payload.order.order_number, "Мы свяжемся с вами, чтобы подтвердить состав, доставку и оплату.");
     } catch (error) {
+      if (createdOrder && pendingPayment) {
+        showCreatedOrder(
+          createdOrder.order_number,
+          errorMessages[error.code] || "Заказ сохранён, но перейти к оплате не удалось. Попробуйте ещё раз.",
+          true,
+        );
+        return;
+      }
       errorNode.textContent = errorMessages[error.code] || "Не удалось создать заказ. Проверьте связь и попробуйте ещё раз.";
       errorNode.hidden = false;
       errorNode.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -227,6 +389,19 @@
       submit.disabled = false;
       submit.classList.remove("is-loading");
     }
+  });
+
+  page.addEventListener("click", (event) => {
+    const retry = event.target.closest("[data-payment-retry]");
+    if (!retry) return;
+    const pending = readPendingPayment();
+    if (!pending) return;
+    retry.disabled = true;
+    startPendingPayment(pending).catch((error) => {
+      page.querySelector("[data-order-result-message]").textContent = errorMessages[error.code]
+        || "Не удалось перейти к оплате. Попробуйте ещё раз немного позже.";
+      retry.disabled = false;
+    });
   });
 
   prefillAccount();

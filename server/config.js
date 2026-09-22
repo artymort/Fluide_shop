@@ -18,6 +18,14 @@ const required = (name) => {
   return value;
 };
 
+const readBoolean = (name, fallback = false) => {
+  const raw = readString(name, fallback ? "true" : "false").toLowerCase();
+  if (!["true", "false"].includes(raw)) {
+    throw new Error(`${name} must be true or false`);
+  }
+  return raw === "true";
+};
+
 export function loadConfig() {
   const nodeEnv = readString("NODE_ENV", "development");
   const sessionSecret = required("SESSION_SECRET");
@@ -26,6 +34,9 @@ export function loadConfig() {
   const vkClientId = readString("VK_CLIENT_ID");
   const smsProvider = readString("SMS_PROVIDER", nodeEnv === "production" ? "disabled" : "console").toLowerCase();
   const smsRuApiKey = readString("SMS_RU_API_KEY");
+  const yooKassaShopId = readString("YOOKASSA_SHOP_ID");
+  const yooKassaSecretKey = readString("YOOKASSA_SECRET_KEY");
+  const yooKassaTestMode = readBoolean("YOOKASSA_TEST_MODE", true);
 
   if (sessionSecret.length < 32) {
     throw new Error("SESSION_SECRET must contain at least 32 characters");
@@ -44,6 +55,18 @@ export function loadConfig() {
   }
   if (smsProvider === "smsru" && !smsRuApiKey) {
     throw new Error("SMS_RU_API_KEY is required when SMS_PROVIDER=smsru");
+  }
+  if (Boolean(yooKassaShopId) !== Boolean(yooKassaSecretKey)) {
+    throw new Error("YOOKASSA_SHOP_ID and YOOKASSA_SECRET_KEY must be set together");
+  }
+  if (yooKassaShopId && !/^\d+$/.test(yooKassaShopId)) {
+    throw new Error("YOOKASSA_SHOP_ID must contain only digits");
+  }
+  if (yooKassaTestMode && yooKassaSecretKey && !yooKassaSecretKey.startsWith("test_")) {
+    throw new Error("YOOKASSA_TEST_MODE=true requires a test secret key");
+  }
+  if (!yooKassaTestMode && yooKassaSecretKey.startsWith("test_")) {
+    throw new Error("A test YooKassa key cannot be used when YOOKASSA_TEST_MODE=false");
   }
 
   return Object.freeze({
@@ -102,6 +125,18 @@ export function loadConfig() {
       dailyPerPhone: readInteger("SMS_DAILY_PER_PHONE", 5, { min: 1, max: 20 }),
       dailyPerIp: readInteger("SMS_DAILY_PER_IP", 30, { min: 5, max: 200 }),
       dailyGlobal: readInteger("SMS_DAILY_GLOBAL", 100, { min: 10, max: 10000 }),
+    }),
+    yooKassa: Object.freeze({
+      enabled: Boolean(yooKassaShopId && yooKassaSecretKey),
+      shopId: yooKassaShopId,
+      secretKey: yooKassaSecretKey,
+      testMode: yooKassaTestMode,
+      returnUrl: readString(
+        "YOOKASSA_RETURN_URL",
+        nodeEnv === "production"
+          ? "https://fluide-atelier.ru/checkout.html?payment=return"
+          : "http://127.0.0.1:8765/checkout.html?payment=return",
+      ),
     }),
     allowedOrigins: Object.freeze([
       "https://fluide-atelier.ru",

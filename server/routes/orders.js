@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { normalizeRussianPhone } from "../security/phone-otp.js";
@@ -109,6 +109,14 @@ const makeOrderNumber = () => {
   return `FA-${year}-${suffix}`;
 };
 
+const createCheckoutToken = () => {
+  const token = randomBytes(32).toString("base64url");
+  return {
+    token,
+    hash: createHash("sha256").update(token).digest("hex"),
+  };
+};
+
 export function createOrdersRouter({ pool, config }) {
   const router = Router();
 
@@ -171,19 +179,20 @@ export function createOrdersRouter({ pool, config }) {
       const promotion = calculatePerfumePromotion(resolvedItems);
       const totalMinor = subtotalMinor - promotion.discountMinor;
       const orderNumber = makeOrderNumber();
+      const checkoutToken = createCheckoutToken();
       const orderResult = await client.query(
         `INSERT INTO commerce_orders (
            order_number, user_id, status, payment_status, customer_name,
            customer_email, customer_phone_e164, subtotal_minor, discount_minor,
            delivery_minor, total_minor, currency, delivery_method, delivery_address,
-           customer_comment
+           customer_comment, checkout_token_hash
          ) VALUES (
-           $1, $2, 'new', 'unpaid', $3, $4, $5, $6, $7, 0, $8, 'RUB', $9, $10::JSONB, $11
+           $1, $2, 'new', 'unpaid', $3, $4, $5, $6, $7, 0, $8, 'RUB', $9, $10::JSONB, $11, $12
          ) RETURNING id, order_number, status, payment_status, total_minor, currency, created_at`,
         [
           orderNumber, userId, payload.customerName, payload.email, payload.phone,
           subtotalMinor, promotion.discountMinor, totalMinor, payload.deliveryMethod,
-          JSON.stringify(payload.deliveryAddress), payload.comment,
+          JSON.stringify(payload.deliveryAddress), payload.comment, checkoutToken.hash,
         ],
       );
       const order = orderResult.rows[0];
@@ -206,7 +215,15 @@ export function createOrdersRouter({ pool, config }) {
         [order.id],
       );
       await client.query("COMMIT");
-      response.status(201).json({ order });
+      response.status(201).json({
+        order,
+        checkoutToken: checkoutToken.token,
+        payment: {
+          available: Boolean(config.yooKassa?.enabled && payload.deliveryAddress.pricingStatus === "fixed"),
+          provider: config.yooKassa?.enabled ? "yookassa" : null,
+          test: Boolean(config.yooKassa?.testMode),
+        },
+      });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
       if (error instanceof OrderRequestError) {
