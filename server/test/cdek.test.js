@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   CdekError,
   createCdekClient,
+  normalizeCdekCity,
   normalizeCdekPoint,
   quotePayload,
   selectCdekTariff,
@@ -29,7 +30,7 @@ test("signed CDEK quote detects tampering and expiration", () => {
     mode: "pvz",
     city: "Оренбург",
     cityCode: 100,
-    postalCode: "460044",
+    postalCode: "",
     address: "ул. Мира, 1",
     pointCode: "ORE1",
     tariffCode: 136,
@@ -61,6 +62,22 @@ test("CDEK point normalization only returns usable pickup points", () => {
   assert.equal(normalizeCdekPoint({ code: "ORE2" }), null);
 });
 
+test("CDEK city normalization builds a clear suggestion label", () => {
+  assert.deepEqual(normalizeCdekCity({
+    code: 261,
+    city: "Оренбург",
+    sub_region: "городской округ Оренбург",
+    region: "Оренбургская область",
+  }), {
+    code: 261,
+    city: "Оренбург",
+    subRegion: "городской округ Оренбург",
+    region: "Оренбургская область",
+    label: "Оренбург, городской округ Оренбург, Оренбургская область",
+  });
+  assert.equal(normalizeCdekCity({ city: "Без кода" }), null);
+});
+
 test("CDEK quote payload marks shipment creation as disabled", () => {
   const payload = quotePayload({
     destination: { city: "Оренбург", code: 100, postalCode: "460044" },
@@ -89,7 +106,7 @@ test("CDEK client resolves the origin city code before tariff calculation", asyn
     if (requestUrl.pathname.endsWith("/oauth/token")) {
       return new Response(JSON.stringify({ access_token: "token", expires_in: 3600 }), { status: 200 });
     }
-    if (requestUrl.pathname.endsWith("/location/cities") && requestUrl.searchParams.has("postal_code")) {
+    if (requestUrl.pathname.endsWith("/location/cities") && requestUrl.searchParams.get("code") === "261") {
       return new Response(JSON.stringify([{ code: 261, city: "Оренбург", region: "Оренбургская область" }]), { status: 200 });
     }
     if (requestUrl.pathname.endsWith("/location/cities") && requestUrl.searchParams.get("city") === "Владимир") {
@@ -113,9 +130,39 @@ test("CDEK client resolves the origin city code before tariff calculation", asyn
     package: { weightGrams: 1000, lengthCm: 25, widthCm: 20, heightCm: 15 },
   }, { fetchImpl });
 
-  const destination = await client.findCity({ city: "Оренбург", postalCode: "460044" });
+  const destination = await client.findCity({ code: 261, city: "Оренбург", postalCode: "" });
   const tariff = await client.quote({ destination, mode: "pvz" });
 
   assert.equal(tariff.deliveryMinor, 49_900);
   assert.equal(calls.filter((call) => call.url.pathname.endsWith("/location/cities")).length, 2);
+});
+
+test("CDEK client searches and deduplicates city suggestions", async () => {
+  const fetchImpl = async (url) => {
+    const requestUrl = new URL(url);
+    if (requestUrl.pathname.endsWith("/oauth/token")) {
+      return new Response(JSON.stringify({ access_token: "token", expires_in: 3600 }), { status: 200 });
+    }
+    if (requestUrl.pathname.endsWith("/location/suggest/cities")) {
+      assert.equal(requestUrl.searchParams.get("name"), "Орен");
+      assert.equal(requestUrl.searchParams.get("country_code"), "RU");
+      return new Response(JSON.stringify([
+        { code: 261, full_name: "Оренбург, Оренбургская область", country_code: "RU" },
+        { code: 300, full_name: "Новосергиевка, Оренбургская область", country_code: "RU" },
+        { code: 261, full_name: "Оренбург, Оренбургская область", country_code: "RU" },
+      ]), { status: 200 });
+    }
+    return new Response(JSON.stringify({ message: "unexpected request" }), { status: 500 });
+  };
+  const client = createCdekClient({
+    account: "account",
+    securePassword: "secret",
+    apiBase: "https://api.cdek.ru/v2",
+    fromCity: "Владимир",
+    package: { weightGrams: 1000, lengthCm: 25, widthCm: 20, heightCm: 15 },
+  }, { fetchImpl });
+
+  const cities = await client.searchCities("Орен");
+  assert.deepEqual(cities.map((city) => city.code), [261, 300]);
+  assert.equal(cities[0].label, "Оренбург, Оренбургская область");
 });

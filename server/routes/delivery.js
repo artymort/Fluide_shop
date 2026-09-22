@@ -16,27 +16,54 @@ const quoteLimit = rateLimit({
   legacyHeaders: false,
 });
 
+const citySearchLimit = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 60,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+});
+
 const normalizeQuoteRequest = (body = {}) => {
   const mode = cleanText(body.mode, 16);
   const city = cleanText(body.city, 120);
-  const postalCode = cleanText(body.postalCode, 6);
+  const cityCode = Number(body.cityCode);
   const address = cleanText(body.address, 300);
   if (!new Set(["pvz", "door"]).has(mode)) throw new CdekError("cdek_mode_invalid", 400);
-  if (city.length < 2) throw new CdekError("cdek_city_invalid", 400);
-  if (!/^\d{6}$/.test(postalCode)) throw new CdekError("cdek_postal_code_invalid", 400);
+  if (city.length < 2 || !Number.isInteger(cityCode) || cityCode < 1) {
+    throw new CdekError("cdek_city_invalid", 400);
+  }
   if (mode === "door" && address.length < 5) throw new CdekError("cdek_address_invalid", 400);
-  return { mode, city, postalCode, address };
+  return { mode, city, cityCode, postalCode: "", address };
 };
 
 export function createDeliveryRouter({ config }) {
   const router = Router();
   const cdek = config.cdek.enabled ? createCdekClient(config.cdek) : null;
 
+  router.get("/cdek/cities", citySearchLimit, async (request, response, next) => {
+    try {
+      if (!cdek) throw new CdekError("cdek_provider_disabled", 503);
+      const query = cleanText(request.query.q, 120);
+      if (query.length < 2) throw new CdekError("cdek_city_invalid", 400);
+      response.json({ cities: await cdek.searchCities(query) });
+    } catch (error) {
+      if (error instanceof CdekError) {
+        response.status(error.status).json({ error: error.code });
+        return;
+      }
+      next(error);
+    }
+  });
+
   router.post("/cdek/quote", quoteLimit, async (request, response, next) => {
     try {
       if (!cdek) throw new CdekError("cdek_provider_disabled", 503);
       const input = normalizeQuoteRequest(request.body);
-      const destination = await cdek.findCity(input);
+      const destination = await cdek.findCity({
+        code: input.cityCode,
+        city: input.city,
+        postalCode: "",
+      });
       const tariff = await cdek.quote({ destination, mode: input.mode });
       const common = {
         provider: "cdek",

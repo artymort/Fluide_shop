@@ -66,7 +66,7 @@ export function verifyCdekQuote(token, secret, now = Date.now()) {
     || payload.currency !== CURRENCY
     || !["pvz", "door"].includes(payload.mode)
     || !cleanText(payload.city, 120)
-    || !/^\d{6}$/.test(String(payload.postalCode || ""))
+    || (payload.postalCode && !/^\d{6}$/.test(String(payload.postalCode)))
     || !cleanText(payload.address, 300)
     || !Number.isInteger(payload.tariffCode)
     || (payload.mode === "pvz" && !cleanText(payload.pointCode, 40))) {
@@ -106,6 +106,24 @@ export function normalizeCdekPoint(point) {
     workTime: cleanText(point?.work_time, 200),
     latitude: Number.isFinite(Number(location.latitude)) ? Number(location.latitude) : null,
     longitude: Number.isFinite(Number(location.longitude)) ? Number(location.longitude) : null,
+  };
+}
+
+export function normalizeCdekCity(candidate) {
+  const code = Number(candidate?.code);
+  const fullName = cleanText(candidate?.full_name, 240);
+  const city = cleanText(candidate?.city || fullName, 240);
+  if (!Number.isInteger(code) || code < 1 || !city) return null;
+  const region = cleanText(candidate?.region, 160);
+  const subRegion = cleanText(candidate?.sub_region, 160);
+  const details = [...new Set([subRegion, region].filter(Boolean))]
+    .filter((value) => value.toLocaleLowerCase("ru-RU") !== city.toLocaleLowerCase("ru-RU"));
+  return {
+    code,
+    city,
+    region,
+    subRegion,
+    label: fullName || [city, ...details].join(", "),
   };
 }
 
@@ -175,11 +193,28 @@ export function createCdekClient(config, { fetchImpl = globalThis.fetch } = {}) 
     return payload;
   }
 
-  async function findCity({ city, postalCode }) {
+  async function searchCities(query) {
+    const normalizedQuery = cleanText(query, 120);
+    if (normalizedQuery.length < 2) throw new CdekError("cdek_city_invalid", 400);
+    const cities = await request("location/suggest/cities", {
+      query: { country_code: "RU", name: normalizedQuery },
+    });
+    const unique = new Map();
+    (Array.isArray(cities) ? cities : []).forEach((candidate) => {
+      const city = normalizeCdekCity(candidate);
+      if (city && !unique.has(city.code)) unique.set(city.code, city);
+    });
+    return [...unique.values()].slice(0, 12);
+  }
+
+  async function findCity({ city, postalCode, code }) {
+    const cityCode = Number(code);
     const cities = await request("location/cities", {
       query: {
         country_codes: "RU",
-        ...(postalCode ? { postal_code: postalCode } : { city, size: 20 }),
+        ...(Number.isInteger(cityCode) && cityCode > 0
+          ? { code: cityCode }
+          : (postalCode ? { postal_code: postalCode } : { city, size: 20 })),
       },
     });
     const normalizedCity = cleanText(city, 120).toLocaleLowerCase("ru-RU");
@@ -187,7 +222,9 @@ export function createCdekClient(config, { fetchImpl = globalThis.fetch } = {}) 
       const candidateName = cleanText(candidate?.city, 120).toLocaleLowerCase("ru-RU");
       return !normalizedCity || candidateName === normalizedCity;
     });
-    const selected = matches[0] || (Array.isArray(cities) ? cities[0] : null);
+    const selected = (Number.isInteger(cityCode) && cityCode > 0
+      ? (Array.isArray(cities) ? cities.find((candidate) => Number(candidate?.code) === cityCode) : null)
+      : matches[0]) || (Array.isArray(cities) ? cities[0] : null);
     if (!selected?.code) throw new CdekError("cdek_city_not_found", 404);
     return {
       code: Number(selected.code),
@@ -239,7 +276,7 @@ export function createCdekClient(config, { fetchImpl = globalThis.fetch } = {}) 
       .slice(0, 200);
   }
 
-  return Object.freeze({ findCity, quote, pickupPoints });
+  return Object.freeze({ findCity, searchCities, quote, pickupPoints });
 }
 
 export function quotePayload({ destination, tariff, mode, address, point = null }) {

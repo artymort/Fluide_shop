@@ -40,7 +40,7 @@ test("CDEK delivery requires a server-signed quote", () => {
     customerName: "Анна",
     customerPhone: "+79990000000",
     deliveryMethod: "cdek",
-    deliveryAddress: { city: "Оренбург", address: "ул. Мира, 1", postalCode: "460044" },
+    deliveryAddress: { city: "Оренбург", address: "ул. Мира, 1", postalCode: "" },
     items: [{ key: "product-01", quantity: 1 }],
   }), /delivery_quote_required/);
 
@@ -49,10 +49,11 @@ test("CDEK delivery requires a server-signed quote", () => {
     customerPhone: "+79990000000",
     deliveryMethod: "cdek",
     deliveryQuoteToken: "signed.quote",
-    deliveryAddress: { city: "Оренбург", address: "ул. Мира, 1", postalCode: "460044" },
+    deliveryAddress: { city: "Оренбург", address: "ул. Мира, 1", postalCode: "" },
     items: [{ key: "product-01", quantity: 1 }],
   });
   assert.equal(payload.deliveryQuoteToken, "signed.quote");
+  assert.equal(payload.deliveryAddress.postalCode, "");
 });
 
 test("Russian Post delivery requires a six-digit postal code", () => {

@@ -65,7 +65,7 @@ export function normalizeOrderPayload(body = {}) {
   if (deliveryMethod !== "pickup" && (!deliveryAddress.city || !deliveryAddress.address)) {
     throw new OrderRequestError("delivery_address_required");
   }
-  if (["russian_post", "cdek"].includes(deliveryMethod) && !/^\d{6}$/.test(deliveryAddress.postalCode)) {
+  if (deliveryMethod === "russian_post" && !/^\d{6}$/.test(deliveryAddress.postalCode)) {
     throw new OrderRequestError("delivery_postal_code_required");
   }
   if (deliveryMethod === "cdek" && !deliveryQuoteToken) {
