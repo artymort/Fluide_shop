@@ -202,7 +202,7 @@ export function createOrdersRouter({ pool, config }) {
           `INSERT INTO commerce_order_items (
              order_id, product_id, variant_id, product_name, variant_name, sku,
              image_url, quantity, unit_price_minor, total_price_minor
-           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9 * $8)`,
+           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9::BIGINT * $8::INTEGER)`,
           [
             order.id, item.product_id, item.variant_id, item.product_name, item.variant_name,
             item.sku, item.image_url, item.quantity, item.price_minor,
