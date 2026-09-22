@@ -37,6 +37,10 @@ export function loadConfig() {
   const yooKassaShopId = readString("YOOKASSA_SHOP_ID");
   const yooKassaSecretKey = readString("YOOKASSA_SECRET_KEY");
   const yooKassaTestMode = readBoolean("YOOKASSA_TEST_MODE", true);
+  const cdekAccount = readString("CDEK_ACCOUNT");
+  const cdekSecurePassword = readString("CDEK_SECURE_PASSWORD");
+  const cdekApiBase = readString("CDEK_API_BASE", "https://api.cdek.ru/v2").replace(/\/+$/, "");
+  const cdekCreateOrders = readBoolean("CDEK_CREATE_ORDERS", false);
 
   if (sessionSecret.length < 32) {
     throw new Error("SESSION_SECRET must contain at least 32 characters");
@@ -67,6 +71,15 @@ export function loadConfig() {
   }
   if (!yooKassaTestMode && yooKassaSecretKey.startsWith("test_")) {
     throw new Error("A test YooKassa key cannot be used when YOOKASSA_TEST_MODE=false");
+  }
+  if (Boolean(cdekAccount) !== Boolean(cdekSecurePassword)) {
+    throw new Error("CDEK_ACCOUNT and CDEK_SECURE_PASSWORD must be set together");
+  }
+  if (!["https://api.cdek.ru/v2", "https://api.edu.cdek.ru/v2"].includes(cdekApiBase)) {
+    throw new Error("CDEK_API_BASE must be an official CDEK API v2 endpoint");
+  }
+  if (cdekCreateOrders) {
+    throw new Error("CDEK_CREATE_ORDERS=true is not supported in read-only delivery mode");
   }
 
   return Object.freeze({
@@ -137,6 +150,20 @@ export function loadConfig() {
           ? "https://fluide-atelier.ru/checkout.html?payment=return"
           : "http://127.0.0.1:8765/checkout.html?payment=return",
       ),
+    }),
+    cdek: Object.freeze({
+      enabled: Boolean(cdekAccount && cdekSecurePassword),
+      account: cdekAccount,
+      securePassword: cdekSecurePassword,
+      apiBase: cdekApiBase,
+      createOrders: false,
+      fromCity: readString("CDEK_FROM_CITY", "Владимир"),
+      package: Object.freeze({
+        weightGrams: readInteger("CDEK_PACKAGE_WEIGHT_GRAMS", 1000, { min: 1, max: 30_000 }),
+        lengthCm: readInteger("CDEK_PACKAGE_LENGTH_CM", 25, { min: 1, max: 200 }),
+        widthCm: readInteger("CDEK_PACKAGE_WIDTH_CM", 20, { min: 1, max: 200 }),
+        heightCm: readInteger("CDEK_PACKAGE_HEIGHT_CM", 15, { min: 1, max: 200 }),
+      }),
     }),
     allowedOrigins: Object.freeze([
       "https://fluide-atelier.ru",

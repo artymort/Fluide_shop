@@ -3,6 +3,7 @@ import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { normalizeRussianPhone } from "../security/phone-otp.js";
 import { hashSessionToken, readCookie } from "../security/sessions.js";
+import { CdekError, verifyCdekQuote } from "../delivery/cdek.js";
 
 const DELIVERY_METHODS = new Set(["russian_post", "cdek", "pickup"]);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -45,6 +46,7 @@ export function normalizeOrderPayload(body = {}) {
   const phone = normalizeRussianPhone(body.customerPhone);
   const email = cleanText(body.customerEmail, 320).toLowerCase() || null;
   const deliveryMethod = cleanText(body.deliveryMethod, 32);
+  const deliveryQuoteToken = cleanText(body.deliveryQuoteToken, 4096) || null;
   const comment = cleanText(body.customerComment, 1000) || null;
   const delivery = body.deliveryAddress && typeof body.deliveryAddress === "object"
     ? body.deliveryAddress
@@ -63,8 +65,11 @@ export function normalizeOrderPayload(body = {}) {
   if (deliveryMethod !== "pickup" && (!deliveryAddress.city || !deliveryAddress.address)) {
     throw new OrderRequestError("delivery_address_required");
   }
-  if (deliveryMethod === "russian_post" && !/^\d{6}$/.test(deliveryAddress.postalCode)) {
+  if (["russian_post", "cdek"].includes(deliveryMethod) && !/^\d{6}$/.test(deliveryAddress.postalCode)) {
     throw new OrderRequestError("delivery_postal_code_required");
+  }
+  if (deliveryMethod === "cdek" && !deliveryQuoteToken) {
+    throw new OrderRequestError("delivery_quote_required", 409);
   }
 
   if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 50) {
@@ -82,7 +87,16 @@ export function normalizeOrderPayload(body = {}) {
     throw new OrderRequestError("order_items_duplicate");
   }
 
-  return { customerName, phone, email, deliveryMethod, deliveryAddress, comment, items };
+  return {
+    customerName,
+    phone,
+    email,
+    deliveryMethod,
+    deliveryAddress,
+    deliveryQuoteToken,
+    comment,
+    items,
+  };
 }
 
 async function findSessionUserId(database, request, config) {
@@ -177,7 +191,31 @@ export function createOrdersRouter({ pool, config }) {
         0,
       );
       const promotion = calculatePerfumePromotion(resolvedItems);
-      const totalMinor = subtotalMinor - promotion.discountMinor;
+      let deliveryMinor = 0;
+      let deliveryAddress = payload.deliveryAddress;
+      if (payload.deliveryMethod === "cdek") {
+        if (!config.cdek?.enabled) throw new CdekError("cdek_provider_disabled", 503);
+        const quote = verifyCdekQuote(payload.deliveryQuoteToken, config.session.secret);
+        deliveryMinor = quote.deliveryMinor;
+        deliveryAddress = {
+          city: quote.city,
+          address: quote.address,
+          postalCode: quote.postalCode,
+          pricingStatus: "fixed",
+          provider: "cdek",
+          cdekMode: quote.mode,
+          cityCode: quote.cityCode,
+          pointCode: quote.pointCode,
+          pointName: quote.pointName,
+          pointType: quote.pointType,
+          tariffCode: quote.tariffCode,
+          tariffName: quote.tariffName,
+          periodMin: quote.periodMin,
+          periodMax: quote.periodMax,
+          shipmentCreation: false,
+        };
+      }
+      const totalMinor = subtotalMinor - promotion.discountMinor + deliveryMinor;
       const orderNumber = makeOrderNumber();
       const checkoutToken = createCheckoutToken();
       const orderResult = await client.query(
@@ -187,12 +225,12 @@ export function createOrdersRouter({ pool, config }) {
            delivery_minor, total_minor, currency, delivery_method, delivery_address,
            customer_comment, checkout_token_hash
          ) VALUES (
-           $1, $2, 'new', 'unpaid', $3, $4, $5, $6, $7, 0, $8, 'RUB', $9, $10::JSONB, $11, $12
+           $1, $2, 'new', 'unpaid', $3, $4, $5, $6, $7, $8, $9, 'RUB', $10, $11::JSONB, $12, $13
          ) RETURNING id, order_number, status, payment_status, total_minor, currency, created_at`,
         [
           orderNumber, userId, payload.customerName, payload.email, payload.phone,
-          subtotalMinor, promotion.discountMinor, totalMinor, payload.deliveryMethod,
-          JSON.stringify(payload.deliveryAddress), payload.comment, checkoutToken.hash,
+          subtotalMinor, promotion.discountMinor, deliveryMinor, totalMinor, payload.deliveryMethod,
+          JSON.stringify(deliveryAddress), payload.comment, checkoutToken.hash,
         ],
       );
       const order = orderResult.rows[0];
@@ -219,14 +257,14 @@ export function createOrdersRouter({ pool, config }) {
         order,
         checkoutToken: checkoutToken.token,
         payment: {
-          available: Boolean(config.yooKassa?.enabled && payload.deliveryAddress.pricingStatus === "fixed"),
+          available: Boolean(config.yooKassa?.enabled && deliveryAddress.pricingStatus === "fixed"),
           provider: config.yooKassa?.enabled ? "yookassa" : null,
           test: Boolean(config.yooKassa?.testMode),
         },
       });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
-      if (error instanceof OrderRequestError) {
+      if (error instanceof OrderRequestError || error instanceof CdekError) {
         response.status(error.status).json({ error: error.code });
       } else {
         next(error);
