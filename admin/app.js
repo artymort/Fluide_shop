@@ -9,6 +9,8 @@ const state = {
   homeContent: null,
   contentProducts: [],
   selectedBestsellerIds: [],
+  ordersArchived: false,
+  currentOrder: null,
 };
 
 const elements = Object.fromEntries([
@@ -18,8 +20,10 @@ const elements = Object.fromEntries([
   "catalog-search", "catalog-status", "catalog-type", "catalog-sort", "catalog-rows",
   "customer-search", "customer-rows", "new-product-button", "product-dialog", "product-form",
   "customer-dialog", "customer-dialog-title", "customer-detail",
-  "order-search", "order-status", "order-payment", "order-rows",
-  "order-dialog", "order-dialog-title", "order-detail", "order-status-form",
+  "order-search", "order-status", "order-payment", "order-rows", "orders-title", "orders-caption", "order-archive-toggle",
+  "order-dialog", "order-dialog-title", "order-detail", "order-status-form", "archive-order-button",
+  "order-archive-actions", "order-archive-message", "restore-order-button",
+  "order-archive-dialog", "order-archive-number", "order-archive-note", "cancel-order-archive", "confirm-order-archive",
   "analytics-period", "analytics-stats", "analytics-chart", "analytics-funnel",
   "analytics-products", "analytics-sources",
   "product-dialog-title", "product-message", "add-variant-button", "variant-rows",
@@ -44,6 +48,7 @@ const orderStatusLabels = {
   delivered: "Доставлен",
   cancelled: "Отменён",
   refunded: "Возвращён",
+  archived: "В архиве",
 };
 const paymentStatusLabels = {
   unpaid: "Не оплачен",
@@ -454,15 +459,25 @@ async function openCustomer(id) {
 
 async function loadOrders() {
   try {
+    elements["orders-title"].textContent = state.ordersArchived ? "Архив заказов" : "Заказы";
+    elements["orders-caption"].textContent = state.ordersArchived
+      ? "Заказы можно восстановить в течение 14 дней"
+      : "Текущие заказы магазина";
+    const archiveToggleIcon = elements["order-archive-toggle"].querySelector("use");
+    archiveToggleIcon.setAttribute("href", state.ordersArchived
+      ? "../assets/icons/lucide.svg#arrow-left"
+      : "../assets/icons/lucide.svg#trash-2");
+    elements["order-archive-toggle"].querySelector("span").textContent = state.ordersArchived ? "К заказам" : "Архив";
     const params = new URLSearchParams({
       q: elements["order-search"].value.trim(),
       status: elements["order-status"].value,
       payment: elements["order-payment"].value,
+      archived: String(state.ordersArchived),
     });
     const { orders } = await api(`/orders?${params}`);
     if (!orders.length) {
       const row = document.createElement("tr");
-      const cell = makeCell("Заказы не найдены", "empty-cell");
+      const cell = makeCell(state.ordersArchived ? "Архив пуст" : "Заказы не найдены", "empty-cell");
       cell.colSpan = 6;
       row.append(cell);
       elements["order-rows"].replaceChildren(row);
@@ -529,7 +544,16 @@ async function loadOrders() {
       const paymentCell = document.createElement("td");
       paymentCell.append(orderBadge(order.payment_status, "payment"));
       const statusCell = document.createElement("td");
-      statusCell.append(orderBadge(order.status));
+      if (state.ordersArchived) {
+        const expiry = document.createElement("span");
+        expiry.className = "order-secondary";
+        expiry.textContent = order.has_live_payment
+          ? "Оплата сохранена"
+          : `До ${formatDate(order.purge_at)}`;
+        statusCell.append(orderBadge("archived"), expiry);
+      } else {
+        statusCell.append(orderBadge(order.status));
+      }
       row.append(
         numberCell,
         compositionCell,
@@ -690,21 +714,84 @@ function renderOrderDetail(order, items = [], payments = [], history = []) {
 }
 
 async function openOrder(id) {
+  state.currentOrder = null;
   elements["order-dialog-title"].textContent = "Заказ";
   elements["order-detail"].textContent = "Загружаем данные…";
   elements["order-status-form"].hidden = true;
+  elements["order-archive-actions"].hidden = true;
   if (!elements["order-dialog"].open) elements["order-dialog"].showModal();
   try {
     const { order, items, payments, history } = await api(`/orders/${id}`);
+    state.currentOrder = order;
     elements["order-dialog-title"].textContent = `Заказ ${order.order_number}`;
     renderOrderDetail(order, items || [], payments || [], history || []);
-    elements["order-status-form"].elements.id.value = order.id;
-    elements["order-status-form"].elements.status.value = order.status;
-    elements["order-status-form"].hidden = false;
+    const canArchiveOrders = ["owner", "admin"].includes(state.admin?.role);
+    if (order.archived_at) {
+      elements["order-archive-message"].textContent = order.has_live_payment
+        ? "Это оплаченный заказ. Он хранится в архиве без автоматического удаления."
+        : `Заказ можно восстановить до ${formatDate(order.purge_at)}. После этого он удалится окончательно.`;
+      elements["restore-order-button"].hidden = !canArchiveOrders;
+      elements["order-archive-actions"].hidden = false;
+    } else {
+      elements["order-status-form"].elements.id.value = order.id;
+      elements["order-status-form"].elements.status.value = order.status;
+      elements["archive-order-button"].hidden = !canArchiveOrders;
+      elements["order-status-form"].hidden = false;
+    }
   } catch (error) {
+    state.currentOrder = null;
     elements["order-detail"].textContent = error.status === 404
       ? "Заказ не найден"
       : "Не удалось загрузить заказ";
+  }
+}
+
+function openOrderArchiveConfirmation() {
+  const order = state.currentOrder;
+  if (!order || order.archived_at) return;
+  elements["order-archive-number"].textContent = order.order_number;
+  elements["order-archive-note"].textContent = order.has_live_payment
+    ? "Заказ исчезнет из текущего списка, но реальная платёжная история останется в архиве и не будет удалена автоматически."
+    : "Заказ можно будет восстановить из архива в течение 14 дней. Затем он удалится окончательно.";
+  elements["order-archive-dialog"].showModal();
+}
+
+async function archiveCurrentOrder() {
+  const order = state.currentOrder;
+  if (!order || order.archived_at) return;
+  const button = elements["confirm-order-archive"];
+  button.disabled = true;
+  try {
+    await api(`/orders/${order.id}`, { method: "DELETE" });
+    elements["order-archive-dialog"].close();
+    elements["order-dialog"].close();
+    state.currentOrder = null;
+    await loadOrders();
+  } catch (error) {
+    elements["order-archive-note"].textContent = error.status === 403
+      ? "У вашей роли нет права удалять заказы."
+      : "Не удалось переместить заказ в архив. Попробуйте ещё раз.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function restoreCurrentOrder() {
+  const order = state.currentOrder;
+  if (!order?.archived_at) return;
+  const button = elements["restore-order-button"];
+  button.disabled = true;
+  try {
+    await api(`/orders/${order.id}/restore`, { method: "POST" });
+    elements["order-dialog"].close();
+    state.currentOrder = null;
+    await loadOrders();
+  } catch (error) {
+    elements["order-archive-message"].textContent = error.status === 404
+      ? "Срок хранения заказа истёк, восстановить его уже нельзя."
+      : "Не удалось восстановить заказ. Попробуйте ещё раз.";
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -1588,6 +1675,12 @@ elements["customer-search"].addEventListener("input", debounce(() => loadCustome
 elements["order-search"].addEventListener("input", debounce(() => loadOrders().catch(console.error)));
 elements["order-status"].addEventListener("change", () => loadOrders().catch(console.error));
 elements["order-payment"].addEventListener("change", () => loadOrders().catch(console.error));
+elements["order-archive-toggle"].addEventListener("click", () => {
+  state.ordersArchived = !state.ordersArchived;
+  state.currentOrder = null;
+  if (elements["order-dialog"].open) elements["order-dialog"].close();
+  loadOrders().catch(console.error);
+});
 elements["analytics-period"].addEventListener("change", () => loadAnalytics().catch(console.error));
 elements["content-product-search"].addEventListener("input", renderBestsellerCatalog);
 elements["content-form"].addEventListener("input", (event) => {
@@ -1792,6 +1885,12 @@ elements["order-status-form"].addEventListener("submit", async (event) => {
     submit.disabled = false;
   }
 });
+
+elements["archive-order-button"].addEventListener("click", openOrderArchiveConfirmation);
+elements["cancel-order-archive"].addEventListener("click", () => elements["order-archive-dialog"].close());
+elements["confirm-order-archive"].addEventListener("click", archiveCurrentOrder);
+elements["restore-order-button"].addEventListener("click", restoreCurrentOrder);
+elements["order-dialog"].addEventListener("close", () => { state.currentOrder = null; });
 
 async function bootstrap() {
   try {

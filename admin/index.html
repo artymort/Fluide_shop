@@ -6,9 +6,9 @@
   <meta name="robots" content="noindex,nofollow">
   <title>FLUIDE CMS</title>
   <link rel="icon" href="../icon_fluide_cms.svg?v=1" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=29">
-  <script src="preview.js?v=15" defer></script>
-  <script src="app.js?v=23" defer></script>
+  <link rel="stylesheet" href="styles.css?v=30">
+  <script src="preview.js?v=16" defer></script>
+  <script src="app.js?v=24" defer></script>
 </head>
 <body>
   <section class="login-shell" id="login-view" hidden>
@@ -117,7 +117,10 @@
       </section>
 
       <section class="view" data-view="orders">
-        <div class="page-head"><h1>Заказы</h1></div>
+        <div class="page-head orders-page-head">
+          <div><h1 id="orders-title">Заказы</h1><p id="orders-caption" class="orders-caption">Текущие заказы магазина</p></div>
+          <button class="secondary order-archive-toggle" id="order-archive-toggle" type="button"><svg aria-hidden="true"><use href="../assets/icons/lucide.svg#trash-2"></use></svg><span>Архив</span></button>
+        </div>
         <div class="toolbar orders-toolbar">
           <input id="order-search" type="search" placeholder="Номер, имя, телефон или email">
           <select id="order-status" aria-label="Статус заказа">
@@ -295,6 +298,7 @@
     <div class="order-detail" id="order-detail"></div>
     <form class="order-status-form" id="order-status-form">
       <input name="id" type="hidden">
+      <button class="order-archive-button" id="archive-order-button" type="button"><svg aria-hidden="true"><use href="../assets/icons/lucide.svg#trash-2"></use></svg><span>Удалить</span></button>
       <label>Статус заказа<select name="status" required>
         <option value="new">Новый</option>
         <option value="confirmed">Подтверждён</option>
@@ -307,6 +311,21 @@
       </select></label>
       <button class="primary" type="submit">Сохранить статус</button>
     </form>
+    <div class="order-archive-actions" id="order-archive-actions" hidden>
+      <p id="order-archive-message"></p>
+      <button class="secondary" id="restore-order-button" type="button"><svg aria-hidden="true"><use href="../assets/icons/lucide.svg#arrow-left"></use></svg><span>Восстановить заказ</span></button>
+    </div>
+  </dialog>
+
+  <dialog id="order-archive-dialog" class="confirm-dialog">
+    <form method="dialog" class="dialog-head"><h2>Удалить заказ?</h2><button value="cancel" aria-label="Закрыть">×</button></form>
+    <div class="confirm-dialog-body">
+      <span class="confirm-dialog-icon"><svg aria-hidden="true"><use href="../assets/icons/lucide.svg#trash-2"></use></svg></span>
+      <p>Вы точно хотите переместить в архив заказ</p>
+      <strong id="order-archive-number"></strong>
+      <p id="order-archive-note"></p>
+    </div>
+    <footer class="dialog-actions confirm-dialog-actions"><button class="secondary" id="cancel-order-archive" type="button">Отмена</button><button class="danger-primary" id="confirm-order-archive" type="button">Удалить в архив</button></footer>
   </dialog>
 
   <dialog id="import-dialog">

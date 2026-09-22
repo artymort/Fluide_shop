@@ -337,6 +337,7 @@
       const q = (url.searchParams.get("q") || "").toLocaleLowerCase("ru-RU");
       const status = url.searchParams.get("status") || "";
       const payment = url.searchParams.get("payment") || "";
+      const archived = url.searchParams.get("archived") === "true";
       const rows = orders.filter((order) => {
         const searchable = [order.order_number, order.customer_name, order.customer_email, order.customer_phone_e164]
           .filter(Boolean)
@@ -344,21 +345,50 @@
           .toLocaleLowerCase("ru-RU");
         return (!q || searchable.includes(q))
           && (!status || order.status === status)
-          && (!payment || order.payment_status === payment);
-      }).map((order) => ({ ...order, item_count: order.items.length, items_preview: order.items.slice(0, 2) }));
+          && (!payment || order.payment_status === payment)
+          && (archived ? Boolean(order.archived_at) : !order.archived_at);
+      }).map((order) => ({
+        ...order,
+        item_count: order.items.length,
+        items_preview: order.items.slice(0, 2),
+        has_live_payment: order.payments.some((paymentRow) => paymentRow.status === "succeeded"),
+        purge_at: order.archived_at ? new Date(new Date(order.archived_at).getTime() + 14 * 86_400_000).toISOString() : null,
+      }));
       return json({ orders: rows });
     }
     const orderMatch = path.match(/^\/orders\/([^/]+)$/);
     if (orderMatch && method === "GET") {
       const order = orders.find((item) => item.id === orderMatch[1]);
       return order
-        ? json({ order, items: order.items, payments: order.payments, history: order.history })
+        ? json({
+          order: {
+            ...order,
+            has_live_payment: order.payments.some((paymentRow) => paymentRow.status === "succeeded"),
+            purge_at: order.archived_at ? new Date(new Date(order.archived_at).getTime() + 14 * 86_400_000).toISOString() : null,
+          },
+          items: order.items,
+          payments: order.payments,
+          history: order.history,
+        })
         : json({ error: "order_not_found" }, 404);
+    }
+    if (orderMatch && method === "DELETE") {
+      const order = orders.find((item) => item.id === orderMatch[1]);
+      if (!order || order.archived_at) return json({ error: "order_not_found" }, 404);
+      order.archived_at = now();
+      return json({ order });
+    }
+    const orderRestoreMatch = path.match(/^\/orders\/([^/]+)\/restore$/);
+    if (orderRestoreMatch && method === "POST") {
+      const order = orders.find((item) => item.id === orderRestoreMatch[1]);
+      if (!order?.archived_at) return json({ error: "order_not_found" }, 404);
+      order.archived_at = null;
+      return json({ order });
     }
     const orderStatusMatch = path.match(/^\/orders\/([^/]+)\/status$/);
     if (orderStatusMatch && method === "PATCH") {
       const order = orders.find((item) => item.id === orderStatusMatch[1]);
-      if (!order) return json({ error: "order_not_found" }, 404);
+      if (!order || order.archived_at) return json({ error: "order_not_found" }, 404);
       order.status = body(options).status;
       order.updated_at = now();
       order.history.unshift({ id: Date.now(), status: order.status, admin_name: "Владелец FLUIDE", created_at: order.updated_at });

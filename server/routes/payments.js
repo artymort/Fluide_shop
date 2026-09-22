@@ -22,15 +22,15 @@ const paymentLimit = rateLimit({
   legacyHeaders: false,
 });
 
-const loadOrder = async (database, id) => {
+const loadOrder = async (database, id, { includeArchived = false } = {}) => {
   if (!UUID_PATTERN.test(String(id || ""))) return null;
   const result = await database.query(
     `SELECT id, order_number, payment_status, total_minor, currency,
             delivery_method, delivery_address, checkout_token_hash
        FROM commerce_orders
-      WHERE id = $1
+      WHERE id = $1 AND ($2::BOOLEAN OR archived_at IS NULL)
       LIMIT 1`,
-    [id],
+    [id, includeArchived],
   );
   return result.rows[0] || null;
 };
@@ -178,7 +178,7 @@ export function createPaymentsRouter({ pool, config }) {
 
       const payment = await getPayment(yooKassa, paymentId);
       const orderId = payment?.metadata?.orderId;
-      const order = orderId ? await loadOrder(pool, orderId) : null;
+      const order = orderId ? await loadOrder(pool, orderId, { includeArchived: true }) : null;
       if (!order) {
         response.status(200).end();
         return;

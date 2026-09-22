@@ -258,6 +258,10 @@ td strong,.product-cell strong{font-size:14px;font-weight:500;line-height:1.4}
 }
 
 /* Orders */
+.orders-page-head{align-items:center}
+.orders-caption{margin:7px 0 0;color:var(--muted);font-size:13px}
+.order-archive-toggle{gap:8px}
+.order-archive-toggle svg,.order-archive-button svg,.order-archive-actions button svg{width:17px;height:17px;fill:none;stroke:currentColor}
 .orders-toolbar{display:grid;grid-template-columns:minmax(280px,1fr) 210px 210px;align-items:stretch}
 .orders-toolbar input,.orders-toolbar select{width:100%;max-width:none}
 .orders-table{table-layout:fixed}
@@ -286,6 +290,7 @@ td strong,.product-cell strong{font-size:14px;font-weight:500;line-height:1.4}
 .order-status-cancelled,.order-status-refunded,.payment-status-refunded,.payment-status-failed,.payment-status-cancelled{background:#f7e9eb;color:#8b3842}
 .payment-status-pending,.payment-status-unpaid{background:#f5eee0;color:#74591f}
 .payment-status-partially_refunded{background:#f1eaf5;color:#684478}
+.order-status-archived{background:#f2eaec;color:var(--danger)}
 .order-dialog{width:min(980px,calc(100% - 24px))}
 .order-detail{padding:24px 28px 12px}
 .order-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -317,8 +322,24 @@ td strong,.product-cell strong{font-size:14px;font-weight:500;line-height:1.4}
 .order-status-form{position:sticky;bottom:0;display:flex;align-items:end;justify-content:flex-end;gap:12px;padding:18px 28px;border-top:1px solid var(--line);background:#fff}
 .order-status-form[hidden]{display:none}
 .order-status-form label{width:230px}
+.order-archive-button{display:inline-flex;min-height:42px;align-items:center;gap:8px;margin-right:auto;padding:0 14px;border:1px solid #e7c6ca;border-radius:10px;background:#fff5f6;color:var(--danger);font-size:14px;font-weight:520}
+.order-archive-button:hover{background:#f9e7e9}
+.order-archive-actions{position:sticky;bottom:0;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 28px;border-top:1px solid var(--line);background:#fff}
+.order-archive-actions[hidden]{display:none}
+.order-archive-actions p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.order-archive-actions button{display:inline-flex;flex:0 0 auto;align-items:center;gap:8px}
+.confirm-dialog{width:min(500px,calc(100% - 24px))}
+.confirm-dialog-body{display:grid;justify-items:center;padding:30px 34px 12px;text-align:center}
+.confirm-dialog-body p{margin:10px 0 0;color:var(--muted);font-size:14px;line-height:1.5}
+.confirm-dialog-body strong{margin-top:8px;font-size:20px;font-weight:550}
+.confirm-dialog-icon{display:grid;width:54px;height:54px;place-items:center;border-radius:50%;background:#f8e8ea;color:var(--danger)}
+.confirm-dialog-icon svg{width:25px;height:25px;fill:none;stroke:currentColor}
+.confirm-dialog-actions{margin:0;padding:20px 28px 26px;border-top:0}
+.danger-primary{display:inline-flex;min-height:42px;align-items:center;justify-content:center;padding:0 18px;border-radius:10px;background:var(--danger);color:#fff;font-size:14px;font-weight:520}
+.danger-primary:hover{filter:brightness(.92)}
+.danger-primary:disabled{cursor:wait;opacity:.6}
 @media(max-width:900px){.orders-toolbar{grid-template-columns:1fr 1fr}.orders-toolbar input{grid-column:1/-1}.orders-table{min-width:900px}}
-@media(max-width:620px){.orders-toolbar{grid-template-columns:1fr}.orders-toolbar input{grid-column:auto}.order-detail{padding:20px}.order-overview,.order-info-grid{grid-template-columns:1fr}.order-item{grid-template-columns:48px minmax(0,1fr);gap:12px}.order-item img{width:48px;height:48px}.order-item>span,.order-item>strong{grid-column:2;text-align:left}.order-status-form{align-items:stretch;flex-direction:column;padding:16px 20px}.order-status-form label,.order-status-form .primary{width:100%}}
+@media(max-width:620px){.orders-page-head{align-items:stretch}.order-archive-toggle{width:100%}.orders-toolbar{grid-template-columns:1fr}.orders-toolbar input{grid-column:auto}.order-detail{padding:20px}.order-overview,.order-info-grid{grid-template-columns:1fr}.order-item{grid-template-columns:48px minmax(0,1fr);gap:12px}.order-item img{width:48px;height:48px}.order-item>span,.order-item>strong{grid-column:2;text-align:left}.order-status-form,.order-archive-actions{align-items:stretch;flex-direction:column;padding:16px 20px}.order-status-form label,.order-status-form .primary,.order-status-form .order-archive-button,.order-archive-actions button{width:100%}.order-archive-button{justify-content:center;margin-right:0}}
 
 /* Analytics */
 .analytics-head{align-items:center;margin-bottom:22px}

@@ -23,6 +23,7 @@ const PRODUCT_EDIT_ROLES = new Set(["owner", "admin", "editor"]);
 const CONTENT_EDIT_ROLES = new Set(["owner", "admin", "editor"]);
 const CUSTOMER_ROLES = new Set(["owner", "admin", "orders"]);
 const ORDER_ROLES = new Set(["owner", "admin", "orders"]);
+const ORDER_ARCHIVE_ROLES = new Set(["owner", "admin"]);
 const ANALYTICS_ROLES = new Set(["owner", "admin", "analyst"]);
 const ORDER_STATUSES = new Set(["new", "confirmed", "assembling", "ready", "shipped", "delivered", "cancelled", "refunded"]);
 const PAYMENT_STATUSES = new Set(["unpaid", "pending", "paid", "partially_refunded", "refunded", "failed", "cancelled"]);
@@ -60,6 +61,33 @@ async function audit(pool, request, action, entityType, entityId, details = {}) 
       (admin_user_id, action, entity_type, entity_id, details, ip_address)
      VALUES ($1, $2, $3, $4, $5::JSONB, $6)`,
     [request.admin.id, action, entityType, entityId || null, JSON.stringify(details), request.ip || null],
+  );
+}
+
+async function purgeExpiredArchivedOrders(database) {
+  await database.query(
+    `WITH purged AS (
+       DELETE FROM commerce_orders o
+        WHERE o.archived_at < NOW() - INTERVAL '14 days'
+          AND NOT EXISTS (
+            SELECT 1
+              FROM commerce_payments p
+             WHERE p.order_id = o.id
+               AND p.operation = 'payment'
+               AND p.status = 'succeeded'
+               AND LOWER(COALESCE(p.metadata->>'test', 'false')) <> 'true'
+          )
+        RETURNING o.id, o.order_number, o.archived_at, o.payment_status
+     )
+     INSERT INTO admin_audit_log (action, entity_type, entity_id, details)
+     SELECT 'order.purged_after_retention', 'commerce_order', id::TEXT,
+            jsonb_build_object(
+              'orderNumber', order_number,
+              'archivedAt', archived_at,
+              'paymentStatus', payment_status,
+              'retentionDays', 14
+            )
+       FROM purged`,
   );
 }
 
@@ -468,15 +496,27 @@ export function createAdminRouter({ pool, config }) {
     const search = String(request.query.q || "").trim().slice(0, 120);
     const status = String(request.query.status || "");
     const payment = String(request.query.payment || "");
-    if ((status && !ORDER_STATUSES.has(status)) || (payment && !PAYMENT_STATUSES.has(payment))) {
+    const archived = String(request.query.archived || "false");
+    if ((status && !ORDER_STATUSES.has(status))
+      || (payment && !PAYMENT_STATUSES.has(payment))
+      || !new Set(["true", "false"]).has(archived)) {
       response.status(400).json({ error: "order_filter_invalid" });
       return;
     }
     try {
+      await purgeExpiredArchivedOrders(pool);
       const result = await pool.query(
         `SELECT o.id, o.order_number, o.user_id, o.status, o.payment_status,
                 o.customer_name, o.customer_email, o.customer_phone_e164,
-                o.total_minor, o.currency, o.created_at, o.updated_at,
+                o.total_minor, o.currency, o.created_at, o.updated_at, o.archived_at,
+                o.archived_at + INTERVAL '14 days' AS purge_at,
+                EXISTS (
+                  SELECT 1 FROM commerce_payments p_live
+                   WHERE p_live.order_id = o.id
+                     AND p_live.operation = 'payment'
+                     AND p_live.status = 'succeeded'
+                     AND LOWER(COALESCE(p_live.metadata->>'test', 'false')) <> 'true'
+                ) AS has_live_payment,
                 COUNT(oi.id)::INT AS item_count,
                 COALESCE((
                   SELECT jsonb_agg(jsonb_build_object(
@@ -502,10 +542,12 @@ export function createAdminRouter({ pool, config }) {
             OR o.customer_phone_e164 ILIKE '%' || $1 || '%')
             AND ($2 = '' OR o.status = $2)
             AND ($3 = '' OR o.payment_status = $3)
+            AND (($4::BOOLEAN AND o.archived_at IS NOT NULL)
+              OR (NOT $4::BOOLEAN AND o.archived_at IS NULL))
           GROUP BY o.id
-          ORDER BY o.created_at DESC
+          ORDER BY CASE WHEN $4::BOOLEAN THEN o.archived_at ELSE o.created_at END DESC
           LIMIT 300`,
-        [search, status, payment],
+        [search, status, payment, archived === "true"],
       );
       response.json({ orders: result.rows });
     } catch (error) {
@@ -523,8 +565,23 @@ export function createAdminRouter({ pool, config }) {
       return;
     }
     try {
+      await purgeExpiredArchivedOrders(pool);
       const [orderResult, itemsResult, paymentsResult, historyResult] = await Promise.all([
-        pool.query("SELECT * FROM commerce_orders WHERE id = $1 LIMIT 1", [request.params.id]),
+        pool.query(
+          `SELECT o.*,
+                  o.archived_at + INTERVAL '14 days' AS purge_at,
+                  EXISTS (
+                    SELECT 1 FROM commerce_payments p_live
+                     WHERE p_live.order_id = o.id
+                       AND p_live.operation = 'payment'
+                       AND p_live.status = 'succeeded'
+                       AND LOWER(COALESCE(p_live.metadata->>'test', 'false')) <> 'true'
+                  ) AS has_live_payment
+             FROM commerce_orders o
+            WHERE o.id = $1
+            LIMIT 1`,
+          [request.params.id],
+        ),
         pool.query(
           `SELECT id, product_id, variant_id, product_name, variant_name, sku,
                   image_url, quantity, unit_price_minor, total_price_minor, created_at
@@ -566,6 +623,82 @@ export function createAdminRouter({ pool, config }) {
     }
   });
 
+  router.delete("/orders/:id", async (request, response, next) => {
+    if (!ORDER_ARCHIVE_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    if (!/^[0-9a-f-]{36}$/i.test(request.params.id)) {
+      response.status(404).json({ error: "order_not_found" });
+      return;
+    }
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const result = await client.query(
+        `UPDATE commerce_orders
+            SET archived_at = NOW(), archived_by = $2
+          WHERE id = $1 AND archived_at IS NULL
+          RETURNING *, archived_at + INTERVAL '14 days' AS purge_at`,
+        [request.params.id, request.admin.id],
+      );
+      if (!result.rowCount) {
+        await client.query("ROLLBACK");
+        response.status(404).json({ error: "order_not_found" });
+        return;
+      }
+      await audit(client, request, "order.archived", "commerce_order", request.params.id, {
+        orderNumber: result.rows[0].order_number,
+        retentionDays: 14,
+      });
+      await client.query("COMMIT");
+      response.json({ order: result.rows[0] });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      next(error);
+    } finally {
+      client.release();
+    }
+  });
+
+  router.post("/orders/:id/restore", async (request, response, next) => {
+    if (!ORDER_ARCHIVE_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    if (!/^[0-9a-f-]{36}$/i.test(request.params.id)) {
+      response.status(404).json({ error: "order_not_found" });
+      return;
+    }
+    const client = await pool.connect();
+    try {
+      await purgeExpiredArchivedOrders(client);
+      await client.query("BEGIN");
+      const result = await client.query(
+        `UPDATE commerce_orders
+            SET archived_at = NULL, archived_by = NULL
+          WHERE id = $1 AND archived_at IS NOT NULL
+          RETURNING *`,
+        [request.params.id],
+      );
+      if (!result.rowCount) {
+        await client.query("ROLLBACK");
+        response.status(404).json({ error: "order_not_found" });
+        return;
+      }
+      await audit(client, request, "order.restored", "commerce_order", request.params.id, {
+        orderNumber: result.rows[0].order_number,
+      });
+      await client.query("COMMIT");
+      response.json({ order: result.rows[0] });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      next(error);
+    } finally {
+      client.release();
+    }
+  });
+
   router.patch("/orders/:id/status", async (request, response, next) => {
     if (!ORDER_ROLES.has(request.admin.role)) {
       response.status(403).json({ error: "forbidden" });
@@ -585,7 +718,7 @@ export function createAdminRouter({ pool, config }) {
                 shipped_at = CASE WHEN $2 = 'shipped' THEN COALESCE(shipped_at, NOW()) ELSE shipped_at END,
                 delivered_at = CASE WHEN $2 = 'delivered' THEN COALESCE(delivered_at, NOW()) ELSE delivered_at END,
                 cancelled_at = CASE WHEN $2 = 'cancelled' THEN COALESCE(cancelled_at, NOW()) ELSE cancelled_at END
-          WHERE id = $1
+          WHERE id = $1 AND archived_at IS NULL
           RETURNING *`,
         [request.params.id, status],
       );
@@ -635,14 +768,17 @@ export function createAdminRouter({ pool, config }) {
           `SELECT COUNT(*)::INT AS orders
              FROM commerce_orders
             WHERE created_at >= NOW() - ($1::INT * INTERVAL '1 day')
+              AND archived_at IS NULL
               AND status NOT IN ('cancelled', 'refunded')`,
           [period],
         ),
         pool.query(
-          `SELECT COALESCE(SUM(CASE WHEN operation = 'payment' THEN amount_minor ELSE -amount_minor END), 0)::BIGINT AS revenue_minor
-             FROM commerce_payments
-            WHERE status = 'succeeded'
-              AND created_at >= NOW() - ($1::INT * INTERVAL '1 day')`,
+          `SELECT COALESCE(SUM(CASE WHEN p.operation = 'payment' THEN p.amount_minor ELSE -p.amount_minor END), 0)::BIGINT AS revenue_minor
+             FROM commerce_payments p
+             JOIN commerce_orders o ON o.id = p.order_id
+            WHERE p.status = 'succeeded'
+              AND o.archived_at IS NULL
+              AND p.created_at >= NOW() - ($1::INT * INTERVAL '1 day')`,
           [period],
         ),
         pool.query(
