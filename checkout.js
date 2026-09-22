@@ -493,13 +493,26 @@
 
   function renderCitySuggestions(cities) {
     citySuggestions.replaceChildren();
+    const nameCounts = cities.reduce((counts, city) => {
+      const key = String(city.city || "").toLocaleLowerCase("ru-RU");
+      counts.set(key, (counts.get(key) || 0) + 1);
+      return counts;
+    }, new Map());
     cities.forEach((city) => {
       const button = document.createElement("button");
       button.type = "button";
       button.role = "option";
       button.dataset.cdekCityCode = String(city.code);
       button.dataset.cdekCityName = city.city;
-      button.textContent = city.label;
+      button.setAttribute("aria-label", city.label || city.city);
+      const name = document.createElement("span");
+      name.textContent = city.city;
+      button.append(name);
+      if (nameCounts.get(String(city.city).toLocaleLowerCase("ru-RU")) > 1 && city.label !== city.city) {
+        const context = document.createElement("small");
+        context.textContent = city.label.split(",").slice(1).join(",").trim();
+        button.append(context);
+      }
       citySuggestions.append(button);
     });
     if (!cities.length) {

@@ -137,18 +137,19 @@ test("CDEK client resolves the origin city code before tariff calculation", asyn
   assert.equal(calls.filter((call) => call.url.pathname.endsWith("/location/cities")).length, 2);
 });
 
-test("CDEK client searches and deduplicates city suggestions", async () => {
+test("CDEK city suggestions prioritize settlement names and ignore region-only matches", async () => {
   const fetchImpl = async (url) => {
     const requestUrl = new URL(url);
     if (requestUrl.pathname.endsWith("/oauth/token")) {
       return new Response(JSON.stringify({ access_token: "token", expires_in: 3600 }), { status: 200 });
     }
     if (requestUrl.pathname.endsWith("/location/suggest/cities")) {
-      assert.equal(requestUrl.searchParams.get("name"), "Орен");
+      assert.equal(requestUrl.searchParams.get("name"), "Оренбург");
       assert.equal(requestUrl.searchParams.get("country_code"), "RU");
       return new Response(JSON.stringify([
+        { code: 400, full_name: "Лесничество, Оренбургский район, Оренбургская область, Россия", country_code: "RU" },
+        { code: 301, full_name: "Оренбургское, Бикинский район, Хабаровский край, Россия", country_code: "RU" },
         { code: 261, full_name: "Оренбург, Оренбургская область", country_code: "RU" },
-        { code: 300, full_name: "Новосергиевка, Оренбургская область", country_code: "RU" },
         { code: 261, full_name: "Оренбург, Оренбургская область", country_code: "RU" },
       ]), { status: 200 });
     }
@@ -162,7 +163,8 @@ test("CDEK client searches and deduplicates city suggestions", async () => {
     package: { weightGrams: 1000, lengthCm: 25, widthCm: 20, heightCm: 15 },
   }, { fetchImpl });
 
-  const cities = await client.searchCities("Орен");
-  assert.deepEqual(cities.map((city) => city.code), [261, 300]);
+  const cities = await client.searchCities("Оренбург");
+  assert.deepEqual(cities.map((city) => city.code), [261, 301]);
+  assert.equal(cities[0].city, "Оренбург");
   assert.equal(cities[0].label, "Оренбург, Оренбургская область");
 });

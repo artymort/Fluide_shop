@@ -133,6 +133,8 @@
 .checkout-city-suggestions button{width:100%;min-height:44px;padding:10px 14px;border:0;border-top:1px solid #ececf0;background:#fff;color:#111;text-align:left;font:inherit;line-height:1.35}
 .checkout-city-suggestions button:first-child{border-top:0}
 .checkout-city-suggestions button:hover,.checkout-city-suggestions button:focus-visible{background:#f1f1f5;outline:0}
+.checkout-city-suggestions button>span{display:block;font-size:14px}
+.checkout-city-suggestions button>small{display:block;margin-top:3px;color:#707686;font-size:12px;line-height:1.35}
 .checkout-city-suggestions p{margin:0;padding:13px 14px;color:#656c7d;font-size:13px;line-height:1.45}
 
 @media(max-width:520px){

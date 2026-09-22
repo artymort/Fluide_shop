@@ -112,7 +112,7 @@ export function normalizeCdekPoint(point) {
 export function normalizeCdekCity(candidate) {
   const code = Number(candidate?.code);
   const fullName = cleanText(candidate?.full_name, 240);
-  const city = cleanText(candidate?.city || fullName, 240);
+  const city = cleanText(candidate?.city || fullName.split(",")[0], 120);
   if (!Number.isInteger(code) || code < 1 || !city) return null;
   const region = cleanText(candidate?.region, 160);
   const subRegion = cleanText(candidate?.sub_region, 160);
@@ -204,7 +204,19 @@ export function createCdekClient(config, { fetchImpl = globalThis.fetch } = {}) 
       const city = normalizeCdekCity(candidate);
       if (city && !unique.has(city.code)) unique.set(city.code, city);
     });
-    return [...unique.values()].slice(0, 12);
+    const lowerQuery = normalizedQuery.toLocaleLowerCase("ru-RU");
+    return [...unique.values()]
+      .filter((city) => city.city.toLocaleLowerCase("ru-RU").startsWith(lowerQuery))
+      .sort((left, right) => {
+        const leftName = left.city.toLocaleLowerCase("ru-RU");
+        const rightName = right.city.toLocaleLowerCase("ru-RU");
+        const leftExact = leftName === lowerQuery ? 0 : 1;
+        const rightExact = rightName === lowerQuery ? 0 : 1;
+        return leftExact - rightExact
+          || leftName.length - rightName.length
+          || left.label.localeCompare(right.label, "ru");
+      })
+      .slice(0, 8);
   }
 
   async function findCity({ city, postalCode, code }) {
