@@ -144,4 +144,6 @@ test("customer orders are scoped to the signed-in user and exclude the archive",
   assert.equal(queries[1].values[0], "user-42");
   assert.match(queries[1].sql, /o\.user_id = \$1/);
   assert.match(queries[1].sql, /o\.archived_at IS NULL/);
+  assert.match(queries[1].sql, /o\.payment_status = 'paid'/);
+  assert.match(queries[1].sql, /o\.status NOT IN \('cancelled', 'refunded'\)/);
 });

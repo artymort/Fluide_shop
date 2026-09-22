@@ -169,6 +169,8 @@ export function createOrdersRouter({ pool, config }) {
            ) order_items ON TRUE
           WHERE o.user_id = $1
             AND o.archived_at IS NULL
+            AND o.payment_status = 'paid'
+            AND o.status NOT IN ('cancelled', 'refunded')
           ORDER BY o.created_at DESC
           LIMIT 100`,
         [userId],
