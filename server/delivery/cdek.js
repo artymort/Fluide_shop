@@ -114,7 +114,9 @@ export function normalizeCdekCity(candidate) {
   const fullName = cleanText(candidate?.full_name, 240);
   const city = cleanText(candidate?.city || fullName.split(",")[0], 120);
   if (!Number.isInteger(code) || code < 1 || !city) return null;
-  const region = cleanText(candidate?.region, 160);
+  const fullNameParts = fullName.split(",").map((part) => part.trim()).filter(Boolean);
+  const inferredRegion = fullNameParts.find((part) => /(?:область|край|республика|автономный округ|автономная область)$/iu.test(part));
+  const region = cleanText(candidate?.region || inferredRegion, 160);
   const subRegion = cleanText(candidate?.sub_region, 160);
   const details = [...new Set([subRegion, region].filter(Boolean))]
     .filter((value) => value.toLocaleLowerCase("ru-RU") !== city.toLocaleLowerCase("ru-RU"));

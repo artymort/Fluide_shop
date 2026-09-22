@@ -212,7 +212,7 @@
           <label class="checkout-field-wide"><span>Email <small>необязательно</small></span><input name="customerEmail" type="email" autocomplete="email" maxlength="320"></label>
         </div></section>
         <section class="checkout-section"><h2>Доставка</h2><div class="checkout-delivery">
-          <label><input type="radio" name="deliveryMethod" value="cdek" checked><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>СДЭК</b><small>ПВЗ или курьерская доставка</small></span><img src="assets/brand/cdek.svg" alt="" aria-hidden="true"></span></label>
+          <label><input type="radio" name="deliveryMethod" value="cdek" checked><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>СДЭК</b><small>В пункт выдачи</small></span><img src="assets/brand/cdek.svg" alt="" aria-hidden="true"></span></label>
           <label><input type="radio" name="deliveryMethod" value="russian_post"><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>Почта России</b><small>В отделение или до двери</small></span><img class="checkout-delivery-logo--post" src="assets/brand/russian-post.svg" alt="" aria-hidden="true"></span></label>
           <label><input type="radio" name="deliveryMethod" value="pickup"><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>Самовывоз</b><small>Из пространства FLUIDE во Владимире</small></span></span></label>
         </div><div class="checkout-fields checkout-fields--two" data-checkout-address>
@@ -220,12 +220,7 @@
           <label data-postal-field><span>Индекс <small data-postal-hint>обязательно</small></span><input name="postalCode" autocomplete="postal-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required></label>
           <label class="checkout-field-wide" data-address-field hidden><span data-address-label>Адрес</span><input name="address" autocomplete="street-address" maxlength="300"></label>
         </div><div class="checkout-cdek" data-cdek-options>
-          <div class="checkout-cdek-modes" role="group" aria-label="Способ доставки СДЭК">
-            <label><input type="radio" name="cdekMode" value="pvz" checked><span>В пункт выдачи</span></label>
-            <label><input type="radio" name="cdekMode" value="door"><span>Курьером до двери</span></label>
-          </div>
-          <button type="button" class="checkout-cdek-calculate" data-cdek-calculate hidden>Рассчитать доставку курьером</button>
-          <p class="checkout-cdek-status" data-cdek-status>Начните вводить город и выберите его из подсказок.</p>
+          <p class="checkout-cdek-status" data-cdek-status></p>
           <label class="checkout-cdek-point" data-cdek-point-field hidden><span>Пункт выдачи</span><select name="cdekPoint"><option value="">Выберите ПВЗ</option></select></label>
         </div></section>
         <section class="checkout-section"><h2>Комментарий</h2><label><textarea name="customerComment" rows="3" maxlength="1000" placeholder="Например, удобное время для звонка"></textarea></label></section>
@@ -251,7 +246,6 @@
   const addressLabel = page.querySelector("[data-address-label]");
   const cdekOptions = page.querySelector("[data-cdek-options]");
   const cdekStatus = page.querySelector("[data-cdek-status]");
-  const cdekCalculate = page.querySelector("[data-cdek-calculate]");
   const cdekPointField = page.querySelector("[data-cdek-point-field]");
   const cdekPointSelect = form.elements.cdekPoint;
   let deliveryMinor = 0;
@@ -278,8 +272,6 @@
     cdek_city_not_found: "СДЭК не нашёл выбранный город.",
     cdek_tariff_unavailable: "Для этого адреса нет подходящего тарифа СДЭК.",
     cdek_points_unavailable: "В этом городе не найдены доступные ПВЗ СДЭК.",
-    cdek_postal_code_invalid: "Укажите шестизначный индекс.",
-    cdek_address_invalid: "Укажите адрес для курьера СДЭК.",
     catalog_item_unavailable: "Один из товаров больше недоступен. Обновите корзину.",
     order_items_invalid: "Корзина пуста или повреждена.",
     payment_provider_disabled: "Онлайн-оплата временно недоступна. Заказ сохранён.",
@@ -325,7 +317,7 @@
     form.elements.city.setAttribute("aria-expanded", "false");
   }
 
-  function resetCdekQuote(message = "Выберите город из подсказок.") {
+  function resetCdekQuote(message = "") {
     cdekQuoteController?.abort();
     cdekQuoteController = null;
     deliveryMinor = 0;
@@ -334,12 +326,11 @@
     cdekPointSelect.innerHTML = '<option value="">Выберите ПВЗ</option>';
     cdekPointSelect.required = false;
     cdekPointField.hidden = true;
+    cdekOptions.hidden = true;
     cdekStatus.textContent = message;
     cdekStatus.classList.remove("is-error", "is-success");
-    if (form.elements.cdekMode.value === "pvz") {
-      form.elements.address.value = "";
-      addressField.hidden = true;
-    }
+    form.elements.address.value = "";
+    addressField.hidden = true;
     updateOrderTotals();
   }
 
@@ -347,7 +338,6 @@
     const method = form.elements.deliveryMethod.value;
     const isCdek = method === "cdek";
     const requiresAddress = method !== "pickup";
-    const cdekMode = form.elements.cdekMode.value;
     addressBlock.hidden = !requiresAddress;
     cdekOptions.hidden = !isCdek;
     form.elements.city.required = requiresAddress;
@@ -360,19 +350,15 @@
     page.querySelector("[data-postal-hint]").textContent = method === "russian_post" ? "обязательно" : "необязательно";
 
     if (isCdek) {
-      const isDoor = cdekMode === "door";
-      cdekCalculate.hidden = !isDoor;
-      addressField.hidden = !isDoor && !cdekQuoteToken;
-      addressLabel.textContent = isDoor ? "Адрес для курьера" : "Выбранный ПВЗ";
-      form.elements.address.readOnly = !isDoor;
-      form.elements.address.required = isDoor;
+      addressField.hidden = true;
+      addressLabel.textContent = "Выбранный ПВЗ";
+      form.elements.address.readOnly = true;
+      form.elements.address.required = false;
       page.querySelector("[data-checkout-delivery-note]").textContent = cdekQuoteToken
         ? "Доставка рассчитана СДЭК и включена в итоговую сумму."
-        : "Рассчитайте доставку СДЭК перед оформлением.";
+        : "Выберите город и удобный пункт выдачи СДЭК.";
       page.querySelector(".checkout-payment-note").textContent = "После оформления вы перейдёте к оплате в ЮKassa.";
-      if (resetQuote) resetCdekQuote(isDoor
-        ? (cdekCityCode ? "Укажите адрес и рассчитайте доставку курьером." : "Начните вводить город и выберите его из подсказок.")
-        : (cdekCityCode ? "Загружаем пункты выдачи…" : "Начните вводить город и выберите его из подсказок."));
+      if (resetQuote) resetCdekQuote();
       return;
     }
 
@@ -383,7 +369,6 @@
     cdekPointField.hidden = true;
     cdekPointSelect.required = false;
     hideCitySuggestions();
-    cdekCalculate.hidden = true;
     addressField.hidden = !requiresAddress;
     form.elements.address.readOnly = false;
     form.elements.address.required = requiresAddress;
@@ -412,10 +397,8 @@
     page.querySelector("[data-checkout-subtotal]").textContent = money(nextPricing.subtotal);
     page.querySelector("[data-checkout-discount]").textContent = nextPricing.discount ? `− ${money(nextPricing.discount)}` : "—";
     if (form.elements.deliveryMethod.value === "cdek") {
-      resetCdekQuote(cdekCityCode && form.elements.cdekMode.value === "pvz"
-        ? "Обновляем пункты выдачи…"
-        : "Состав заказа изменился. Рассчитайте доставку заново.");
-      if (cdekCityCode && form.elements.cdekMode.value === "pvz") loadCdekQuote();
+      resetCdekQuote();
+      if (cdekCityCode) loadCdekQuote();
     }
     else updateOrderTotals(nextPricing);
   }
@@ -438,14 +421,7 @@
     if (event.target.name === "deliveryMethod") {
       form.elements.address.value = "";
       updateDeliveryUi();
-      if (form.elements.deliveryMethod.value === "cdek"
-        && cdekCityCode
-        && form.elements.cdekMode.value === "pvz") loadCdekQuote();
-    }
-    if (event.target.name === "cdekMode") {
-      form.elements.address.value = "";
-      updateDeliveryUi();
-      if (cdekCityCode && form.elements.cdekMode.value === "pvz") loadCdekQuote();
+      if (form.elements.deliveryMethod.value === "cdek" && cdekCityCode) loadCdekQuote();
     }
     if (event.target.name === "cdekPoint") {
       const point = cdekPoints.get(event.target.value);
@@ -453,7 +429,7 @@
         cdekQuoteToken = "";
         deliveryMinor = 0;
         addressField.hidden = true;
-        cdekStatus.textContent = "Выберите удобный ПВЗ СДЭК.";
+        cdekStatus.textContent = "";
         cdekStatus.classList.remove("is-error", "is-success");
         updateOrderTotals();
         return;
@@ -461,7 +437,7 @@
       cdekQuoteToken = point.quoteToken;
       deliveryMinor = point.deliveryMinor;
       form.elements.address.value = point.address;
-      addressField.hidden = false;
+      addressField.hidden = true;
       cdekStatus.textContent = `Выбран ${point.type === "postamat" ? "постамат" : "ПВЗ"}. Доставка ${money(deliveryMinor / 100)}.${point.period || ""}`;
       cdekStatus.classList.remove("is-error");
       cdekStatus.classList.add("is-success");
@@ -473,31 +449,20 @@
   form.addEventListener("input", (event) => {
     if (event.target.name === "city") {
       cdekCityCode = null;
+      form.elements.address.value = "";
       clearTimeout(citySearchTimer);
       citySearchController?.abort();
       hideCitySuggestions();
       if (form.elements.deliveryMethod.value !== "cdek") return;
-      resetCdekQuote("Продолжайте вводить и выберите город из подсказок.");
+      resetCdekQuote("");
       const query = form.elements.city.value.trim();
       if (query.length < 2) return;
       citySearchTimer = setTimeout(() => searchCdekCities(query), 300);
-      return;
-    }
-    if (form.elements.deliveryMethod.value === "cdek"
-      && event.target.name === "address"
-      && form.elements.cdekMode.value === "door"
-      && (cdekQuoteToken || deliveryMinor)) {
-      resetCdekQuote("Адрес изменился. Рассчитайте доставку курьером заново.");
     }
   });
 
   function renderCitySuggestions(cities) {
     citySuggestions.replaceChildren();
-    const nameCounts = cities.reduce((counts, city) => {
-      const key = String(city.city || "").toLocaleLowerCase("ru-RU");
-      counts.set(key, (counts.get(key) || 0) + 1);
-      return counts;
-    }, new Map());
     cities.forEach((city) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -508,9 +473,10 @@
       const name = document.createElement("span");
       name.textContent = city.city;
       button.append(name);
-      if (nameCounts.get(String(city.city).toLocaleLowerCase("ru-RU")) > 1 && city.label !== city.city) {
+      const contextText = city.region || city.subRegion || "";
+      if (contextText) {
         const context = document.createElement("small");
-        context.textContent = city.label.split(",").slice(1).join(",").trim();
+        context.textContent = contextText;
         button.append(context);
       }
       citySuggestions.append(button);
@@ -527,7 +493,6 @@
   async function searchCdekCities(query) {
     citySearchController?.abort();
     citySearchController = new AbortController();
-    cdekStatus.textContent = "Ищем город в базе СДЭК…";
     cdekStatus.classList.remove("is-error", "is-success");
     try {
       const response = await fetch(`/api/delivery/cdek/cities?q=${encodeURIComponent(query)}`, {
@@ -539,21 +504,19 @@
       if (!response.ok) throw Object.assign(new Error(payload.error || "cdek_provider_unavailable"), { code: payload.error });
       if (form.elements.city.value.trim() !== query || form.elements.deliveryMethod.value !== "cdek") return;
       renderCitySuggestions(Array.isArray(payload.cities) ? payload.cities : []);
-      cdekStatus.textContent = payload.cities?.length
-        ? "Выберите свой город из списка."
-        : "Город не найден. Попробуйте уточнить название.";
+      cdekStatus.textContent = "";
     } catch (error) {
       if (error.name === "AbortError") return;
       hideCitySuggestions();
+      cdekOptions.hidden = false;
       cdekStatus.textContent = errorMessages[error.code] || "Не удалось загрузить города СДЭК. Попробуйте ещё раз.";
       cdekStatus.classList.add("is-error");
     }
   }
 
   async function loadCdekQuote() {
-    const mode = form.elements.cdekMode.value;
     form.elements.city.required = true;
-    form.elements.address.required = mode === "door";
+    form.elements.address.required = false;
     if (!form.elements.city.reportValidity()) return;
     if (!cdekCityCode) {
       cdekStatus.textContent = "Выберите город из подсказок.";
@@ -561,12 +524,10 @@
       form.elements.city.focus();
       return;
     }
-    if (mode === "door" && !form.elements.address.reportValidity()) return;
     cdekQuoteController?.abort();
     const quoteController = new AbortController();
     cdekQuoteController = quoteController;
-    cdekCalculate.disabled = true;
-    cdekStatus.textContent = mode === "pvz" ? "Загружаем пункты выдачи СДЭК…" : "СДЭК рассчитывает доставку…";
+    cdekStatus.textContent = "";
     cdekStatus.classList.remove("is-error", "is-success");
     try {
       const response = await fetch("/api/delivery/cdek/quote", {
@@ -574,10 +535,9 @@
         credentials: "same-origin",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
-          mode,
+          mode: "pvz",
           city: form.elements.city.value,
           cityCode: cdekCityCode,
-          address: form.elements.address.value,
         }),
         signal: quoteController.signal,
       });
@@ -588,61 +548,46 @@
       const period = payload.periodMin && payload.periodMax
         ? ` Срок: ${payload.periodMin}–${payload.periodMax} дн.`
         : "";
-      if (mode === "door") {
-        deliveryMinor = quotedDeliveryMinor;
-        cdekQuoteToken = payload.quoteToken;
-        cdekStatus.textContent = `Доставка курьером: ${money(deliveryMinor / 100)}.${period}`;
-        cdekStatus.classList.add("is-success");
-        page.querySelector("[data-checkout-delivery-note]").textContent = "Доставка рассчитана СДЭК и включена в итоговую сумму.";
-      } else {
-        deliveryMinor = 0;
-        cdekQuoteToken = "";
-        cdekPoints = new Map(payload.points.map((point) => [point.code, {
-          ...point,
-          deliveryMinor: quotedDeliveryMinor,
-          period,
-        }]));
-        cdekPointSelect.innerHTML = '<option value="">Выберите ПВЗ</option>';
-        payload.points.forEach((point) => {
-          const option = document.createElement("option");
-          option.value = point.code;
-          option.textContent = `${point.type === "postamat" ? "Постамат" : "ПВЗ"} — ${point.address}`;
-          cdekPointSelect.append(option);
-        });
-        cdekPointSelect.required = true;
-        cdekPointField.hidden = false;
-        cdekStatus.textContent = "Выберите удобный ПВЗ — после выбора стоимость добавится к заказу.";
-      }
+      deliveryMinor = 0;
+      cdekQuoteToken = "";
+      cdekPoints = new Map(payload.points.map((point) => [point.code, {
+        ...point,
+        deliveryMinor: quotedDeliveryMinor,
+        period,
+      }]));
+      cdekPointSelect.innerHTML = '<option value="">Выберите ПВЗ</option>';
+      payload.points.forEach((point) => {
+        const option = document.createElement("option");
+        option.value = point.code;
+        option.textContent = `${point.type === "postamat" ? "Постамат" : "ПВЗ"} — ${point.address}`;
+        cdekPointSelect.append(option);
+      });
+      cdekPointSelect.required = true;
+      cdekPointField.hidden = false;
+      cdekOptions.hidden = false;
       updateOrderTotals();
     } catch (error) {
       if (error.name === "AbortError") return;
       deliveryMinor = 0;
       cdekQuoteToken = "";
+      cdekOptions.hidden = false;
       cdekStatus.textContent = errorMessages[error.code] || "Не удалось рассчитать доставку СДЭК. Попробуйте ещё раз.";
       cdekStatus.classList.add("is-error");
       updateOrderTotals();
     } finally {
-      cdekCalculate.disabled = false;
       if (cdekQuoteController === quoteController) cdekQuoteController = null;
     }
   }
-
-  cdekCalculate.addEventListener("click", loadCdekQuote);
 
   page.addEventListener("click", (event) => {
     const city = event.target.closest("[data-cdek-city-code]");
     if (city) {
       cdekCityCode = Number(city.dataset.cdekCityCode);
       form.elements.city.value = city.dataset.cdekCityName;
+      form.elements.address.value = "";
       hideCitySuggestions();
-      resetCdekQuote(form.elements.cdekMode.value === "pvz"
-        ? "Загружаем пункты выдачи…"
-        : "Укажите адрес и рассчитайте доставку курьером.");
-      if (form.elements.cdekMode.value === "pvz") loadCdekQuote();
-      else {
-        form.elements.address.value = "";
-        form.elements.address.focus();
-      }
+      resetCdekQuote();
+      loadCdekQuote();
       return;
     }
     if (!event.target.closest("[data-city-field]")) hideCitySuggestions();

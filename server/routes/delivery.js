@@ -27,13 +27,11 @@ const normalizeQuoteRequest = (body = {}) => {
   const mode = cleanText(body.mode, 16);
   const city = cleanText(body.city, 120);
   const cityCode = Number(body.cityCode);
-  const address = cleanText(body.address, 300);
-  if (!new Set(["pvz", "door"]).has(mode)) throw new CdekError("cdek_mode_invalid", 400);
+  if (mode !== "pvz") throw new CdekError("cdek_mode_invalid", 400);
   if (city.length < 2 || !Number.isInteger(cityCode) || cityCode < 1) {
     throw new CdekError("cdek_city_invalid", 400);
   }
-  if (mode === "door" && address.length < 5) throw new CdekError("cdek_address_invalid", 400);
-  return { mode, city, cityCode, postalCode: "", address };
+  return { mode, city, cityCode };
 };
 
 export function createDeliveryRouter({ config }) {
@@ -62,7 +60,6 @@ export function createDeliveryRouter({ config }) {
       const destination = await cdek.findCity({
         code: input.cityCode,
         city: input.city,
-        postalCode: "",
       });
       const tariff = await cdek.quote({ destination, mode: input.mode });
       const common = {
@@ -78,18 +75,6 @@ export function createDeliveryRouter({ config }) {
         tariffName: cleanText(tariff.tariff_name, 160),
         shipmentCreation: false,
       };
-
-      if (input.mode === "door") {
-        response.json({
-          ...common,
-          address: input.address,
-          quoteToken: signCdekQuote(
-            quotePayload({ destination, tariff, mode: input.mode, address: input.address }),
-            config.session.secret,
-          ),
-        });
-        return;
-      }
 
       const points = await cdek.pickupPoints(destination.code);
       if (!points.length) throw new CdekError("cdek_points_unavailable", 422);

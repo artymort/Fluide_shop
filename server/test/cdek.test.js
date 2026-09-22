@@ -166,5 +166,6 @@ test("CDEK city suggestions prioritize settlement names and ignore region-only m
   const cities = await client.searchCities("Оренбург");
   assert.deepEqual(cities.map((city) => city.code), [261, 301]);
   assert.equal(cities[0].city, "Оренбург");
+  assert.equal(cities[0].region, "Оренбургская область");
   assert.equal(cities[0].label, "Оренбург, Оренбургская область");
 });
