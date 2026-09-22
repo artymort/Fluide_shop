@@ -140,7 +140,7 @@ function initAccountPage(initialAccount) {
       const status = orderStatusLabels[order.status] || "Обрабатывается";
       const payment = paymentStatusLabels[order.payment_status] || "Статус уточняется";
       const itemMarkup = items.map((item) => `<li class="account-order-item">
-        <span class="account-order-item-image"><img src="${escapeHtml(item.imageUrl || "assets/brand/logo-blue.svg")}" alt="" loading="lazy" decoding="async"></span>
+        <span class="account-order-item-image"><img src="${escapeHtml(item.imageUrl || "assets/brand/logo-blue.svg")}" alt=""></span>
         <span class="account-order-item-copy"><strong>${escapeHtml(item.productName || "Товар FLUIDE")}</strong>${item.variantName ? `<small>${escapeHtml(item.variantName)}</small>` : ""}</span>
         <span class="account-order-item-quantity">${Number(item.quantity) || 1} шт.</span>
         <b>${escapeHtml(moneyMinor(item.totalPriceMinor, order.currency))}</b>
