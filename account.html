@@ -7,7 +7,7 @@
   <title>Личный кабинет — FLUIDE Atelier</title>
   <link rel="icon" href="icon_fluide_site.svg?v=1" type="image/svg+xml">
   <link rel="stylesheet" href="catalog-page.css?v=perf-v1">
-  <link rel="stylesheet" href="account-page.css?v=account-v55">
+  <link rel="stylesheet" href="account-page.css?v=orders-v1">
   <link rel="stylesheet" href="site-colors.css?v=neutral-text-v15">
   <link rel="stylesheet" href="checkout.css?v=payment-flow-v1">
   <link rel="stylesheet" href="site-performance.css?v=perf-v2">
@@ -16,7 +16,7 @@
   <script src="catalog-data.js?v=perf-v2" defer></script>
   <script src="site-performance.js?v=perf-v2" defer></script>
   <script src="promotion.js?v=cart-footer-v2" defer></script>
-  <script src="account-page.js?v=perf-v2" defer></script>
+  <script src="account-page.js?v=orders-v1" defer></script>
   <script src="checkout.js?v=payment-flow-v1" defer></script>
   <script src="analytics.js?v=analytics-v2" defer></script>
 </head>
@@ -168,7 +168,10 @@
 
         <section class="account-panel" data-account-panel="orders" hidden>
           <div class="account-panel-head"><div><h2>Мои заказы</h2></div></div>
-          <div class="account-empty account-empty--orders"><h3>Заказов пока нет</h3><p>Когда подключим оформление и оплату, здесь появятся состав, стоимость и статус доставки.</p><a href="catalog.html">Выбрать аромат</a></div>
+          <div class="account-orders" id="account-orders" aria-live="polite" aria-busy="true">
+            <div class="account-orders-loading"><span></span><p>Загружаем заказы…</p></div>
+          </div>
+          <div class="account-empty account-empty--orders" id="account-orders-empty" hidden><h3>Заказов пока нет</h3><p>После оформления здесь появятся состав, стоимость, оплата и статус доставки.</p><a href="catalog.html">Выбрать аромат</a></div>
         </section>
 
         <section class="account-panel" data-account-panel="profile" hidden>
@@ -192,7 +195,7 @@
     <div><h3>Коллекции</h3><a href="catalog.html">Парфюм</a><a href="catalog.html?category=home">Для дома</a><a href="index.html#gifts">Подарки</a></div>
     <div><h3>О бренде</h3><a href="about.html">О компании</a><a href="about.html">Пространство во Владимире</a><a href="about.html">Мастер-классы</a></div>
     <div><h3>Покупателям</h3><a href="index.html#contacts">Связаться с нами</a><a href="index.html#contacts">Доставка и оплата</a></div>
-    <div class="footer-bottom"><span>© FLUIDE Atelier, 2026</span><span>Сделано с чувством.</span><span>Демо-версия кабинета</span></div>
+    <div class="footer-bottom"><span>© FLUIDE Atelier, 2026</span><span>Сделано с чувством.</span><span>Личный кабинет FLUIDE</span></div>
   </footer>
 
   <div class="drawer-backdrop"></div>

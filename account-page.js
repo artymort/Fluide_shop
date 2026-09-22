@@ -26,7 +26,7 @@ function initAccountPage(initialAccount) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
   })[char]);
   const favorites = readJson("fluide-favorites", []);
-  const orders = readJson("fluide-orders", []);
+  let orders = [];
   let cart = readJson("fluide-cart", []);
   const readSessionJson = (key, fallback) => {
     try {
@@ -68,6 +68,140 @@ function initAccountPage(initialAccount) {
 
   function money(value) {
     return `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
+  }
+
+  function moneyMinor(value, currency = "RUB") {
+    return new Intl.NumberFormat("ru-RU", {
+      style: "currency",
+      currency: currency || "RUB",
+      maximumFractionDigits: 0,
+    }).format((Number(value) || 0) / 100);
+  }
+
+  function orderDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Дата не указана";
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  }
+
+  const orderStatusLabels = {
+    new: "Новый",
+    confirmed: "Подтверждён",
+    assembling: "Собирается",
+    ready: "Готов к отправке",
+    shipped: "Отправлен",
+    delivered: "Доставлен",
+    cancelled: "Отменён",
+    refunded: "Возврат",
+  };
+  const paymentStatusLabels = {
+    unpaid: "Не оплачен",
+    pending: "Ожидает оплаты",
+    paid: "Оплачен",
+    partially_refunded: "Частичный возврат",
+    refunded: "Возвращён",
+    failed: "Ошибка оплаты",
+    cancelled: "Платёж отменён",
+  };
+  const deliveryLabels = {
+    cdek: "СДЭК",
+    russian_post: "Почта России",
+    pickup: "Самовывоз",
+  };
+
+  function orderDeliveryText(order) {
+    const address = order.delivery_address || {};
+    const method = deliveryLabels[order.delivery_method] || "Доставка";
+    const point = address.pointName || address.address;
+    const location = [point, address.city].filter(Boolean).join(", ");
+    return location ? `${method} · ${location}` : method;
+  }
+
+  function renderOrders() {
+    const container = document.querySelector("#account-orders");
+    const empty = document.querySelector("#account-orders-empty");
+    if (!container || !empty) return;
+    container.setAttribute("aria-busy", "false");
+    container.hidden = orders.length === 0;
+    empty.hidden = orders.length !== 0;
+    if (!orders.length) {
+      container.innerHTML = "";
+      return;
+    }
+
+    container.innerHTML = orders.map((order) => {
+      const items = Array.isArray(order.items) ? order.items : [];
+      const status = orderStatusLabels[order.status] || "Обрабатывается";
+      const payment = paymentStatusLabels[order.payment_status] || "Статус уточняется";
+      const itemMarkup = items.map((item) => `<li class="account-order-item">
+        <span class="account-order-item-image"><img src="${escapeHtml(item.imageUrl || "assets/brand/logo-blue.svg")}" alt="" loading="lazy" decoding="async"></span>
+        <span class="account-order-item-copy"><strong>${escapeHtml(item.productName || "Товар FLUIDE")}</strong>${item.variantName ? `<small>${escapeHtml(item.variantName)}</small>` : ""}</span>
+        <span class="account-order-item-quantity">${Number(item.quantity) || 1} шт.</span>
+        <b>${escapeHtml(moneyMinor(item.totalPriceMinor, order.currency))}</b>
+      </li>`).join("");
+      const discount = Number(order.discount_minor) || 0;
+      const delivery = Number(order.delivery_minor) || 0;
+      return `<article class="account-order">
+        <header class="account-order-head">
+          <div><span>Заказ</span><h3>${escapeHtml(order.order_number || "Без номера")}</h3><time datetime="${escapeHtml(order.created_at)}">${escapeHtml(orderDate(order.created_at))}</time></div>
+          <div class="account-order-badges"><span class="account-order-status" data-status="${escapeHtml(order.status)}">${escapeHtml(status)}</span><span class="account-payment-status" data-status="${escapeHtml(order.payment_status)}">${escapeHtml(payment)}</span></div>
+        </header>
+        <ul class="account-order-items">${itemMarkup}</ul>
+        <footer class="account-order-foot">
+          <div class="account-order-delivery"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#map-pin"></use></svg><span>${escapeHtml(orderDeliveryText(order))}</span></div>
+          <div class="account-order-summary">
+            ${discount ? `<span>Скидка <b>−${escapeHtml(moneyMinor(discount, order.currency))}</b></span>` : ""}
+            ${delivery ? `<span>Доставка <b>${escapeHtml(moneyMinor(delivery, order.currency))}</b></span>` : ""}
+            <strong>Итого <b>${escapeHtml(moneyMinor(order.total_minor, order.currency))}</b></strong>
+          </div>
+        </footer>
+      </article>`;
+    }).join("");
+  }
+
+  function renderOrdersError() {
+    const container = document.querySelector("#account-orders");
+    const empty = document.querySelector("#account-orders-empty");
+    if (!container || !empty) return;
+    empty.hidden = true;
+    container.hidden = false;
+    container.setAttribute("aria-busy", "false");
+    container.innerHTML = '<div class="account-orders-error"><h3>Не удалось загрузить заказы</h3><p>Обновите страницу или попробуйте немного позже.</p><button type="button" data-orders-retry>Повторить</button></div>';
+  }
+
+  async function loadOrders() {
+    const container = document.querySelector("#account-orders");
+    const empty = document.querySelector("#account-orders-empty");
+    if (container) {
+      container.hidden = false;
+      container.setAttribute("aria-busy", "true");
+      container.innerHTML = '<div class="account-orders-loading"><span></span><p>Загружаем заказы…</p></div>';
+    }
+    if (empty) empty.hidden = true;
+    try {
+      const response = await fetch("/api/orders/mine", {
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+      });
+      if (response.status === 401) {
+        await window.FluideAccount.clear();
+        window.location.replace("index.html?login=1");
+        return;
+      }
+      if (!response.ok) throw new Error("orders_unavailable");
+      const payload = await response.json();
+      orders = Array.isArray(payload.orders) ? payload.orders : [];
+      renderOrders();
+      renderLoyaltyHistory();
+    } catch {
+      renderOrdersError();
+    }
   }
 
   function bonusNumber(value) {
@@ -383,6 +517,7 @@ function initAccountPage(initialAccount) {
       await window.FluideAccount.clear();
       window.location.href = "index.html";
     }
+    if (event.target.closest("[data-orders-retry]")) loadOrders();
   });
 
   document.querySelector("#account-profile-form").addEventListener("submit", async (event) => {
@@ -424,6 +559,7 @@ function initAccountPage(initialAccount) {
   }));
 
   applyLoyaltyTheme(localStorage.getItem("fluide-loyalty-theme") || "cobalt", false);
+  loadOrders();
   activateTab(location.hash.replace("#", "") || "overview", false);
   window.addEventListener("hashchange", () => {
     activateTab(location.hash.replace("#", "") || "overview", false);

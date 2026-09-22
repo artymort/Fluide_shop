@@ -134,6 +134,53 @@ const createCheckoutToken = () => {
 export function createOrdersRouter({ pool, config }) {
   const router = Router();
 
+  router.get("/mine", async (request, response, next) => {
+    try {
+      const userId = await findSessionUserId(pool, request, config);
+      if (!userId) {
+        response.status(401).json({ error: "not_authenticated" });
+        return;
+      }
+
+      const result = await pool.query(
+        `SELECT o.id, o.order_number, o.status, o.payment_status,
+                o.subtotal_minor, o.discount_minor, o.delivery_minor,
+                o.total_minor, o.currency, o.payment_provider,
+                o.delivery_method, o.delivery_address, o.customer_comment,
+                o.paid_at, o.shipped_at, o.delivered_at, o.cancelled_at,
+                o.created_at, o.updated_at,
+                COALESCE(order_items.entries, '[]'::JSONB) AS items
+           FROM commerce_orders o
+           LEFT JOIN LATERAL (
+             SELECT JSONB_AGG(
+                      JSONB_BUILD_OBJECT(
+                        'id', oi.id,
+                        'productName', oi.product_name,
+                        'variantName', oi.variant_name,
+                        'sku', oi.sku,
+                        'imageUrl', oi.image_url,
+                        'quantity', oi.quantity,
+                        'unitPriceMinor', oi.unit_price_minor,
+                        'totalPriceMinor', oi.total_price_minor
+                      ) ORDER BY oi.created_at, oi.id
+                    ) AS entries
+               FROM commerce_order_items oi
+              WHERE oi.order_id = o.id
+           ) order_items ON TRUE
+          WHERE o.user_id = $1
+            AND o.archived_at IS NULL
+          ORDER BY o.created_at DESC
+          LIMIT 100`,
+        [userId],
+      );
+
+      response.set("Cache-Control", "no-store");
+      response.json({ orders: result.rows });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/", rateLimit({
     windowMs: 15 * 60_000,
     limit: 12,
