@@ -9,7 +9,7 @@ const state = {
   homeContent: null,
   contentProducts: [],
   selectedBestsellerIds: [],
-  ordersArchived: false,
+  ordersView: "active",
   currentOrder: null,
 };
 
@@ -20,8 +20,8 @@ const elements = Object.fromEntries([
   "catalog-search", "catalog-status", "catalog-type", "catalog-sort", "catalog-rows",
   "customer-search", "customer-rows", "new-product-button", "product-dialog", "product-form",
   "customer-dialog", "customer-dialog-title", "customer-detail",
-  "order-search", "order-status", "order-payment", "order-rows", "orders-title", "orders-caption", "order-archive-toggle",
-  "order-dialog", "order-dialog-title", "order-detail", "order-status-form", "archive-order-button",
+  "order-search", "order-status", "order-payment", "order-rows", "orders-title", "orders-caption", "order-incomplete-toggle", "order-archive-toggle",
+  "order-dialog", "order-dialog-title", "order-detail", "order-status-form", "archive-order-button", "order-incomplete-message", "order-status-label", "order-status-submit",
   "order-archive-actions", "order-archive-message", "restore-order-button",
   "order-archive-dialog", "order-archive-number", "order-archive-note", "cancel-order-archive", "confirm-order-archive",
   "analytics-period", "analytics-stats", "analytics-chart", "analytics-funnel",
@@ -49,6 +49,8 @@ const orderStatusLabels = {
   cancelled: "Отменён",
   refunded: "Возвращён",
   archived: "В архиве",
+  payment_waiting: "Ждём оплату",
+  payment_incomplete: "Оплата не завершена",
 };
 const paymentStatusLabels = {
   unpaid: "Не оплачен",
@@ -459,25 +461,35 @@ async function openCustomer(id) {
 
 async function loadOrders() {
   try {
-    elements["orders-title"].textContent = state.ordersArchived ? "Архив заказов" : "Заказы";
-    elements["orders-caption"].textContent = state.ordersArchived
-      ? "Заказы можно восстановить в течение 14 дней"
-      : "Текущие заказы магазина";
+    const viewCopy = {
+      active: { title: "Заказы", caption: "Заказы, принятые в работу", empty: "Заказы не найдены" },
+      incomplete: { title: "Не завершили оплату", caption: "Через 24 часа такие заказы автоматически попадут в архив", empty: "Незавершённых оплат нет" },
+      archived: { title: "Архив заказов", caption: "Тестовые и неоплаченные заказы можно восстановить в течение 14 дней", empty: "Архив пуст" },
+    }[state.ordersView];
+    elements["orders-title"].textContent = viewCopy.title;
+    elements["orders-caption"].textContent = viewCopy.caption;
+    const incompleteToggleIcon = elements["order-incomplete-toggle"].querySelector("use");
+    incompleteToggleIcon.setAttribute("href", state.ordersView === "incomplete"
+      ? "../assets/icons/lucide.svg#arrow-left"
+      : "../assets/icons/lucide.svg#russian-ruble");
+    elements["order-incomplete-toggle"].querySelector("span").textContent = state.ordersView === "incomplete"
+      ? "К заказам"
+      : "Не завершили оплату";
     const archiveToggleIcon = elements["order-archive-toggle"].querySelector("use");
-    archiveToggleIcon.setAttribute("href", state.ordersArchived
+    archiveToggleIcon.setAttribute("href", state.ordersView === "archived"
       ? "../assets/icons/lucide.svg#arrow-left"
       : "../assets/icons/lucide.svg#trash-2");
-    elements["order-archive-toggle"].querySelector("span").textContent = state.ordersArchived ? "К заказам" : "Архив";
+    elements["order-archive-toggle"].querySelector("span").textContent = state.ordersView === "archived" ? "К заказам" : "Архив";
     const params = new URLSearchParams({
       q: elements["order-search"].value.trim(),
       status: elements["order-status"].value,
       payment: elements["order-payment"].value,
-      archived: String(state.ordersArchived),
+      view: state.ordersView,
     });
     const { orders } = await api(`/orders?${params}`);
     if (!orders.length) {
       const row = document.createElement("tr");
-      const cell = makeCell(state.ordersArchived ? "Архив пуст" : "Заказы не найдены", "empty-cell");
+      const cell = makeCell(viewCopy.empty, "empty-cell");
       cell.colSpan = 6;
       row.append(cell);
       elements["order-rows"].replaceChildren(row);
@@ -544,13 +556,20 @@ async function loadOrders() {
       const paymentCell = document.createElement("td");
       paymentCell.append(orderBadge(order.payment_status, "payment"));
       const statusCell = document.createElement("td");
-      if (state.ordersArchived) {
+      if (state.ordersView === "archived") {
         const expiry = document.createElement("span");
         expiry.className = "order-secondary";
         expiry.textContent = order.has_live_payment
           ? "Оплата сохранена"
           : `До ${formatDate(order.purge_at)}`;
         statusCell.append(orderBadge("archived"), expiry);
+      } else if (state.ordersView === "incomplete") {
+        const attentionReached = ["cancelled", "failed"].includes(order.payment_status)
+          || (order.payment_attention_at && Date.parse(order.payment_attention_at) <= Date.now());
+        const archiveTime = document.createElement("span");
+        archiveTime.className = "order-secondary";
+        archiveTime.textContent = `В архив ${formatDate(order.auto_archive_at)}`;
+        statusCell.append(orderBadge(attentionReached ? "payment_incomplete" : "payment_waiting"), archiveTime);
       } else {
         statusCell.append(orderBadge(order.status));
       }
@@ -726,6 +745,9 @@ async function openOrder(id) {
     elements["order-dialog-title"].textContent = `Заказ ${order.order_number}`;
     renderOrderDetail(order, items || [], payments || [], history || []);
     const canArchiveOrders = ["owner", "admin"].includes(state.admin?.role);
+    elements["order-incomplete-message"].hidden = true;
+    elements["order-status-label"].hidden = false;
+    elements["order-status-submit"].hidden = false;
     if (order.archived_at) {
       elements["order-archive-message"].textContent = order.has_live_payment
         ? "Это оплаченный заказ. Он хранится в архиве без автоматического удаления."
@@ -736,6 +758,16 @@ async function openOrder(id) {
       elements["order-status-form"].elements.id.value = order.id;
       elements["order-status-form"].elements.status.value = order.status;
       elements["archive-order-button"].hidden = !canArchiveOrders;
+      if (order.incomplete_payment) {
+        const attentionReached = ["cancelled", "failed"].includes(order.payment_status)
+          || (order.payment_attention_at && Date.parse(order.payment_attention_at) <= Date.now());
+        elements["order-incomplete-message"].textContent = attentionReached
+          ? `Покупатель не завершил оплату. Автоматический перенос в архив — ${formatDate(order.auto_archive_at)}.`
+          : "Платёжная сессия ещё активна. Заказ появится в рабочем списке сразу после оплаты.";
+        elements["order-incomplete-message"].hidden = false;
+        elements["order-status-label"].hidden = true;
+        elements["order-status-submit"].hidden = true;
+      }
       elements["order-status-form"].hidden = false;
     }
   } catch (error) {
@@ -1675,8 +1707,14 @@ elements["customer-search"].addEventListener("input", debounce(() => loadCustome
 elements["order-search"].addEventListener("input", debounce(() => loadOrders().catch(console.error)));
 elements["order-status"].addEventListener("change", () => loadOrders().catch(console.error));
 elements["order-payment"].addEventListener("change", () => loadOrders().catch(console.error));
+elements["order-incomplete-toggle"].addEventListener("click", () => {
+  state.ordersView = state.ordersView === "incomplete" ? "active" : "incomplete";
+  state.currentOrder = null;
+  if (elements["order-dialog"].open) elements["order-dialog"].close();
+  loadOrders().catch(console.error);
+});
 elements["order-archive-toggle"].addEventListener("click", () => {
-  state.ordersArchived = !state.ordersArchived;
+  state.ordersView = state.ordersView === "archived" ? "active" : "archived";
   state.currentOrder = null;
   if (elements["order-dialog"].open) elements["order-dialog"].close();
   loadOrders().catch(console.error);

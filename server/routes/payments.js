@@ -25,8 +25,8 @@ const paymentLimit = rateLimit({
 const loadOrder = async (database, id, { includeArchived = false } = {}) => {
   if (!UUID_PATTERN.test(String(id || ""))) return null;
   const result = await database.query(
-    `SELECT id, order_number, payment_status, total_minor, currency,
-            delivery_method, delivery_address, checkout_token_hash
+    `SELECT id, order_number, status, payment_status, total_minor, currency,
+            delivery_method, delivery_address, checkout_token_hash, archived_at
        FROM commerce_orders
       WHERE id = $1 AND ($2::BOOLEAN OR archived_at IS NULL)
       LIMIT 1`,
@@ -122,10 +122,21 @@ async function persistVerifiedPayment(database, order, payment, existingPaymentI
         SET payment_status = $2,
             payment_provider = $3,
             payment_transaction_id = $4,
-            paid_at = CASE WHEN $2 = 'paid' THEN COALESCE(paid_at, NOW()) ELSE paid_at END
+            paid_at = CASE WHEN $2 = 'paid' THEN COALESCE(paid_at, NOW()) ELSE paid_at END,
+            status = CASE WHEN $2 = 'paid' AND status = 'cancelled' THEN 'new' ELSE status END,
+            cancelled_at = CASE WHEN $2 = 'paid' THEN NULL ELSE cancelled_at END,
+            archived_at = CASE WHEN $2 = 'paid' THEN NULL ELSE archived_at END,
+            archived_by = CASE WHEN $2 = 'paid' THEN NULL ELSE archived_by END
       WHERE id = $1`,
     [order.id, orderPaymentStatus, YOOKASSA_PROVIDER, payment.id],
   );
+  if (localStatus === "succeeded" && order.status === "cancelled") {
+    await database.query(
+      `INSERT INTO commerce_order_status_history (order_id, status, comment)
+       VALUES ($1, 'new', 'Заказ восстановлен после успешной оплаты')`,
+      [order.id],
+    );
+  }
   if (paymentRow?.id) {
     await database.query(
       `DELETE FROM commerce_payments
@@ -200,6 +211,7 @@ export function createPaymentsRouter({ pool, config }) {
       if (!yooKassa.enabled) throw new YooKassaError("payment_provider_disabled", 503);
       const order = await loadOrder(pool, request.params.id);
       assertOrderAccess(order, request.body?.checkoutToken);
+      if (order.status === "cancelled") throw new YooKassaError("order_cancelled", 409);
       if (order.payment_status === "paid") {
         response.json({ payment: { status: "succeeded", confirmationUrl: null, test: yooKassa.testMode } });
         return;
@@ -260,6 +272,50 @@ export function createPaymentsRouter({ pool, config }) {
         order: { orderNumber: order.order_number },
         payment: paymentResponse(current.payment),
       });
+    } catch (error) {
+      if (error instanceof YooKassaError) {
+        response.status(error.status).json({ error: error.code });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  router.post("/orders/:id/yookassa/cancel", paymentLimit, async (request, response, next) => {
+    try {
+      const order = await loadOrder(pool, request.params.id);
+      assertOrderAccess(order, request.body?.checkoutToken);
+      if (order.payment_status === "paid") throw new YooKassaError("order_already_paid", 409);
+      if (yooKassa.enabled) {
+        const current = await providerPaymentForOrder(pool, order, yooKassa);
+        if (current.payment?.status === "succeeded") throw new YooKassaError("order_already_paid", 409);
+      }
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const cancelled = await client.query(
+          `UPDATE commerce_orders
+              SET status = 'cancelled', payment_status = 'cancelled', cancelled_at = NOW()
+            WHERE id = $1 AND archived_at IS NULL AND payment_status <> 'paid'
+            RETURNING id`,
+          [order.id],
+        );
+        if (!cancelled.rowCount) throw new YooKassaError("order_already_paid", 409);
+        if (order.status !== "cancelled") {
+          await client.query(
+            `INSERT INTO commerce_order_status_history (order_id, status, comment)
+             VALUES ($1, 'cancelled', 'Покупатель отказался от незавершённой оплаты')`,
+            [order.id],
+          );
+        }
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw error;
+      } finally {
+        client.release();
+      }
+      response.json({ order: { orderNumber: order.order_number, status: "cancelled" } });
     } catch (error) {
       if (error instanceof YooKassaError) {
         response.status(error.status).json({ error: error.code });

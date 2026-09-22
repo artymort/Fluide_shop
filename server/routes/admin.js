@@ -24,6 +24,7 @@ const CONTENT_EDIT_ROLES = new Set(["owner", "admin", "editor"]);
 const CUSTOMER_ROLES = new Set(["owner", "admin", "orders"]);
 const ORDER_ROLES = new Set(["owner", "admin", "orders"]);
 const ORDER_ARCHIVE_ROLES = new Set(["owner", "admin"]);
+const ORDER_VIEWS = new Set(["active", "incomplete", "archived"]);
 const ANALYTICS_ROLES = new Set(["owner", "admin", "analyst"]);
 const ORDER_STATUSES = new Set(["new", "confirmed", "assembling", "ready", "shipped", "delivered", "cancelled", "refunded"]);
 const PAYMENT_STATUSES = new Set(["unpaid", "pending", "paid", "partially_refunded", "refunded", "failed", "cancelled"]);
@@ -89,6 +90,60 @@ async function purgeExpiredArchivedOrders(database) {
             )
        FROM purged`,
   );
+}
+
+async function archiveAbandonedPaymentOrders(database) {
+  await database.query(
+    `WITH candidates AS (
+       SELECT o.id
+         FROM commerce_orders o
+        WHERE o.archived_at IS NULL
+          AND o.payment_status IN ('unpaid', 'pending', 'failed', 'cancelled')
+          AND (
+            LOWER(COALESCE(o.payment_provider, '')) = 'yookassa'
+            OR EXISTS (
+              SELECT 1 FROM commerce_payments p_started
+               WHERE p_started.order_id = o.id
+                 AND p_started.operation = 'payment'
+                 AND LOWER(p_started.provider) = 'yookassa'
+            )
+          )
+          AND GREATEST(COALESCE((
+            SELECT MIN(p_started.created_at)
+              FROM commerce_payments p_started
+             WHERE p_started.order_id = o.id
+               AND p_started.operation = 'payment'
+               AND LOWER(p_started.provider) = 'yookassa'
+          ), o.created_at), o.updated_at) < NOW() - INTERVAL '24 hours'
+          AND NOT EXISTS (
+            SELECT 1 FROM commerce_payments p_paid
+             WHERE p_paid.order_id = o.id
+               AND p_paid.operation = 'payment'
+               AND p_paid.status = 'succeeded'
+          )
+     ), archived AS (
+       UPDATE commerce_orders o
+          SET archived_at = NOW(), archived_by = NULL
+         FROM candidates c
+        WHERE o.id = c.id
+          AND o.archived_at IS NULL
+          AND o.payment_status IN ('unpaid', 'pending', 'failed', 'cancelled')
+        RETURNING o.id, o.order_number, o.payment_status
+     )
+     INSERT INTO admin_audit_log (action, entity_type, entity_id, details)
+     SELECT 'order.auto_archived_incomplete_payment', 'commerce_order', id::TEXT,
+            jsonb_build_object(
+              'orderNumber', order_number,
+              'paymentStatus', payment_status,
+              'incompletePaymentHours', 24
+            )
+       FROM archived`,
+  );
+}
+
+async function maintainOrderLifecycle(database) {
+  await archiveAbandonedPaymentOrders(database);
+  await purgeExpiredArchivedOrders(database);
 }
 
 export function createAdminRouter({ pool, config }) {
@@ -496,20 +551,33 @@ export function createAdminRouter({ pool, config }) {
     const search = String(request.query.q || "").trim().slice(0, 120);
     const status = String(request.query.status || "");
     const payment = String(request.query.payment || "");
-    const archived = String(request.query.archived || "false");
+    const legacyArchived = String(request.query.archived || "false") === "true";
+    const view = String(request.query.view || (legacyArchived ? "archived" : "active"));
     if ((status && !ORDER_STATUSES.has(status))
       || (payment && !PAYMENT_STATUSES.has(payment))
-      || !new Set(["true", "false"]).has(archived)) {
+      || !ORDER_VIEWS.has(view)) {
       response.status(400).json({ error: "order_filter_invalid" });
       return;
     }
     try {
-      await purgeExpiredArchivedOrders(pool);
+      await maintainOrderLifecycle(pool);
       const result = await pool.query(
         `SELECT o.id, o.order_number, o.user_id, o.status, o.payment_status,
                 o.customer_name, o.customer_email, o.customer_phone_e164,
                 o.total_minor, o.currency, o.created_at, o.updated_at, o.archived_at,
                 o.archived_at + INTERVAL '14 days' AS purge_at,
+                COALESCE(yk.payment_started_at,
+                  CASE WHEN LOWER(COALESCE(o.payment_provider, '')) = 'yookassa' THEN o.created_at END
+                ) AS payment_started_at,
+                COALESCE(yk.payment_started_at,
+                  CASE WHEN LOWER(COALESCE(o.payment_provider, '')) = 'yookassa' THEN o.created_at END
+                ) + INTERVAL '30 minutes' AS payment_attention_at,
+                GREATEST(COALESCE(yk.payment_started_at,
+                  CASE WHEN LOWER(COALESCE(o.payment_provider, '')) = 'yookassa' THEN o.created_at END
+                ), o.updated_at) + INTERVAL '24 hours' AS auto_archive_at,
+                (o.payment_status IN ('unpaid', 'pending', 'failed', 'cancelled')
+                  AND (LOWER(COALESCE(o.payment_provider, '')) = 'yookassa'
+                    OR yk.payment_started_at IS NOT NULL)) AS incomplete_payment,
                 EXISTS (
                   SELECT 1 FROM commerce_payments p_live
                    WHERE p_live.order_id = o.id
@@ -536,18 +604,36 @@ export function createAdminRouter({ pool, config }) {
                 ), '[]'::JSONB) AS items_preview
            FROM commerce_orders o
            LEFT JOIN commerce_order_items oi ON oi.order_id = o.id
+           LEFT JOIN LATERAL (
+             SELECT MIN(p_started.created_at) AS payment_started_at
+               FROM commerce_payments p_started
+              WHERE p_started.order_id = o.id
+                AND p_started.operation = 'payment'
+                AND LOWER(p_started.provider) = 'yookassa'
+           ) yk ON TRUE
           WHERE ($1 = '' OR o.order_number ILIKE '%' || $1 || '%'
             OR o.customer_name ILIKE '%' || $1 || '%'
             OR o.customer_email ILIKE '%' || $1 || '%'
             OR o.customer_phone_e164 ILIKE '%' || $1 || '%')
             AND ($2 = '' OR o.status = $2)
             AND ($3 = '' OR o.payment_status = $3)
-            AND (($4::BOOLEAN AND o.archived_at IS NOT NULL)
-              OR (NOT $4::BOOLEAN AND o.archived_at IS NULL))
-          GROUP BY o.id
-          ORDER BY CASE WHEN $4::BOOLEAN THEN o.archived_at ELSE o.created_at END DESC
+            AND (
+              ($4 = 'archived' AND o.archived_at IS NOT NULL)
+              OR ($4 = 'incomplete' AND o.archived_at IS NULL
+                AND o.payment_status IN ('unpaid', 'pending', 'failed', 'cancelled')
+                AND (LOWER(COALESCE(o.payment_provider, '')) = 'yookassa'
+                  OR yk.payment_started_at IS NOT NULL))
+              OR ($4 = 'active' AND o.archived_at IS NULL
+                AND NOT (o.payment_status IN ('unpaid', 'pending', 'failed', 'cancelled')
+                  AND (LOWER(COALESCE(o.payment_provider, '')) = 'yookassa'
+                    OR yk.payment_started_at IS NOT NULL)))
+            )
+          GROUP BY o.id, yk.payment_started_at
+          ORDER BY CASE WHEN $4 = 'archived' THEN o.archived_at
+                        WHEN $4 = 'incomplete' THEN COALESCE(yk.payment_started_at, o.created_at)
+                        ELSE o.created_at END DESC
           LIMIT 300`,
-        [search, status, payment, archived === "true"],
+        [search, status, payment, view],
       );
       response.json({ orders: result.rows });
     } catch (error) {
@@ -565,11 +651,23 @@ export function createAdminRouter({ pool, config }) {
       return;
     }
     try {
-      await purgeExpiredArchivedOrders(pool);
+      await maintainOrderLifecycle(pool);
       const [orderResult, itemsResult, paymentsResult, historyResult] = await Promise.all([
         pool.query(
           `SELECT o.*,
                   o.archived_at + INTERVAL '14 days' AS purge_at,
+                  COALESCE(yk.payment_started_at,
+                    CASE WHEN LOWER(COALESCE(o.payment_provider, '')) = 'yookassa' THEN o.created_at END
+                  ) AS payment_started_at,
+                  COALESCE(yk.payment_started_at,
+                    CASE WHEN LOWER(COALESCE(o.payment_provider, '')) = 'yookassa' THEN o.created_at END
+                  ) + INTERVAL '30 minutes' AS payment_attention_at,
+                  GREATEST(COALESCE(yk.payment_started_at,
+                    CASE WHEN LOWER(COALESCE(o.payment_provider, '')) = 'yookassa' THEN o.created_at END
+                  ), o.updated_at) + INTERVAL '24 hours' AS auto_archive_at,
+                  (o.payment_status IN ('unpaid', 'pending', 'failed', 'cancelled')
+                    AND (LOWER(COALESCE(o.payment_provider, '')) = 'yookassa'
+                      OR yk.payment_started_at IS NOT NULL)) AS incomplete_payment,
                   EXISTS (
                     SELECT 1 FROM commerce_payments p_live
                      WHERE p_live.order_id = o.id
@@ -578,6 +676,13 @@ export function createAdminRouter({ pool, config }) {
                        AND LOWER(COALESCE(p_live.metadata->>'test', 'false')) <> 'true'
                   ) AS has_live_payment
              FROM commerce_orders o
+             LEFT JOIN LATERAL (
+               SELECT MIN(p_started.created_at) AS payment_started_at
+                 FROM commerce_payments p_started
+                WHERE p_started.order_id = o.id
+                  AND p_started.operation = 'payment'
+                  AND LOWER(p_started.provider) = 'yookassa'
+             ) yk ON TRUE
             WHERE o.id = $1
             LIMIT 1`,
           [request.params.id],
@@ -754,6 +859,7 @@ export function createAdminRouter({ pool, config }) {
       return;
     }
     try {
+      await maintainOrderLifecycle(pool);
       const [eventsResult, ordersResult, revenueResult, dailyResult, funnelResult, productsResult, sourcesResult] = await Promise.all([
         pool.query(
           `SELECT COUNT(*) FILTER (WHERE event_name = 'page_view')::INT AS page_views,
@@ -769,7 +875,19 @@ export function createAdminRouter({ pool, config }) {
              FROM commerce_orders
             WHERE created_at >= NOW() - ($1::INT * INTERVAL '1 day')
               AND archived_at IS NULL
-              AND status NOT IN ('cancelled', 'refunded')`,
+              AND status NOT IN ('cancelled', 'refunded')
+              AND NOT (
+                payment_status IN ('unpaid', 'pending', 'failed', 'cancelled')
+                AND (
+                  LOWER(COALESCE(payment_provider, '')) = 'yookassa'
+                  OR EXISTS (
+                    SELECT 1 FROM commerce_payments p_started
+                     WHERE p_started.order_id = commerce_orders.id
+                       AND p_started.operation = 'payment'
+                       AND LOWER(p_started.provider) = 'yookassa'
+                  )
+                )
+              )`,
           [period],
         ),
         pool.query(

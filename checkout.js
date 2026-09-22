@@ -58,12 +58,6 @@
     if (readCart().length) window.location.assign("checkout.html");
   }
 
-  const page = document.querySelector("[data-checkout-page]");
-  if (!page) {
-    document.addEventListener("click", goToCheckout);
-    return;
-  }
-
   function readPendingPayment() {
     try {
       const value = JSON.parse(sessionStorage.getItem(PENDING_PAYMENT_KEY) || "null");
@@ -79,6 +73,74 @@
 
   function clearPendingPayment() {
     sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+  }
+
+  function mountPendingPaymentReminder() {
+    const pending = readPendingPayment();
+    if (!pending || new URLSearchParams(window.location.search).get("payment") === "return") return;
+    const reminder = document.createElement("aside");
+    reminder.className = "pending-payment-reminder";
+    reminder.dataset.pendingPaymentReminder = "";
+    reminder.innerHTML = `<div><strong>Остался неоплаченный заказ ${escapeHtml(pending.orderNumber || "")}</strong><span>Можно продолжить оплату или отказаться от заказа.</span></div><div><button type="button" data-pending-continue>Продолжить оплату</button><button type="button" data-pending-cancel>Отменить заказ</button></div>`;
+    document.body.append(reminder);
+  }
+
+  function bindPendingPaymentReminder() {
+    document.addEventListener("click", async (event) => {
+      const continueButton = event.target.closest("[data-pending-continue]");
+      const cancelButton = event.target.closest("[data-pending-cancel]");
+      if (!continueButton && !cancelButton) return;
+      const pending = readPendingPayment();
+      if (!pending) {
+        event.target.closest("[data-pending-payment-reminder]")?.remove();
+        return;
+      }
+      if (continueButton) {
+        continueButton.disabled = true;
+        startPendingPayment(pending).catch((error) => {
+          if (["order_not_found", "order_cancelled"].includes(error.code)) {
+            clearPendingPayment();
+            event.target.closest("[data-pending-payment-reminder]")?.remove();
+            if (page) window.location.reload();
+            return;
+          }
+          const message = event.target.closest("[data-pending-payment-reminder]")?.querySelector("span");
+          if (message) message.textContent = "Не удалось открыть оплату. Попробуйте ещё раз немного позже.";
+          continueButton.disabled = false;
+        });
+        return;
+      }
+      if (!window.confirm(`Отменить заказ ${pending.orderNumber || ""}?`)) return;
+      cancelButton.disabled = true;
+      try {
+        await paymentRequest(`/api/payments/orders/${encodeURIComponent(pending.orderId)}/yookassa/cancel`, pending);
+        clearPendingPayment();
+        event.target.closest("[data-pending-payment-reminder]")?.remove();
+        if (page) window.location.reload();
+      } catch (error) {
+        if (error.code === "order_already_paid") {
+          window.location.assign("checkout.html?payment=return");
+          return;
+        }
+        if (["order_not_found", "order_cancelled"].includes(error.code)) {
+          clearPendingPayment();
+          event.target.closest("[data-pending-payment-reminder]")?.remove();
+          if (page) window.location.reload();
+          return;
+        }
+        const message = event.target.closest("[data-pending-payment-reminder]")?.querySelector("span");
+        if (message) message.textContent = "Не удалось отменить заказ. Попробуйте ещё раз немного позже.";
+        cancelButton.disabled = false;
+      }
+    });
+  }
+
+  const page = document.querySelector("[data-checkout-page]");
+  if (!page) {
+    mountPendingPaymentReminder();
+    bindPendingPaymentReminder();
+    document.addEventListener("click", goToCheckout);
+    return;
   }
 
   async function paymentRequest(path, pending) {
@@ -107,6 +169,10 @@
   async function startPendingPayment(pending) {
     const payload = await paymentRequest(`/api/payments/orders/${encodeURIComponent(pending.orderId)}/yookassa`, pending);
     if (payload.payment?.status === "succeeded") {
+      if (!page) {
+        window.location.assign("checkout.html?payment=return");
+        return;
+      }
       localStorage.removeItem(CART_KEY);
       clearPendingPayment();
       window.FluideAnalytics?.track("purchase", {
@@ -193,6 +259,9 @@
     return;
   }
 
+  mountPendingPaymentReminder();
+  bindPendingPaymentReminder();
+
   let activeCart = readCart();
   if (!activeCart.length) {
     page.innerHTML = `<section class="checkout-empty"><h1>Корзина пуста</h1><p>Добавьте товары, чтобы перейти к оформлению заказа.</p><a href="catalog.html">Перейти в каталог</a></section>`;
@@ -277,6 +346,7 @@
     payment_provider_disabled: "Онлайн-оплата временно недоступна. Заказ сохранён.",
     payment_provider_unavailable: "ЮKassa временно недоступна. Заказ сохранён — попробуйте оплатить его ещё раз.",
     payment_provider_rejected: "ЮKassa не приняла запрос. Заказ сохранён — попробуйте оплатить его ещё раз.",
+    order_cancelled: "Этот заказ отменён. Оформите новый заказ из корзины.",
   };
 
   function showCreatedOrder(orderNumber, message, retry = false) {
@@ -600,6 +670,12 @@
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const errorNode = page.querySelector(".checkout-error");
+    if (readPendingPayment()) {
+      errorNode.textContent = "Сначала завершите или отмените предыдущий неоплаченный заказ.";
+      errorNode.hidden = false;
+      errorNode.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return;
+    }
     if (form.elements.deliveryMethod.value === "cdek" && !cdekQuoteToken) {
       errorNode.textContent = errorMessages.delivery_quote_required;
       errorNode.hidden = false;

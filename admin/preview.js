@@ -115,6 +115,17 @@
   ];
   const orders = [
     {
+      id: "demo-order-payment-pending", order_number: "FA-2026-PENDING", user_id: null, status: "new", payment_status: "pending",
+      customer_name: "Тестовый покупатель", customer_email: "buyer@example.ru", customer_phone_e164: "+79991112233",
+      subtotal_minor: 349000, discount_minor: 0, delivery_minor: 45000, total_minor: 394000, currency: "RUB",
+      payment_provider: "yookassa", payment_transaction_id: "yk_pending_preview", delivery_method: "СДЭК до пункта выдачи",
+      delivery_address: { city: "Оренбург", pointName: "ПВЗ — пр-т Дзержинского, 7" }, customer_comment: null,
+      created_at: new Date(Date.now() - 45 * 60_000).toISOString(), updated_at: new Date(Date.now() - 45 * 60_000).toISOString(),
+      items: [{ id: "oi-pending-1", product_name: "FLUIDE 17 IMPERATRICE", variant_name: "30 мл", sku: "FL-017-30", image_url: "../images/fragrances/thumbs/017.webp", quantity: 1, unit_price_minor: 349000, total_price_minor: 349000 }],
+      payments: [{ id: "pay-pending", operation: "payment", status: "pending", provider: "yookassa", provider_transaction_id: "yk_pending_preview", amount_minor: 394000, currency: "RUB", created_at: new Date(Date.now() - 45 * 60_000).toISOString() }],
+      history: [{ id: 1, status: "new", admin_name: null, created_at: new Date(Date.now() - 45 * 60_000).toISOString() }],
+    },
+    {
       id: "demo-order-1042", order_number: "FA-2026-1042", user_id: "c1", status: "new", payment_status: "paid",
       customer_name: "Анна Касаткина", customer_email: "anna@example.ru", customer_phone_e164: "+79990000000",
       subtotal_minor: 585000, discount_minor: 0, delivery_minor: 0, total_minor: 585000, currency: "RUB",
@@ -337,23 +348,48 @@
       const q = (url.searchParams.get("q") || "").toLocaleLowerCase("ru-RU");
       const status = url.searchParams.get("status") || "";
       const payment = url.searchParams.get("payment") || "";
-      const archived = url.searchParams.get("archived") === "true";
+      const view = url.searchParams.get("view") || (url.searchParams.get("archived") === "true" ? "archived" : "active");
       const rows = orders.filter((order) => {
+        const paymentStartedAt = order.payments
+          .filter((row) => row.operation === "payment" && String(row.provider).toLowerCase() === "yookassa")
+          .map((row) => row.created_at)
+          .sort()[0] || (String(order.payment_provider).toLowerCase() === "yookassa" ? order.created_at : null);
+        const incompletePayment = ["unpaid", "pending", "failed", "cancelled"].includes(order.payment_status)
+          && Boolean(paymentStartedAt);
+        const lifecycleStartedAt = Math.max(Date.parse(paymentStartedAt), Date.parse(order.updated_at || order.created_at));
+        if (!order.archived_at && incompletePayment && Date.now() - lifecycleStartedAt >= 86_400_000) {
+          order.archived_at = now();
+        }
         const searchable = [order.order_number, order.customer_name, order.customer_email, order.customer_phone_e164]
           .filter(Boolean)
           .join(" ")
           .toLocaleLowerCase("ru-RU");
+        const matchesView = view === "archived"
+          ? Boolean(order.archived_at)
+          : view === "incomplete" ? !order.archived_at && incompletePayment : !order.archived_at && !incompletePayment;
         return (!q || searchable.includes(q))
           && (!status || order.status === status)
           && (!payment || order.payment_status === payment)
-          && (archived ? Boolean(order.archived_at) : !order.archived_at);
+          && matchesView;
       }).map((order) => ({
         ...order,
         item_count: order.items.length,
         items_preview: order.items.slice(0, 2),
         has_live_payment: order.payments.some((paymentRow) => paymentRow.status === "succeeded"),
         purge_at: order.archived_at ? new Date(new Date(order.archived_at).getTime() + 14 * 86_400_000).toISOString() : null,
+        payment_started_at: order.payments
+          .filter((row) => row.operation === "payment" && String(row.provider).toLowerCase() === "yookassa")
+          .map((row) => row.created_at)
+          .sort()[0] || (String(order.payment_provider).toLowerCase() === "yookassa" ? order.created_at : null),
       }));
+      rows.forEach((order) => {
+        order.incomplete_payment = ["unpaid", "pending", "failed", "cancelled"].includes(order.payment_status)
+          && Boolean(order.payment_started_at);
+        order.payment_attention_at = order.payment_started_at ? new Date(Date.parse(order.payment_started_at) + 30 * 60_000).toISOString() : null;
+        order.auto_archive_at = order.payment_started_at
+          ? new Date(Math.max(Date.parse(order.payment_started_at), Date.parse(order.updated_at || order.created_at)) + 24 * 60 * 60_000).toISOString()
+          : null;
+      });
       return json({ orders: rows });
     }
     const orderMatch = path.match(/^\/orders\/([^/]+)$/);
@@ -365,6 +401,11 @@
             ...order,
             has_live_payment: order.payments.some((paymentRow) => paymentRow.status === "succeeded"),
             purge_at: order.archived_at ? new Date(new Date(order.archived_at).getTime() + 14 * 86_400_000).toISOString() : null,
+            incomplete_payment: ["unpaid", "pending", "failed", "cancelled"].includes(order.payment_status)
+              && String(order.payment_provider).toLowerCase() === "yookassa",
+            payment_started_at: order.payments.find((row) => row.operation === "payment" && String(row.provider).toLowerCase() === "yookassa")?.created_at || order.created_at,
+            payment_attention_at: new Date(Date.parse(order.created_at) + 30 * 60_000).toISOString(),
+            auto_archive_at: new Date(Math.max(Date.parse(order.created_at), Date.parse(order.updated_at || order.created_at)) + 24 * 60 * 60_000).toISOString(),
           },
           items: order.items,
           payments: order.payments,
@@ -383,6 +424,7 @@
       const order = orders.find((item) => item.id === orderRestoreMatch[1]);
       if (!order?.archived_at) return json({ error: "order_not_found" }, 404);
       order.archived_at = null;
+      order.updated_at = now();
       return json({ order });
     }
     const orderStatusMatch = path.match(/^\/orders\/([^/]+)\/status$/);

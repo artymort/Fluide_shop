@@ -216,6 +216,7 @@ export function createOrdersRouter({ pool, config }) {
         };
       }
       const totalMinor = subtotalMinor - promotion.discountMinor + deliveryMinor;
+      const onlinePaymentAvailable = Boolean(config.yooKassa?.enabled && deliveryAddress.pricingStatus === "fixed");
       const orderNumber = makeOrderNumber();
       const checkoutToken = createCheckoutToken();
       const orderResult = await client.query(
@@ -223,14 +224,15 @@ export function createOrdersRouter({ pool, config }) {
            order_number, user_id, status, payment_status, customer_name,
            customer_email, customer_phone_e164, subtotal_minor, discount_minor,
            delivery_minor, total_minor, currency, delivery_method, delivery_address,
-           customer_comment, checkout_token_hash
+           customer_comment, checkout_token_hash, payment_provider
          ) VALUES (
-           $1, $2, 'new', 'unpaid', $3, $4, $5, $6, $7, $8, $9, 'RUB', $10, $11::JSONB, $12, $13
+           $1, $2, 'new', 'unpaid', $3, $4, $5, $6, $7, $8, $9, 'RUB', $10, $11::JSONB, $12, $13, $14
          ) RETURNING id, order_number, status, payment_status, total_minor, currency, created_at`,
         [
           orderNumber, userId, payload.customerName, payload.email, payload.phone,
           subtotalMinor, promotion.discountMinor, deliveryMinor, totalMinor, payload.deliveryMethod,
           JSON.stringify(deliveryAddress), payload.comment, checkoutToken.hash,
+          onlinePaymentAvailable ? "yookassa" : null,
         ],
       );
       const order = orderResult.rows[0];
@@ -257,7 +259,7 @@ export function createOrdersRouter({ pool, config }) {
         order,
         checkoutToken: checkoutToken.token,
         payment: {
-          available: Boolean(config.yooKassa?.enabled && deliveryAddress.pricingStatus === "fixed"),
+          available: onlinePaymentAvailable,
           provider: config.yooKassa?.enabled ? "yookassa" : null,
           test: Boolean(config.yooKassa?.testMode),
         },
