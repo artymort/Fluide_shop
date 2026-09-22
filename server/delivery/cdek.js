@@ -118,6 +118,7 @@ const providerErrorDetails = (response, body) => ({
 export function createCdekClient(config, { fetchImpl = globalThis.fetch } = {}) {
   let accessToken = null;
   let accessTokenExpiresAt = 0;
+  let originPromise = null;
 
   async function authorize() {
     if (accessToken && accessTokenExpiresAt > Date.now() + 60_000) return accessToken;
@@ -176,7 +177,10 @@ export function createCdekClient(config, { fetchImpl = globalThis.fetch } = {}) 
 
   async function findCity({ city, postalCode }) {
     const cities = await request("location/cities", {
-      query: { country_codes: "RU", postal_code: postalCode },
+      query: {
+        country_codes: "RU",
+        ...(postalCode ? { postal_code: postalCode } : { city, size: 20 }),
+      },
     });
     const normalizedCity = cleanText(city, 120).toLocaleLowerCase("ru-RU");
     const matches = (Array.isArray(cities) ? cities : []).filter((candidate) => {
@@ -189,18 +193,26 @@ export function createCdekClient(config, { fetchImpl = globalThis.fetch } = {}) 
       code: Number(selected.code),
       city: cleanText(selected.city || city, 120),
       region: cleanText(selected.region, 160),
-      postalCode,
+      postalCode: cleanText(postalCode, 20),
     };
   }
 
   async function quote({ destination, mode }) {
+    if (!originPromise) {
+      originPromise = findCity({ city: config.fromCity, postalCode: "" })
+        .catch((error) => {
+          originPromise = null;
+          throw error;
+        });
+    }
+    const origin = await originPromise;
     const payload = await request("calculator/tarifflist", {
       method: "POST",
       body: {
         type: 1,
         currency: 1,
         lang: "rus",
-        from_location: { city: config.fromCity, country_code: "RU" },
+        from_location: { code: origin.code },
         to_location: { code: destination.code },
         packages: [{
           weight: config.package.weightGrams,

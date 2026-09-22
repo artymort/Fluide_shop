@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CdekError,
+  createCdekClient,
   normalizeCdekPoint,
   quotePayload,
   selectCdekTariff,
@@ -78,4 +79,43 @@ test("CDEK quote payload marks shipment creation as disabled", () => {
   assert.equal(payload.shipmentCreation, false);
   assert.equal(payload.pointCode, "ORE1");
   assert.equal(payload.deliveryMinor, 49_900);
+});
+
+test("CDEK client resolves the origin city code before tariff calculation", async () => {
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    const requestUrl = new URL(url);
+    calls.push({ url: requestUrl, options });
+    if (requestUrl.pathname.endsWith("/oauth/token")) {
+      return new Response(JSON.stringify({ access_token: "token", expires_in: 3600 }), { status: 200 });
+    }
+    if (requestUrl.pathname.endsWith("/location/cities") && requestUrl.searchParams.has("postal_code")) {
+      return new Response(JSON.stringify([{ code: 261, city: "Оренбург", region: "Оренбургская область" }]), { status: 200 });
+    }
+    if (requestUrl.pathname.endsWith("/location/cities") && requestUrl.searchParams.get("city") === "Владимир") {
+      return new Response(JSON.stringify([{ code: 999, city: "Владимир", region: "Владимирская область" }]), { status: 200 });
+    }
+    if (requestUrl.pathname.endsWith("/calculator/tarifflist")) {
+      const body = JSON.parse(options.body);
+      assert.deepEqual(body.from_location, { code: 999 });
+      assert.deepEqual(body.to_location, { code: 261 });
+      return new Response(JSON.stringify({
+        tariff_codes: [{ tariff_code: 136, tariff_name: "Посылка", delivery_mode: 4, total_sum: 499 }],
+      }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ message: "unexpected request" }), { status: 500 });
+  };
+  const client = createCdekClient({
+    account: "account",
+    securePassword: "secret",
+    apiBase: "https://api.cdek.ru/v2",
+    fromCity: "Владимир",
+    package: { weightGrams: 1000, lengthCm: 25, widthCm: 20, heightCm: 15 },
+  }, { fetchImpl });
+
+  const destination = await client.findCity({ city: "Оренбург", postalCode: "460044" });
+  const tariff = await client.quote({ destination, mode: "pvz" });
+
+  assert.equal(tariff.deliveryMinor, 49_900);
+  assert.equal(calls.filter((call) => call.url.pathname.endsWith("/location/cities")).length, 2);
 });
