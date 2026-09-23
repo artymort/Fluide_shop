@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { normalizeRussianPhone } from "../security/phone-otp.js";
@@ -117,10 +117,9 @@ async function findSessionUserId(database, request, config) {
   return result.rows[0]?.id || null;
 }
 
-const makeOrderNumber = () => {
-  const year = new Date().getFullYear();
-  const suffix = randomUUID().replaceAll("-", "").slice(0, 7).toUpperCase();
-  return `FA-${year}-${suffix}`;
+const makeOrderNumber = async (client) => {
+  const result = await client.query("SELECT nextval('commerce_order_number_seq') AS value");
+  return String(result.rows[0].value).padStart(6, "0");
 };
 
 const createCheckoutToken = () => {
@@ -266,7 +265,7 @@ export function createOrdersRouter({ pool, config }) {
       }
       const totalMinor = subtotalMinor - promotion.discountMinor + deliveryMinor;
       const onlinePaymentAvailable = Boolean(config.yooKassa?.enabled && deliveryAddress.pricingStatus === "fixed");
-      const orderNumber = makeOrderNumber();
+      const orderNumber = await makeOrderNumber(client);
       const checkoutToken = createCheckoutToken();
       const orderResult = await client.query(
         `INSERT INTO commerce_orders (

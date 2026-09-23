@@ -27,6 +27,7 @@ function initAccountPage(initialAccount) {
   })[char]);
   const favorites = readJson("fluide-favorites", []);
   let orders = [];
+  let visibleOrderCount = 10;
   let cart = readJson("fluide-cart", []);
   const readSessionJson = (key, fallback) => {
     try {
@@ -123,6 +124,35 @@ function initAccountPage(initialAccount) {
     return location ? `${method} · ${location}` : method;
   }
 
+  function orderItemsLabel(count) {
+    const value = Math.max(0, Number(count) || 0);
+    const lastTwo = value % 100;
+    const last = value % 10;
+    if (lastTwo >= 11 && lastTwo <= 14) return `${value} товаров`;
+    if (last === 1) return `${value} товар`;
+    if (last >= 2 && last <= 4) return `${value} товара`;
+    return `${value} товаров`;
+  }
+
+  function customerOrderNumber(value) {
+    const number = String(value || "").trim();
+    return number ? `№ ${number}` : "Без номера";
+  }
+
+  function orderGiftItemCounts(items, discountMinor) {
+    const discount = Number(discountMinor) || 0;
+    const units = items.flatMap((item, itemIndex) => {
+      if (!/^FL-\d{3}-\d+$/i.test(String(item.sku || ""))) return [];
+      const quantity = Math.max(0, Math.floor(Number(item.quantity) || 0));
+      const unitPriceMinor = Number(item.unitPriceMinor)
+        || Math.round((Number(item.totalPriceMinor) || 0) / Math.max(1, quantity));
+      return Array.from({ length: quantity }, () => ({ itemIndex, unitPriceMinor }));
+    }).sort((left, right) => left.unitPriceMinor - right.unitPriceMinor || left.itemIndex - right.itemIndex);
+    const gifts = units.slice(0, Math.floor(units.length / 4));
+    if (!discount || gifts.reduce((sum, gift) => sum + gift.unitPriceMinor, 0) !== discount) return new Map();
+    return gifts.reduce((counts, gift) => counts.set(gift.itemIndex, (counts.get(gift.itemIndex) || 0) + 1), new Map());
+  }
+
   function renderOrders() {
     const container = document.querySelector("#account-orders");
     const empty = document.querySelector("#account-orders-empty");
@@ -135,34 +165,55 @@ function initAccountPage(initialAccount) {
       return;
     }
 
-    container.innerHTML = orders.map((order) => {
+    const visibleOrders = orders.slice(0, visibleOrderCount);
+    container.innerHTML = visibleOrders.map((order, orderIndex) => {
       const items = Array.isArray(order.items) ? order.items : [];
       const status = orderStatusLabels[order.status] || "Обрабатывается";
       const payment = paymentStatusLabels[order.payment_status] || "Статус уточняется";
-      const itemMarkup = items.map((item) => `<li class="account-order-item">
-        <span class="account-order-item-image"><img src="${escapeHtml(item.imageUrl || "assets/brand/logo-blue.svg")}" alt="" width="70" height="86"></span>
-        <span class="account-order-item-copy"><strong>${escapeHtml(item.productName || "Товар FLUIDE")}</strong>${item.variantName ? `<small>${escapeHtml(item.variantName)}</small>` : ""}</span>
-        <span class="account-order-item-quantity">${Number(item.quantity) || 1} шт.</span>
-        <b>${escapeHtml(moneyMinor(item.totalPriceMinor, order.currency))}</b>
-      </li>`).join("");
+      const detailsId = `account-order-details-${orderIndex}`;
+      const itemCount = items.reduce((total, item) => total + (Number(item.quantity) || 1), 0);
+      const hiddenItemCount = Math.max(0, items.length - 3);
+      const previewMarkup = items.slice(0, 3).map((item, itemIndex) => `<span class="account-order-preview-image"><img src="${escapeHtml(item.imageUrl || "assets/brand/logo-blue.svg")}" alt="" loading="lazy" decoding="async">${itemIndex === 2 && hiddenItemCount ? `<span class="account-order-preview-more">+${hiddenItemCount}</span>` : ""}</span>`).join("");
       const discount = Number(order.discount_minor) || 0;
+      const previewNote = discount ? `Скидка · −${moneyMinor(discount, order.currency)}` : "Показать состав";
+      const giftItemCounts = orderGiftItemCounts(items, discount);
+      const itemMarkup = items.map((item, itemIndex) => {
+        const giftQuantity = giftItemCounts.get(itemIndex) || 0;
+        const quantity = Number(item.quantity) || 1;
+        const unitPriceMinor = Number(item.unitPriceMinor)
+          || Math.round((Number(item.totalPriceMinor) || 0) / Math.max(1, quantity));
+        const paidTotalMinor = Math.max(0, (Number(item.totalPriceMinor) || 0) - giftQuantity * unitPriceMinor);
+        return `<li class="account-order-item">
+        <span class="account-order-item-image"><img src="${escapeHtml(item.imageUrl || "assets/brand/logo-blue.svg")}" alt="" width="70" height="86"></span>
+        <span class="account-order-item-copy"><strong>${escapeHtml(item.productName || "Товар FLUIDE")}</strong>${item.variantName ? `<small>${escapeHtml(item.variantName)}</small>` : ""}${giftQuantity ? `<em class="account-order-item-gift">Подарок по акции 3+1</em>` : ""}</span>
+        <span class="account-order-item-quantity">${quantity} шт.</span>
+        <span class="account-order-item-price${giftQuantity ? " is-gift" : ""}">${giftQuantity ? `<del>${escapeHtml(moneyMinor(item.totalPriceMinor, order.currency))}</del><strong>${escapeHtml(moneyMinor(paidTotalMinor, order.currency))}</strong>` : `<strong>${escapeHtml(moneyMinor(item.totalPriceMinor, order.currency))}</strong>`}</span>
+      </li>`;
+      }).join("");
       const delivery = Number(order.delivery_minor) || 0;
       return `<article class="account-order">
         <header class="account-order-head">
-          <div><span>Заказ</span><h3>${escapeHtml(order.order_number || "Без номера")}</h3><time datetime="${escapeHtml(order.created_at)}">${escapeHtml(orderDate(order.created_at))}</time></div>
-          <div class="account-order-badges"><span class="account-order-status" data-status="${escapeHtml(order.status)}">${escapeHtml(status)}</span><span class="account-payment-status" data-status="${escapeHtml(order.payment_status)}">${escapeHtml(payment)}</span></div>
+          <button class="account-order-overview" type="button" data-order-toggle aria-expanded="false" aria-controls="${detailsId}">
+            <span class="account-order-identity"><span>Номер заказа</span><strong>${escapeHtml(customerOrderNumber(order.order_number))}</strong><time datetime="${escapeHtml(order.created_at)}">${escapeHtml(orderDate(order.created_at))}</time></span>
+            <span class="account-order-preview"><span class="account-order-preview-images" aria-hidden="true">${previewMarkup}</span><span class="account-order-preview-copy"><strong>${escapeHtml(orderItemsLabel(itemCount))}</strong><small${discount ? ` class="account-order-promo-note"` : ""} data-collapsed-label="${escapeHtml(previewNote)}">${escapeHtml(previewNote)}</small></span></span>
+            <span class="account-order-badges"><span class="account-order-status" data-status="${escapeHtml(order.status)}">${escapeHtml(status)}</span><span class="account-payment-status" data-status="${escapeHtml(order.payment_status)}">${escapeHtml(payment)}</span></span>
+            <span class="account-order-overview-total"><small>Итого</small><strong>${escapeHtml(moneyMinor(order.total_minor, order.currency))}</strong></span>
+            <span class="account-order-toggle-icon" aria-hidden="true"><svg><use href="assets/icons/lucide.svg#chevron-down"></use></svg></span>
+          </button>
         </header>
-        <ul class="account-order-items">${itemMarkup}</ul>
-        <footer class="account-order-foot">
-          <div class="account-order-delivery"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#map-pin"></use></svg><span>${escapeHtml(orderDeliveryText(order))}</span></div>
-          <div class="account-order-summary">
-            ${discount ? `<span>Скидка <b>−${escapeHtml(moneyMinor(discount, order.currency))}</b></span>` : ""}
-            ${delivery ? `<span>Доставка <b>${escapeHtml(moneyMinor(delivery, order.currency))}</b></span>` : ""}
-            <strong>Итого <b>${escapeHtml(moneyMinor(order.total_minor, order.currency))}</b></strong>
-          </div>
-        </footer>
+        <div class="account-order-details" id="${detailsId}" hidden>
+          <ul class="account-order-items">${itemMarkup}</ul>
+          <footer class="account-order-foot">
+            <div class="account-order-delivery"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#map-pin"></use></svg><span>${escapeHtml(orderDeliveryText(order))}</span></div>
+            <div class="account-order-summary">
+              ${discount ? `<span>Скидка <b>−${escapeHtml(moneyMinor(discount, order.currency))}</b></span>` : ""}
+              ${delivery ? `<span>Доставка <b>${escapeHtml(moneyMinor(delivery, order.currency))}</b></span>` : ""}
+              <strong>Итого <b>${escapeHtml(moneyMinor(order.total_minor, order.currency))}</b></strong>
+            </div>
+          </footer>
+        </div>
       </article>`;
-    }).join("");
+    }).join("") + (visibleOrderCount < orders.length ? `<button class="account-orders-more" type="button" data-orders-more>Показать ещё</button>` : "");
   }
 
   function renderOrdersError() {
@@ -476,6 +527,23 @@ function initAccountPage(initialAccount) {
     const loyaltyFilter = event.target.closest("[data-loyalty-filter]");
     if (loyaltyFilter) {
       renderLoyaltyHistory(loyaltyFilter.dataset.loyaltyFilter);
+      return;
+    }
+    const orderToggle = event.target.closest("[data-order-toggle]");
+    if (orderToggle) {
+      const details = document.getElementById(orderToggle.getAttribute("aria-controls"));
+      const order = orderToggle.closest(".account-order");
+      const expanded = orderToggle.getAttribute("aria-expanded") === "true";
+      orderToggle.setAttribute("aria-expanded", String(!expanded));
+      order?.classList.toggle("is-expanded", !expanded);
+      if (details) details.hidden = expanded;
+      const hint = orderToggle.querySelector(".account-order-preview-copy small");
+      if (hint) hint.textContent = expanded ? hint.dataset.collapsedLabel : "Скрыть состав";
+      return;
+    }
+    if (event.target.closest("[data-orders-more]")) {
+      visibleOrderCount += 10;
+      renderOrders();
       return;
     }
     if (event.target.closest("[data-selection-reset]")) {

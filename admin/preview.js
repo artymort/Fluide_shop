@@ -115,7 +115,7 @@
   ];
   const orders = [
     {
-      id: "demo-order-payment-pending", order_number: "FA-2026-PENDING", user_id: null, status: "new", payment_status: "pending",
+      id: "demo-order-payment-pending", order_number: "100127", user_id: null, status: "new", payment_status: "pending",
       customer_name: "Тестовый покупатель", customer_email: "buyer@example.ru", customer_phone_e164: "+79991112233",
       subtotal_minor: 349000, discount_minor: 0, delivery_minor: 45000, total_minor: 394000, currency: "RUB",
       payment_provider: "yookassa", payment_transaction_id: "yk_pending_preview", delivery_method: "СДЭК до пункта выдачи",
@@ -126,7 +126,7 @@
       history: [{ id: 1, status: "new", admin_name: null, created_at: new Date(Date.now() - 45 * 60_000).toISOString() }],
     },
     {
-      id: "demo-order-1042", order_number: "FA-2026-1042", user_id: "c1", status: "new", payment_status: "paid",
+      id: "demo-order-1042", order_number: "100126", user_id: "c1", status: "new", payment_status: "paid",
       customer_name: "Анна Касаткина", customer_email: "anna@example.ru", customer_phone_e164: "+79990000000",
       subtotal_minor: 585000, discount_minor: 0, delivery_minor: 0, total_minor: 585000, currency: "RUB",
       payment_provider: "ЮKassa", payment_transaction_id: "yk_2f84a1042", delivery_method: "СДЭК до пункта выдачи",
@@ -143,7 +143,7 @@
       history: [{ id: 1, status: "new", admin_name: null, created_at: "2026-09-17T07:35:00Z" }],
     },
     {
-      id: "demo-order-1041", order_number: "FA-2026-1041", user_id: "c2", status: "assembling", payment_status: "paid",
+      id: "demo-order-1041", order_number: "100125", user_id: "c2", status: "assembling", payment_status: "paid",
       customer_name: "Мария Иванова", customer_email: "maria@example.ru", customer_phone_e164: "+79876543210",
       subtotal_minor: 299000, discount_minor: 0, delivery_minor: 39000, total_minor: 338000, currency: "RUB",
       payment_provider: "ЮKassa", payment_transaction_id: "yk_31de41041", delivery_method: "Курьер",
@@ -157,7 +157,7 @@
       ],
     },
     {
-      id: "demo-order-1040", order_number: "FA-2026-1040", user_id: null, status: "shipped", payment_status: "paid",
+      id: "demo-order-1040", order_number: "100124", user_id: null, status: "shipped", payment_status: "paid",
       customer_name: "Елена Соколова", customer_email: "elena@example.ru", customer_phone_e164: "+79112223344",
       subtotal_minor: 398000, discount_minor: 0, delivery_minor: 0, total_minor: 398000, currency: "RUB",
       payment_provider: "ЮKassa", payment_transaction_id: "yk_991b1040", delivery_method: "СДЭК до пункта выдачи",
@@ -172,7 +172,7 @@
       ],
     },
     {
-      id: "demo-order-1039", order_number: "FA-2026-1039", user_id: "c1", status: "delivered", payment_status: "paid",
+      id: "demo-order-1039", order_number: "100123", user_id: "c1", status: "delivered", payment_status: "paid",
       customer_name: "Анна Касаткина", customer_email: "anna@example.ru", customer_phone_e164: "+79990000000",
       subtotal_minor: 199000, discount_minor: 20000, delivery_minor: 0, total_minor: 179000, currency: "RUB",
       payment_provider: "ЮKassa", payment_transaction_id: "yk_88cd1039", delivery_method: "Самовывоз",
@@ -183,7 +183,7 @@
       history: [{ id: 2, status: "delivered", admin_name: "Владелец FLUIDE", created_at: "2026-09-14T15:30:00Z" }, { id: 1, status: "new", admin_name: null, created_at: "2026-09-11T08:20:00Z" }],
     },
     {
-      id: "demo-order-1038", order_number: "FA-2026-1038", user_id: null, status: "refunded", payment_status: "refunded",
+      id: "demo-order-1038", order_number: "100122", user_id: null, status: "refunded", payment_status: "refunded",
       customer_name: "Ольга Петрова", customer_email: "olga@example.ru", customer_phone_e164: "+79210001122",
       subtotal_minor: 299000, discount_minor: 0, delivery_minor: 0, total_minor: 299000, currency: "RUB",
       payment_provider: "ЮKassa", payment_transaction_id: "yk_74ab1038", delivery_method: "СДЭК до пункта выдачи",
