@@ -89,6 +89,20 @@ test("Russian Post suggests only a validated complete address", () => {
   assert.equal(normalizeRussianPostAddress([{ ...address, "quality-code": "UNDEF_03" }]), null);
   assert.equal(normalizeRussianPostAddress([{ ...address, room: "" }], "строителей 9б кв 12"), null);
   assert.equal(normalizeRussianPostAddress([{ ...address, house: "" }]), null);
+  assert.deepEqual(normalizeRussianPostAddress([{
+    ...address, place: "г. Оренбург", street: "ул. Конституции СССР",
+    house: "д. 11/2", room: "кв. 73",
+  }], "ул. Конституции СССР, д. 11/2, кв. 73"), {
+    city: "г. Оренбург", postalCode: "460044",
+    address: "ул. Конституции СССР, д. 11/2, кв. 73",
+  });
+  assert.deepEqual(normalizeRussianPostAddress([{
+    ...address, house: "дом 11/2", room: "квартира 73",
+    corpus: "корпус 2", building: "строение 1", letter: "литера А",
+  }], "дом 11/2, квартира 73"), {
+    city: "Оренбург", postalCode: "460044",
+    address: "ул. Строителей, д. 11/2, корп. 2, стр. 1, лит. А, кв. 73",
+  });
 });
 
 test("Russian Post client requests only official address normalization", async () => {

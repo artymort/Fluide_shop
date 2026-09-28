@@ -87,17 +87,25 @@ export function normalizeRussianPostAddress(payload, originalAddress = "") {
   const house = clean(entry.house, 40);
   const room = clean(entry.room, 40);
   if (!/^\d{6}$/.test(postalCode) || !city || !street || !house) return null;
+  const withoutLabel = (value, label) => value.replace(label, "").trim();
   const apartmentMentioned = /(?:^|[\s,;])кв(?:артира)?\.?\s*\d/i.test(originalAddress);
   const roomMentioned = /(?:^|[\s,;])(?:оф(?:ис)?|пом(?:ещение)?)\.?\s*\d/i.test(originalAddress);
   if ((apartmentMentioned || roomMentioned) && !room) return null;
-  const houseNumber = `${house}${entry.slash ? `/${clean(entry.slash, 20)}` : ""}`;
+  const houseValue = withoutLabel(house, /^(?:дом|д\.?)\s*/i);
+  if (!houseValue) return null;
+  const slash = clean(entry.slash, 20).replace(/^\//, "");
+  const houseNumber = `${houseValue}${slash && !houseValue.includes("/") ? `/${slash}` : ""}`;
+  const roomLabel = /^кв(?:артира)?\.?\s*/i.test(room) ? "кв."
+    : /^оф(?:ис)?\.?\s*/i.test(room) ? "оф."
+      : apartmentMentioned ? "кв." : "пом.";
+  const roomValue = withoutLabel(room, /^(?:кв(?:артира)?|оф(?:ис)?|пом(?:ещение)?)\.?\s*/i);
   const address = [
     street,
     `д. ${houseNumber}`,
-    entry.corpus ? `корп. ${clean(entry.corpus, 30)}` : "",
-    entry.building ? `стр. ${clean(entry.building, 30)}` : "",
-    entry.letter ? `лит. ${clean(entry.letter, 20)}` : "",
-    room ? `${apartmentMentioned ? "кв." : "пом."} ${room}` : "",
+    entry.corpus ? `корп. ${withoutLabel(clean(entry.corpus, 30), /^(?:корпус|корп\.?)\s*/i)}` : "",
+    entry.building ? `стр. ${withoutLabel(clean(entry.building, 30), /^(?:строение|стр\.?)\s*/i)}` : "",
+    entry.letter ? `лит. ${withoutLabel(clean(entry.letter, 20), /^(?:литера|лит\.?)\s*/i)}` : "",
+    roomValue ? `${roomLabel} ${roomValue}` : "",
   ].filter(Boolean).join(", ");
   if (address.length > 300) return null;
   return { city, postalCode, address };
