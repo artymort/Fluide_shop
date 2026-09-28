@@ -44,6 +44,8 @@ export function loadConfig() {
   const russianPostToken = readString("RUSSIAN_POST_TOKEN");
   const russianPostUserKey = readString("RUSSIAN_POST_USER_KEY");
   const russianPostFromIndex = readString("RUSSIAN_POST_FROM_INDEX");
+  const telegramBotToken = readString("TELEGRAM_BOT_TOKEN");
+  const telegramOrderChatId = readString("TELEGRAM_ORDER_CHAT_ID");
 
   if (sessionSecret.length < 32) {
     throw new Error("SESSION_SECRET must contain at least 32 characters");
@@ -89,6 +91,15 @@ export function loadConfig() {
   }
   if (russianPostFromIndex && !/^\d{6}$/.test(russianPostFromIndex)) {
     throw new Error("RUSSIAN_POST_FROM_INDEX must contain six digits");
+  }
+  if (Boolean(telegramBotToken) !== Boolean(telegramOrderChatId)) {
+    throw new Error("TELEGRAM_BOT_TOKEN and TELEGRAM_ORDER_CHAT_ID must be set together");
+  }
+  if (telegramBotToken && !/^\d+:[A-Za-z0-9_-]+$/.test(telegramBotToken)) {
+    throw new Error("TELEGRAM_BOT_TOKEN is invalid");
+  }
+  if (telegramOrderChatId && !/^-\d+$/.test(telegramOrderChatId)) {
+    throw new Error("TELEGRAM_ORDER_CHAT_ID must be a negative group chat ID");
   }
 
   return Object.freeze({
@@ -185,6 +196,11 @@ export function loadConfig() {
         widthCm: readInteger("RUSSIAN_POST_PACKAGE_WIDTH_CM", 20, { min: 1, max: 150 }),
         heightCm: readInteger("RUSSIAN_POST_PACKAGE_HEIGHT_CM", 15, { min: 1, max: 150 }),
       }),
+    }),
+    telegramOrders: Object.freeze({
+      enabled: Boolean(telegramBotToken && telegramOrderChatId),
+      botToken: telegramBotToken,
+      chatId: telegramOrderChatId,
     }),
     allowedOrigins: Object.freeze([
       "https://fluide-atelier.ru",

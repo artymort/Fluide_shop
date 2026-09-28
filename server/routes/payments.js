@@ -41,7 +41,24 @@ const assertOrderAccess = (order, token) => {
   }
 };
 
-async function persistVerifiedPayment(database, order, payment, existingPaymentId = null, idempotenceKey = null) {
+export async function persistVerifiedPayment(database, order, payment, existingPaymentId = null, idempotenceKey = null, enqueueTelegram = false) {
+  const client = await database.connect();
+  try {
+    await client.query("BEGIN");
+    const paymentRow = await persistPaymentInTransaction(
+      client, order, payment, existingPaymentId, idempotenceKey, enqueueTelegram,
+    );
+    await client.query("COMMIT");
+    return paymentRow;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function persistPaymentInTransaction(client, order, payment, existingPaymentId, idempotenceKey, enqueueTelegram) {
   const localStatus = mapProviderStatus(payment.status);
   const metadata = {
     idempotenceKey,
@@ -51,15 +68,15 @@ async function persistVerifiedPayment(database, order, payment, existingPaymentI
   let paymentRow;
 
   if (existingPaymentId) {
-    const duplicate = await database.query(
+    const duplicate = await client.query(
       `SELECT id FROM commerce_payments
         WHERE provider = $1 AND provider_transaction_id = $2 AND id <> $3
         LIMIT 1`,
       [YOOKASSA_PROVIDER, payment.id, existingPaymentId],
     );
     if (duplicate.rowCount) {
-      await database.query("DELETE FROM commerce_payments WHERE id = $1", [existingPaymentId]);
-      const result = await database.query(
+      await client.query("DELETE FROM commerce_payments WHERE id = $1", [existingPaymentId]);
+      const result = await client.query(
         `UPDATE commerce_payments
             SET status = $2, metadata = $3::JSONB, failure_reason = $4
           WHERE id = $1
@@ -73,7 +90,7 @@ async function persistVerifiedPayment(database, order, payment, existingPaymentI
       );
       paymentRow = result.rows[0];
     } else {
-      const result = await database.query(
+      const result = await client.query(
         `UPDATE commerce_payments
             SET status = $2, provider_transaction_id = $3, metadata = $4::JSONB,
                 failure_reason = $5
@@ -90,7 +107,7 @@ async function persistVerifiedPayment(database, order, payment, existingPaymentI
       paymentRow = result.rows[0];
     }
   } else {
-    const result = await database.query(
+    const result = await client.query(
       `INSERT INTO commerce_payments (
          order_id, operation, status, provider, provider_transaction_id,
          amount_minor, currency, failure_reason, metadata
@@ -117,7 +134,7 @@ async function persistVerifiedPayment(database, order, payment, existingPaymentI
   const orderPaymentStatus = localStatus === "succeeded"
     ? "paid"
     : localStatus === "cancelled" ? "cancelled" : "pending";
-  await database.query(
+  await client.query(
     `UPDATE commerce_orders
         SET payment_status = $2,
             payment_provider = $3,
@@ -131,14 +148,14 @@ async function persistVerifiedPayment(database, order, payment, existingPaymentI
     [order.id, orderPaymentStatus, YOOKASSA_PROVIDER, payment.id],
   );
   if (localStatus === "succeeded" && order.status === "cancelled") {
-    await database.query(
+    await client.query(
       `INSERT INTO commerce_order_status_history (order_id, status, comment)
        VALUES ($1, 'new', 'Заказ восстановлен после успешной оплаты')`,
       [order.id],
     );
   }
   if (paymentRow?.id) {
-    await database.query(
+    await client.query(
       `DELETE FROM commerce_payments
         WHERE order_id = $1
           AND provider = $2
@@ -148,10 +165,17 @@ async function persistVerifiedPayment(database, order, payment, existingPaymentI
       [order.id, YOOKASSA_PROVIDER, paymentRow.id],
     );
   }
+  if (localStatus === "succeeded" && enqueueTelegram) {
+    await client.query(
+      `INSERT INTO telegram_order_notifications (order_id, is_test)
+       VALUES ($1, $2) ON CONFLICT (order_id) DO NOTHING`,
+      [order.id, Boolean(payment.test)],
+    );
+  }
   return paymentRow;
 }
 
-async function providerPaymentForOrder(database, order, config) {
+async function providerPaymentForOrder(database, order, config, enqueueTelegram = false) {
   const result = await database.query(
     `SELECT * FROM commerce_payments
       WHERE order_id = $1 AND operation = 'payment' AND provider = $2
@@ -166,13 +190,14 @@ async function providerPaymentForOrder(database, order, config) {
     order,
     config,
   );
-  await persistVerifiedPayment(database, order, payment, row.id, row.metadata?.idempotenceKey || null);
+  await persistVerifiedPayment(database, order, payment, row.id, row.metadata?.idempotenceKey || null, enqueueTelegram);
   return { row, payment };
 }
 
 export function createPaymentsRouter({ pool, config }) {
   const router = Router();
   const yooKassa = config.yooKassa;
+  const enqueueTelegram = Boolean(config.telegramOrders?.enabled);
 
   router.post("/yookassa/webhook", async (request, response, next) => {
     if (!yooKassa.enabled) {
@@ -195,7 +220,7 @@ export function createPaymentsRouter({ pool, config }) {
         return;
       }
       verifyPaymentForOrder(payment, order, yooKassa);
-      await persistVerifiedPayment(pool, order, payment);
+      await persistVerifiedPayment(pool, order, payment, null, null, enqueueTelegram);
       response.status(200).end();
     } catch (error) {
       if (error instanceof YooKassaError && error.status < 500) {
@@ -220,7 +245,7 @@ export function createPaymentsRouter({ pool, config }) {
         throw new YooKassaError("delivery_price_pending", 409);
       }
 
-      const existing = await providerPaymentForOrder(pool, order, yooKassa);
+      const existing = await providerPaymentForOrder(pool, order, yooKassa, enqueueTelegram);
       if (existing.payment && existing.payment.status !== "canceled") {
         response.json({ payment: paymentResponse(existing.payment) });
         return;
@@ -250,6 +275,7 @@ export function createPaymentsRouter({ pool, config }) {
         payment,
         placeholderResult.rows[0].id,
         idempotenceKey,
+        enqueueTelegram,
       );
       response.status(201).json({ payment: paymentResponse(payment) });
     } catch (error) {
@@ -266,7 +292,7 @@ export function createPaymentsRouter({ pool, config }) {
       if (!yooKassa.enabled) throw new YooKassaError("payment_provider_disabled", 503);
       const order = await loadOrder(pool, request.params.id);
       assertOrderAccess(order, request.body?.checkoutToken);
-      const current = await providerPaymentForOrder(pool, order, yooKassa);
+      const current = await providerPaymentForOrder(pool, order, yooKassa, enqueueTelegram);
       if (!current.payment) throw new YooKassaError("payment_not_found", 404);
       response.json({
         order: { orderNumber: order.order_number },
@@ -287,7 +313,7 @@ export function createPaymentsRouter({ pool, config }) {
       assertOrderAccess(order, request.body?.checkoutToken);
       if (order.payment_status === "paid") throw new YooKassaError("order_already_paid", 409);
       if (yooKassa.enabled) {
-        const current = await providerPaymentForOrder(pool, order, yooKassa);
+        const current = await providerPaymentForOrder(pool, order, yooKassa, enqueueTelegram);
         if (current.payment?.status === "succeeded") throw new YooKassaError("order_already_paid", 409);
       }
       const client = await pool.connect();
