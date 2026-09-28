@@ -76,6 +76,30 @@ test("Telegram paid order message includes fulfillment details and marks test pa
   assert.doesNotMatch(message, /payment_transaction_id|checkout_token|test_\w+/);
 });
 
+test("Telegram CDEK address excludes point label and repeated city", () => {
+  const cdekOrder = {
+    ...order,
+    delivery_method: "cdek",
+    delivery_address: {
+      city: "Оренбург",
+      pointName: "ORN78, Оренбург, пр-т. Дзержинского",
+      address: "пр-т. Дзержинского, 7",
+      periodMin: 4,
+      periodMax: 5,
+    },
+  };
+  const message = formatPaidOrderMessage(cdekOrder, items);
+  assert.match(message, /^Оренбург, пр-т\. Дзержинского, 7$/m);
+  assert.doesNotMatch(message, /ORN78|Дзержинского, пр-т/);
+
+  const fullAddressMessage = formatPaidOrderMessage({
+    ...cdekOrder,
+    delivery_address: { ...cdekOrder.delivery_address, address: "г. Оренбург, пр-т. Дзержинского, 7" },
+  }, items);
+  assert.match(fullAddressMessage, /^г\. Оренбург, пр-т\. Дзержинского, 7$/m);
+  assert.doesNotMatch(fullAddressMessage, /Оренбург, г\. Оренбург/);
+});
+
 test("Telegram message keeps all line items within the API limit", () => {
   const manyItems = Array.from({ length: 50 }, (_, index) => ({
     product_name: `Очень длинное название парфюмерного аромата номер ${index}`,

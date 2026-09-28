@@ -15,13 +15,27 @@ const rubles = (minor) => {
   return `${whole}${kopeks ? `,${String(kopeks).padStart(2, "0")}` : ""} ₽`;
 };
 
+const cdekLocation = (city, streetAddress) => {
+  const cityText = compact(city, 120);
+  const addressText = compact(streetAddress, 300);
+  const normalize = (value) => value.replace(/^г(?:ород)?\.?\s+/iu, "").toLocaleLowerCase("ru-RU");
+  const normalizedCity = normalize(cityText);
+  const normalizedAddress = normalize(addressText);
+  if (normalizedCity && (normalizedAddress === normalizedCity
+    || normalizedAddress.startsWith(`${normalizedCity},`)
+    || normalizedAddress.startsWith(`${normalizedCity} `))) {
+    return addressText;
+  }
+  return [cityText, addressText].filter(Boolean).join(", ");
+};
+
 const deliveryDetails = (order) => {
   const address = order.delivery_address || {};
   let method;
   let location;
   if (order.delivery_method === "cdek") {
     method = "СДЭК, пункт выдачи";
-    location = [address.city, address.pointName, address.address].filter(Boolean).join(", ");
+    location = cdekLocation(address.city, address.address);
   } else if (order.delivery_method === "russian_post") {
     method = "Почта России, отделение";
     location = [address.postalCode, address.city, address.address].filter(Boolean).join(", ");
