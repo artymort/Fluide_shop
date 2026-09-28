@@ -24,6 +24,13 @@ const citySearchLimit = rateLimit({
   legacyHeaders: false,
 });
 
+const addressCheckLimit = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 60,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+});
+
 const normalizeQuoteRequest = (body = {}) => {
   const mode = cleanText(body.mode, 16);
   const city = cleanText(body.city, 120);
@@ -67,6 +74,28 @@ export function createDeliveryRouter({ config }) {
         shipmentCreation: false,
         quoteToken: signRussianPostQuote(quote, config.session.secret),
       });
+    } catch (error) {
+      if (error instanceof RussianPostError) {
+        response.status(error.status).json({ error: error.code });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  router.post("/russian-post/address", addressCheckLimit, async (request, response, next) => {
+    try {
+      if (!russianPost) throw new RussianPostError("russian_post_provider_disabled", 503);
+      const postalCode = cleanText(request.body?.postalCode, 20);
+      const city = cleanText(request.body?.city, 120);
+      const address = cleanText(request.body?.address, 300);
+      if (!/^\d{6}$/.test(postalCode)) throw new RussianPostError("delivery_postal_code_required", 400);
+      if (city.length < 2 || address.length < 7 || !/\d/.test(address)) {
+        throw new RussianPostError("delivery_address_required", 400);
+      }
+      const suggestion = await russianPost.normalizeAddress({ city, postalCode, address });
+      response.set("Cache-Control", "no-store");
+      response.json({ suggestion });
     } catch (error) {
       if (error instanceof RussianPostError) {
         response.status(error.status).json({ error: error.code });

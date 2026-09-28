@@ -129,6 +129,10 @@
 .checkout-city-suggestions button>span{display:block;font-size:14px}
 .checkout-city-suggestions button>small{display:block;margin-top:3px;color:#707686;font-size:12px;line-height:1.35}
 .checkout-city-suggestions p{margin:0;padding:13px 14px;color:#656c7d;font-size:13px;line-height:1.45}
+.checkout-post-address-suggestion{margin-top:-8px;padding:12px 14px;border:1px solid #d9dbe2;background:#f8f8f7}
+.checkout-post-address-suggestion>span{display:block;margin-bottom:7px;color:#656c7d;font-size:12px}
+.checkout-post-address-suggestion>button{display:block;width:100%;min-height:36px;padding:2px 0;background:transparent;color:#111;text-align:left;font-size:14px;line-height:1.45;text-decoration:underline;text-underline-offset:3px}
+.checkout-post-address-suggestion>button:hover,.checkout-post-address-suggestion>button:focus-visible{color:#333;outline:2px solid #111;outline-offset:2px}
 
 @media(max-width:520px){
   .checkout-cdek{padding:14px}

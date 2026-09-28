@@ -76,6 +76,33 @@ export function normalizeRussianPostTariff(payload) {
   return { deliveryMinor, periodMin, periodMax };
 }
 
+export function normalizeRussianPostAddress(payload, originalAddress = "") {
+  const entry = Array.isArray(payload) ? payload[0] : null;
+  if (!entry || entry["quality-code"] !== "GOOD"
+    || !new Set(["VALIDATED", "OVERRIDDEN", "CONFIRMED_MANUALLY"]).has(entry["validation-code"])) return null;
+  const clean = (value, max = 160) => String(value || "").trim().replace(/\s+/g, " ").slice(0, max);
+  const postalCode = clean(entry.index, 6);
+  const city = clean(entry.place, 120);
+  const street = clean(entry.street);
+  const house = clean(entry.house, 40);
+  const room = clean(entry.room, 40);
+  if (!/^\d{6}$/.test(postalCode) || !city || !street || !house) return null;
+  const apartmentMentioned = /(?:^|[\s,;])кв(?:артира)?\.?\s*\d/i.test(originalAddress);
+  const roomMentioned = /(?:^|[\s,;])(?:оф(?:ис)?|пом(?:ещение)?)\.?\s*\d/i.test(originalAddress);
+  if ((apartmentMentioned || roomMentioned) && !room) return null;
+  const houseNumber = `${house}${entry.slash ? `/${clean(entry.slash, 20)}` : ""}`;
+  const address = [
+    street,
+    `д. ${houseNumber}`,
+    entry.corpus ? `корп. ${clean(entry.corpus, 30)}` : "",
+    entry.building ? `стр. ${clean(entry.building, 30)}` : "",
+    entry.letter ? `лит. ${clean(entry.letter, 20)}` : "",
+    room ? `${apartmentMentioned ? "кв." : "пом."} ${room}` : "",
+  ].filter(Boolean).join(", ");
+  if (address.length > 300) return null;
+  return { city, postalCode, address };
+}
+
 export function createRussianPostClient(config, { fetchImpl = globalThis.fetch } = {}) {
   async function quote(postalCode) {
     if (!/^\d{6}$/.test(postalCode)) throw new RussianPostError("delivery_postal_code_required", 400);
@@ -115,5 +142,31 @@ export function createRussianPostClient(config, { fetchImpl = globalThis.fetch }
     if (!response.ok) throw new RussianPostError("russian_post_provider_rejected", 502);
     return normalizeRussianPostTariff(payload);
   }
-  return Object.freeze({ quote });
+
+  async function normalizeAddress({ city, postalCode, address }) {
+    const originalAddress = `${postalCode}, ${city}, ${address}`;
+    let response;
+    try {
+      response = await fetchImpl("https://otpravka-api.pochta.ru/1.0/clean/address", {
+        method: "POST",
+        headers: {
+          Authorization: `AccessToken ${config.token}`,
+          "X-User-Authorization": `Basic ${config.userKey}`,
+          "Content-Type": "application/json;charset=UTF-8",
+          Accept: "application/json",
+        },
+        body: JSON.stringify([{ id: "1", "original-address": originalAddress }]),
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch {
+      throw new RussianPostError("russian_post_provider_unavailable", 503);
+    }
+    const payload = await response.json().catch(() => null);
+    if (response.status === 401 || response.status === 403) {
+      throw new RussianPostError("russian_post_authorization_failed", 502);
+    }
+    if (!response.ok) throw new RussianPostError("russian_post_provider_rejected", 502);
+    return normalizeRussianPostAddress(payload, address);
+  }
+  return Object.freeze({ quote, normalizeAddress });
 }

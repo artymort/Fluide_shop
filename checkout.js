@@ -288,6 +288,7 @@
           <label class="checkout-city-field" data-city-field><span>Город</span><input name="city" autocomplete="off" maxlength="120" required aria-autocomplete="list" aria-expanded="false" aria-controls="delivery-city-suggestions"><div id="delivery-city-suggestions" class="checkout-city-suggestions" data-city-suggestions role="listbox" hidden></div></label>
           <label data-postal-field><span>Индекс <small data-postal-hint>обязательно</small></span><input name="postalCode" autocomplete="postal-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required></label>
           <label class="checkout-field-wide" data-address-field hidden><span data-address-label>Адрес</span><input name="address" autocomplete="street-address" maxlength="300"></label>
+          <div class="checkout-post-address-suggestion checkout-field-wide" data-post-address-suggestion hidden><span>Почта России предлагает уточнить адрес:</span><button type="button" data-apply-post-address></button></div>
         </div><div class="checkout-cdek" data-cdek-options>
           <p class="checkout-cdek-status" data-cdek-status></p>
           <label class="checkout-cdek-point" data-cdek-point-field hidden><span>Пункт выдачи</span><select name="cdekPoint"><option value="">Выберите ПВЗ</option></select></label>
@@ -321,6 +322,8 @@
   const cdekPointSelect = form.elements.cdekPoint;
   const postOptions = page.querySelector("[data-post-options]");
   const postStatus = page.querySelector("[data-post-status]");
+  const postAddressSuggestion = page.querySelector("[data-post-address-suggestion]");
+  const postAddressButton = page.querySelector("[data-apply-post-address]");
   let deliveryMinor = 0;
   let cdekQuoteToken = "";
   let postQuoteToken = "";
@@ -331,6 +334,9 @@
   let cdekQuoteController = null;
   let postQuoteController = null;
   let postQuoteTimer = null;
+  let postAddressController = null;
+  let postAddressTimer = null;
+  let postAddressCandidate = null;
   const errorMessages = {
     customer_name_invalid: "Укажите имя и фамилию.",
     customer_phone_invalid: "Проверьте номер телефона.",
@@ -399,6 +405,58 @@
     form.elements.city.setAttribute("aria-expanded", "false");
   }
 
+  function resetPostAddressSuggestion() {
+    clearTimeout(postAddressTimer);
+    postAddressController?.abort();
+    postAddressController = null;
+    postAddressCandidate = null;
+    postAddressSuggestion.hidden = true;
+  }
+
+  function schedulePostAddressSuggestion() {
+    resetPostAddressSuggestion();
+    if (form.elements.deliveryMethod.value !== "russian_post") return;
+    const city = form.elements.city.value.trim();
+    const postalCode = form.elements.postalCode.value.trim();
+    const address = form.elements.address.value.trim();
+    if (city.length < 2 || !/^\d{6}$/.test(postalCode) || address.length < 7 || !/\d/.test(address)) return;
+    postAddressTimer = setTimeout(checkPostAddress, 850);
+  }
+
+  async function checkPostAddress() {
+    const city = form.elements.city.value.trim();
+    const postalCode = form.elements.postalCode.value.trim();
+    const address = form.elements.address.value.trim();
+    const controller = new AbortController();
+    postAddressController = controller;
+    try {
+      const response = await fetch("/api/delivery/russian-post/address", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ city, postalCode, address }),
+        signal: controller.signal,
+      });
+      if (!response.ok) return;
+      const payload = await response.json().catch(() => ({}));
+      if (form.elements.deliveryMethod.value !== "russian_post"
+        || form.elements.city.value.trim() !== city
+        || form.elements.postalCode.value.trim() !== postalCode
+        || form.elements.address.value.trim() !== address) return;
+      const suggestion = payload.suggestion;
+      if (!suggestion || !/^\d{6}$/.test(suggestion.postalCode)
+        || typeof suggestion.city !== "string" || typeof suggestion.address !== "string") return;
+      if (suggestion.city === city && suggestion.postalCode === postalCode && suggestion.address === address) return;
+      postAddressCandidate = suggestion;
+      postAddressButton.textContent = `${suggestion.postalCode}, ${suggestion.city}, ${suggestion.address}`;
+      postAddressSuggestion.hidden = false;
+    } catch {
+      // Address checking is optional: an API failure must not block checkout.
+    } finally {
+      if (postAddressController === controller) postAddressController = null;
+    }
+  }
+
   function resetCdekQuote(message = "") {
     cdekQuoteController?.abort();
     cdekQuoteController = null;
@@ -443,6 +501,7 @@
     clearTimeout(citySearchTimer);
     citySearchController?.abort();
     hideCitySuggestions();
+    resetPostAddressSuggestion();
     addressBlock.hidden = !requiresAddress;
     cdekOptions.hidden = !isCdek;
     postOptions.hidden = !isPost;
@@ -570,6 +629,7 @@
       if (form.elements.deliveryMethod.value === "russian_post") {
         resetPostQuote();
         schedulePostQuote();
+        schedulePostAddressSuggestion();
       } else if (form.elements.deliveryMethod.value === "cdek") {
         form.elements.address.value = "";
         resetCdekQuote("");
@@ -582,6 +642,10 @@
     if (event.target.name === "postalCode" && form.elements.deliveryMethod.value === "russian_post") {
       resetPostQuote();
       schedulePostQuote();
+      schedulePostAddressSuggestion();
+    }
+    if (event.target.name === "address" && form.elements.deliveryMethod.value === "russian_post") {
+      schedulePostAddressSuggestion();
     }
   });
 
@@ -754,6 +818,17 @@
   }
 
   page.addEventListener("click", (event) => {
+    if (event.target.closest("[data-apply-post-address]")) {
+      if (!postAddressCandidate) return;
+      const { city, postalCode, address } = postAddressCandidate;
+      resetPostAddressSuggestion();
+      form.elements.city.value = city;
+      form.elements.postalCode.value = postalCode;
+      form.elements.address.value = address;
+      resetPostQuote();
+      schedulePostQuote();
+      return;
+    }
     const city = event.target.closest("[data-city-code]");
     if (city) {
       const method = form.elements.deliveryMethod.value;
@@ -770,6 +845,7 @@
         cdekCityCode = null;
         resetPostQuote();
         schedulePostQuote();
+        schedulePostAddressSuggestion();
       }
       return;
     }

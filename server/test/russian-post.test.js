@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createRussianPostClient,
+  normalizeRussianPostAddress,
   normalizeRussianPostTariff,
   RussianPostError,
   signRussianPostQuote,
@@ -75,4 +76,39 @@ test("Russian Post client does not misrepresent authorization failure as a quote
     package: { weightGrams: 1000, lengthCm: 25, widthCm: 20, heightCm: 15 },
   }, { fetchImpl: async () => new Response("{}", { status: 401 }) });
   await assert.rejects(() => client.quote("460000"), /russian_post_authorization_failed/);
+});
+
+test("Russian Post suggests only a validated complete address", () => {
+  const address = {
+    index: "460044", place: "Оренбург", street: "ул. Строителей", house: "9Б",
+    room: "12", "quality-code": "GOOD", "validation-code": "VALIDATED",
+  };
+  assert.deepEqual(normalizeRussianPostAddress([address], "строителей 9б кв 12"), {
+    city: "Оренбург", postalCode: "460044", address: "ул. Строителей, д. 9Б, кв. 12",
+  });
+  assert.equal(normalizeRussianPostAddress([{ ...address, "quality-code": "UNDEF_03" }]), null);
+  assert.equal(normalizeRussianPostAddress([{ ...address, room: "" }], "строителей 9б кв 12"), null);
+  assert.equal(normalizeRussianPostAddress([{ ...address, house: "" }]), null);
+});
+
+test("Russian Post client requests only official address normalization", async () => {
+  const requests = [];
+  const client = createRussianPostClient({ token: "app-token", userKey: "encoded-user-key" }, {
+    fetchImpl: async (url, options) => {
+      requests.push({ url, options });
+      return new Response(JSON.stringify([{
+        index: "460044", place: "Оренбург", street: "улица Лесная", house: "5",
+        "quality-code": "GOOD", "validation-code": "VALIDATED",
+      }]), { status: 200 });
+    },
+  });
+  assert.deepEqual(await client.normalizeAddress({
+    city: "Оренбург", postalCode: "460044", address: "Лесная 5",
+  }), { city: "Оренбург", postalCode: "460044", address: "улица Лесная, д. 5" });
+  assert.equal(requests[0].url, "https://otpravka-api.pochta.ru/1.0/clean/address");
+  assert.equal(requests[0].options.headers.Authorization, "AccessToken app-token");
+  assert.equal(requests[0].options.headers["X-User-Authorization"], "Basic encoded-user-key");
+  assert.deepEqual(JSON.parse(requests[0].options.body), [{
+    id: "1", "original-address": "460044, Оренбург, Лесная 5",
+  }]);
 });
