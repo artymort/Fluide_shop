@@ -285,7 +285,7 @@
           <label><input type="radio" name="deliveryMethod" value="russian_post"><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>Почта России</b><small>В почтовое отделение</small></span><img class="checkout-delivery-logo--post" src="assets/brand/russian-post.svg" alt="" aria-hidden="true"></span></label>
           <label><input type="radio" name="deliveryMethod" value="pickup"><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>Самовывоз</b><small>Из пространства FLUIDE во Владимире</small></span></span></label>
         </div><div class="checkout-fields checkout-fields--two" data-checkout-address>
-          <label class="checkout-city-field" data-city-field><span>Город</span><input name="city" autocomplete="off" maxlength="120" required aria-autocomplete="list" aria-expanded="false" aria-controls="cdek-city-suggestions"><div id="cdek-city-suggestions" class="checkout-city-suggestions" data-cdek-city-suggestions role="listbox" hidden></div></label>
+          <label class="checkout-city-field" data-city-field><span>Город</span><input name="city" autocomplete="off" maxlength="120" required aria-autocomplete="list" aria-expanded="false" aria-controls="delivery-city-suggestions"><div id="delivery-city-suggestions" class="checkout-city-suggestions" data-city-suggestions role="listbox" hidden></div></label>
           <label data-postal-field><span>Индекс <small data-postal-hint>обязательно</small></span><input name="postalCode" autocomplete="postal-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required></label>
           <label class="checkout-field-wide" data-address-field hidden><span data-address-label>Адрес</span><input name="address" autocomplete="street-address" maxlength="300"></label>
         </div><div class="checkout-cdek" data-cdek-options>
@@ -311,7 +311,7 @@
 
   const form = page.querySelector("#checkout-form");
   const addressBlock = page.querySelector("[data-checkout-address]");
-  const citySuggestions = page.querySelector("[data-cdek-city-suggestions]");
+  const citySuggestions = page.querySelector("[data-city-suggestions]");
   const postalField = page.querySelector("[data-postal-field]");
   const addressField = page.querySelector("[data-address-field]");
   const addressLabel = page.querySelector("[data-address-label]");
@@ -440,6 +440,9 @@
     const isCdek = method === "cdek";
     const isPost = method === "russian_post";
     const requiresAddress = method !== "pickup";
+    clearTimeout(citySearchTimer);
+    citySearchController?.abort();
+    hideCitySuggestions();
     addressBlock.hidden = !requiresAddress;
     cdekOptions.hidden = !isCdek;
     postOptions.hidden = !isPost;
@@ -449,7 +452,7 @@
     form.elements.city.disabled = !requiresAddress;
     form.elements.postalCode.disabled = method !== "russian_post";
     form.elements.address.disabled = !requiresAddress;
-    form.elements.city.autocomplete = isCdek ? "off" : "address-level2";
+    form.elements.city.autocomplete = requiresAddress ? "off" : "address-level2";
     page.querySelector("[data-postal-hint]").textContent = method === "russian_post" ? "обязательно" : "необязательно";
 
     if (isCdek) {
@@ -470,11 +473,9 @@
 
     cdekQuoteController?.abort();
     cdekQuoteController = null;
-    citySearchController?.abort();
     cdekPoints = new Map();
     cdekPointField.hidden = true;
     cdekPointSelect.required = false;
-    hideCitySuggestions();
     addressField.hidden = !requiresAddress;
     form.elements.address.readOnly = false;
     form.elements.address.required = requiresAddress;
@@ -569,14 +570,14 @@
       if (form.elements.deliveryMethod.value === "russian_post") {
         resetPostQuote();
         schedulePostQuote();
-        return;
-      }
-      if (form.elements.deliveryMethod.value !== "cdek") return;
-      form.elements.address.value = "";
-      resetCdekQuote("");
+      } else if (form.elements.deliveryMethod.value === "cdek") {
+        form.elements.address.value = "";
+        resetCdekQuote("");
+      } else return;
       const query = form.elements.city.value.trim();
       if (query.length < 2) return;
-      citySearchTimer = setTimeout(() => searchCdekCities(query), 300);
+      const method = form.elements.deliveryMethod.value;
+      citySearchTimer = setTimeout(() => searchCities(query, method), 300);
     }
     if (event.target.name === "postalCode" && form.elements.deliveryMethod.value === "russian_post") {
       resetPostQuote();
@@ -634,8 +635,8 @@
       const button = document.createElement("button");
       button.type = "button";
       button.role = "option";
-      button.dataset.cdekCityCode = String(city.code);
-      button.dataset.cdekCityName = city.city;
+      button.dataset.cityCode = String(city.code);
+      button.dataset.cityName = city.city;
       button.setAttribute("aria-label", city.label || city.city);
       const name = document.createElement("span");
       name.textContent = city.city;
@@ -657,27 +658,33 @@
     form.elements.city.setAttribute("aria-expanded", "true");
   }
 
-  async function searchCdekCities(query) {
+  async function searchCities(query, method) {
     citySearchController?.abort();
-    citySearchController = new AbortController();
-    cdekStatus.classList.remove("is-error", "is-success");
+    const controller = new AbortController();
+    citySearchController = controller;
+    if (method === "cdek") cdekStatus.classList.remove("is-error", "is-success");
     try {
       const response = await fetch(`/api/delivery/cdek/cities?q=${encodeURIComponent(query)}`, {
         credentials: "same-origin",
         headers: { Accept: "application/json" },
-        signal: citySearchController.signal,
+        signal: controller.signal,
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw Object.assign(new Error(payload.error || "cdek_provider_unavailable"), { code: payload.error });
-      if (form.elements.city.value.trim() !== query || form.elements.deliveryMethod.value !== "cdek") return;
+      if (form.elements.city.value.trim() !== query || form.elements.deliveryMethod.value !== method) return;
       renderCitySuggestions(Array.isArray(payload.cities) ? payload.cities : []);
-      cdekStatus.textContent = "";
+      if (method === "cdek") cdekStatus.textContent = "";
     } catch (error) {
       if (error.name === "AbortError") return;
+      if (form.elements.city.value.trim() !== query || form.elements.deliveryMethod.value !== method) return;
       hideCitySuggestions();
-      cdekOptions.hidden = false;
-      cdekStatus.textContent = errorMessages[error.code] || "Не удалось загрузить города СДЭК. Попробуйте ещё раз.";
-      cdekStatus.classList.add("is-error");
+      if (method === "cdek") {
+        cdekOptions.hidden = false;
+        cdekStatus.textContent = errorMessages[error.code] || "Не удалось загрузить города СДЭК. Попробуйте ещё раз.";
+        cdekStatus.classList.add("is-error");
+      }
+    } finally {
+      if (citySearchController === controller) citySearchController = null;
     }
   }
 
@@ -747,14 +754,23 @@
   }
 
   page.addEventListener("click", (event) => {
-    const city = event.target.closest("[data-cdek-city-code]");
+    const city = event.target.closest("[data-city-code]");
     if (city) {
-      cdekCityCode = Number(city.dataset.cdekCityCode);
-      form.elements.city.value = city.dataset.cdekCityName;
-      form.elements.address.value = "";
+      const method = form.elements.deliveryMethod.value;
+      clearTimeout(citySearchTimer);
+      citySearchController?.abort();
+      form.elements.city.value = city.dataset.cityName;
       hideCitySuggestions();
-      resetCdekQuote();
-      loadCdekQuote();
+      if (method === "cdek") {
+        cdekCityCode = Number(city.dataset.cityCode);
+        form.elements.address.value = "";
+        resetCdekQuote();
+        loadCdekQuote();
+      } else if (method === "russian_post") {
+        cdekCityCode = null;
+        resetPostQuote();
+        schedulePostQuote();
+      }
       return;
     }
     if (!event.target.closest("[data-city-field]")) hideCitySuggestions();
