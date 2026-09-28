@@ -41,6 +41,9 @@ export function loadConfig() {
   const cdekSecurePassword = readString("CDEK_SECURE_PASSWORD");
   const cdekApiBase = readString("CDEK_API_BASE", "https://api.cdek.ru/v2").replace(/\/+$/, "");
   const cdekCreateOrders = readBoolean("CDEK_CREATE_ORDERS", false);
+  const russianPostToken = readString("RUSSIAN_POST_TOKEN");
+  const russianPostUserKey = readString("RUSSIAN_POST_USER_KEY");
+  const russianPostFromIndex = readString("RUSSIAN_POST_FROM_INDEX");
 
   if (sessionSecret.length < 32) {
     throw new Error("SESSION_SECRET must contain at least 32 characters");
@@ -80,6 +83,12 @@ export function loadConfig() {
   }
   if (cdekCreateOrders) {
     throw new Error("CDEK_CREATE_ORDERS=true is not supported in read-only delivery mode");
+  }
+  if (Boolean(russianPostToken) !== Boolean(russianPostUserKey)) {
+    throw new Error("RUSSIAN_POST_TOKEN and RUSSIAN_POST_USER_KEY must be set together");
+  }
+  if (russianPostFromIndex && !/^\d{6}$/.test(russianPostFromIndex)) {
+    throw new Error("RUSSIAN_POST_FROM_INDEX must contain six digits");
   }
 
   return Object.freeze({
@@ -163,6 +172,18 @@ export function loadConfig() {
         lengthCm: readInteger("CDEK_PACKAGE_LENGTH_CM", 25, { min: 1, max: 200 }),
         widthCm: readInteger("CDEK_PACKAGE_WIDTH_CM", 20, { min: 1, max: 200 }),
         heightCm: readInteger("CDEK_PACKAGE_HEIGHT_CM", 15, { min: 1, max: 200 }),
+      }),
+    }),
+    russianPost: Object.freeze({
+      enabled: Boolean(russianPostToken && russianPostUserKey),
+      token: russianPostToken,
+      userKey: russianPostUserKey,
+      fromIndex: russianPostFromIndex,
+      package: Object.freeze({
+        weightGrams: readInteger("RUSSIAN_POST_PACKAGE_WEIGHT_GRAMS", 1000, { min: 1, max: 20_000 }),
+        lengthCm: readInteger("RUSSIAN_POST_PACKAGE_LENGTH_CM", 25, { min: 1, max: 150 }),
+        widthCm: readInteger("RUSSIAN_POST_PACKAGE_WIDTH_CM", 20, { min: 1, max: 150 }),
+        heightCm: readInteger("RUSSIAN_POST_PACKAGE_HEIGHT_CM", 15, { min: 1, max: 150 }),
       }),
     }),
     allowedOrigins: Object.freeze([

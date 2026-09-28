@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import express from "express";
+import { signRussianPostQuote } from "../delivery/russian-post.js";
 import {
   calculatePerfumePromotion,
   cartKeyToExternalKey,
   createOrdersRouter,
   normalizeOrderPayload,
+  resolveRussianPostDelivery,
 } from "../routes/orders.js";
 
 const ordersConfig = {
@@ -40,6 +42,7 @@ test("order payload normalizes customer, delivery and cart", () => {
     customerPhone: "8 (999) 000-00-00",
     customerEmail: "ANNA@example.com",
     deliveryMethod: "russian_post",
+    deliveryQuoteToken: "signed.quote",
     deliveryAddress: { city: " Владимир ", address: " ул. Мира, 1 ", postalCode: "600000" },
     customerComment: "  Позвонить   за час ",
     items: [{ key: "fragrance-011-30", quantity: 2 }, { key: "product-01", quantity: 1 }],
@@ -48,6 +51,7 @@ test("order payload normalizes customer, delivery and cart", () => {
   assert.equal(payload.customerName, "Анна Касаткина");
   assert.equal(payload.phone, "+79990000000");
   assert.equal(payload.email, "anna@example.com");
+  assert.equal(payload.deliveryQuoteToken, "signed.quote");
   assert.equal(payload.items[1].externalKey, "product-01-default");
 });
 
@@ -90,6 +94,40 @@ test("Russian Post delivery requires a six-digit postal code", () => {
     deliveryAddress: { city: "Владимир", address: "ул. Мира, 1", postalCode: "123" },
     items: [{ key: "product-01", quantity: 1 }],
   }), /delivery_postal_code_required/);
+});
+
+test("Russian Post delivery requires a server-signed quote", () => {
+  assert.throws(() => normalizeOrderPayload({
+    customerName: "Анна",
+    customerPhone: "+79990000000",
+    deliveryMethod: "russian_post",
+    deliveryAddress: { city: "Оренбург", address: "ул. Мира, 1", postalCode: "460000" },
+    items: [{ key: "product-01", quantity: 1 }],
+  }), /delivery_quote_required/);
+});
+
+test("Russian Post order uses signed tariff and rejects another destination index", () => {
+  const config = {
+    session: { secret: "russian-post-test-secret-with-more-than-32-characters" },
+    russianPost: { enabled: true, package: { weightGrams: 1000 } },
+  };
+  const deliveryQuoteToken = signRussianPostQuote({
+    postalCode: "460000", city: "Оренбург", deliveryMinor: 36_790,
+    currency: "RUB", mailType: "ONLINE_PARCEL", weightGrams: 1000,
+    periodMin: 2, periodMax: 4,
+  }, config.session.secret);
+  const payload = {
+    deliveryQuoteToken,
+    deliveryAddress: { city: "Оренбург", address: "ул. Мира, 1", postalCode: "460000" },
+  };
+  const delivery = resolveRussianPostDelivery(payload, config);
+  assert.equal(delivery.deliveryMinor, 36_790);
+  assert.equal(delivery.deliveryAddress.pricingStatus, "fixed");
+  assert.equal(delivery.deliveryAddress.periodMax, 4);
+  assert.throws(() => resolveRussianPostDelivery({
+    ...payload,
+    deliveryAddress: { ...payload.deliveryAddress, postalCode: "600000" },
+  }, config), /delivery_quote_invalid/);
 });
 
 test("3+1 promotion discounts the cheapest perfume unit only", () => {

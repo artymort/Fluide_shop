@@ -4,6 +4,7 @@ import { rateLimit } from "express-rate-limit";
 import { normalizeRussianPhone } from "../security/phone-otp.js";
 import { hashSessionToken, readCookie } from "../security/sessions.js";
 import { CdekError, verifyCdekQuote } from "../delivery/cdek.js";
+import { RussianPostError, verifyRussianPostQuote } from "../delivery/russian-post.js";
 
 const DELIVERY_METHODS = new Set(["russian_post", "cdek", "pickup"]);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -68,7 +69,7 @@ export function normalizeOrderPayload(body = {}) {
   if (deliveryMethod === "russian_post" && !/^\d{6}$/.test(deliveryAddress.postalCode)) {
     throw new OrderRequestError("delivery_postal_code_required");
   }
-  if (deliveryMethod === "cdek" && !deliveryQuoteToken) {
+  if ((deliveryMethod === "cdek" || deliveryMethod === "russian_post") && !deliveryQuoteToken) {
     throw new OrderRequestError("delivery_quote_required", 409);
   }
 
@@ -96,6 +97,30 @@ export function normalizeOrderPayload(body = {}) {
     deliveryQuoteToken,
     comment,
     items,
+  };
+}
+
+export function resolveRussianPostDelivery(payload, config) {
+  if (!config.russianPost?.enabled) throw new RussianPostError("russian_post_provider_disabled", 503);
+  const quote = verifyRussianPostQuote(payload.deliveryQuoteToken, config.session.secret);
+  if (quote.postalCode !== payload.deliveryAddress.postalCode
+    || quote.city.toLocaleLowerCase("ru-RU") !== payload.deliveryAddress.city.toLocaleLowerCase("ru-RU")
+    || quote.weightGrams !== config.russianPost.package.weightGrams) {
+    throw new RussianPostError("delivery_quote_invalid", 409);
+  }
+  return {
+    deliveryMinor: quote.deliveryMinor,
+    deliveryAddress: {
+      ...payload.deliveryAddress,
+      pricingStatus: "fixed",
+      provider: "russian_post",
+      tariffName: "Посылка онлайн",
+      mailType: quote.mailType,
+      weightGrams: quote.weightGrams,
+      periodMin: quote.periodMin,
+      periodMax: quote.periodMax,
+      shipmentCreation: false,
+    },
   };
 }
 
@@ -262,6 +287,8 @@ export function createOrdersRouter({ pool, config }) {
           periodMax: quote.periodMax,
           shipmentCreation: false,
         };
+      } else if (payload.deliveryMethod === "russian_post") {
+        ({ deliveryMinor, deliveryAddress } = resolveRussianPostDelivery(payload, config));
       }
       const totalMinor = subtotalMinor - promotion.discountMinor + deliveryMinor;
       const onlinePaymentAvailable = Boolean(config.yooKassa?.enabled && deliveryAddress.pricingStatus === "fixed");
@@ -314,7 +341,7 @@ export function createOrdersRouter({ pool, config }) {
       });
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
-      if (error instanceof OrderRequestError || error instanceof CdekError) {
+      if (error instanceof OrderRequestError || error instanceof CdekError || error instanceof RussianPostError) {
         response.status(error.status).json({ error: error.code });
       } else {
         next(error);

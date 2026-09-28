@@ -282,7 +282,7 @@
         </div></section>
         <section class="checkout-section"><h2>Доставка</h2><div class="checkout-delivery">
           <label><input type="radio" name="deliveryMethod" value="cdek" checked><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>СДЭК</b><small>В пункт выдачи</small></span><img src="assets/brand/cdek.svg" alt="" aria-hidden="true"></span></label>
-          <label><input type="radio" name="deliveryMethod" value="russian_post"><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>Почта России</b><small>В отделение или до двери</small></span><img class="checkout-delivery-logo--post" src="assets/brand/russian-post.svg" alt="" aria-hidden="true"></span></label>
+          <label><input type="radio" name="deliveryMethod" value="russian_post"><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>Почта России</b><small>В почтовое отделение</small></span><img class="checkout-delivery-logo--post" src="assets/brand/russian-post.svg" alt="" aria-hidden="true"></span></label>
           <label><input type="radio" name="deliveryMethod" value="pickup"><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>Самовывоз</b><small>Из пространства FLUIDE во Владимире</small></span></span></label>
         </div><div class="checkout-fields checkout-fields--two" data-checkout-address>
           <label class="checkout-city-field" data-city-field><span>Город</span><input name="city" autocomplete="off" maxlength="120" required aria-autocomplete="list" aria-expanded="false" aria-controls="cdek-city-suggestions"><div id="cdek-city-suggestions" class="checkout-city-suggestions" data-cdek-city-suggestions role="listbox" hidden></div></label>
@@ -291,6 +291,8 @@
         </div><div class="checkout-cdek" data-cdek-options>
           <p class="checkout-cdek-status" data-cdek-status></p>
           <label class="checkout-cdek-point" data-cdek-point-field hidden><span>Пункт выдачи</span><select name="cdekPoint"><option value="">Выберите ПВЗ</option></select></label>
+        </div><div class="checkout-cdek" data-post-options hidden>
+          <p class="checkout-cdek-status" data-post-status aria-live="polite">Укажите город и шестизначный индекс для расчёта.</p>
         </div></section>
         <section class="checkout-section"><h2>Комментарий</h2><label><textarea name="customerComment" rows="3" maxlength="1000" placeholder="Например, удобное время для звонка"></textarea></label></section>
         <label class="checkout-consent"><input type="checkbox" name="consent" required><span>Я согласен на обработку персональных данных</span></label>
@@ -317,22 +319,27 @@
   const cdekStatus = page.querySelector("[data-cdek-status]");
   const cdekPointField = page.querySelector("[data-cdek-point-field]");
   const cdekPointSelect = form.elements.cdekPoint;
+  const postOptions = page.querySelector("[data-post-options]");
+  const postStatus = page.querySelector("[data-post-status]");
   let deliveryMinor = 0;
   let cdekQuoteToken = "";
+  let postQuoteToken = "";
   let cdekPoints = new Map();
   let cdekCityCode = null;
   let citySearchTimer = null;
   let citySearchController = null;
   let cdekQuoteController = null;
+  let postQuoteController = null;
+  let postQuoteTimer = null;
   const errorMessages = {
     customer_name_invalid: "Укажите имя и фамилию.",
     customer_phone_invalid: "Проверьте номер телефона.",
     customer_email_invalid: "Проверьте email.",
     delivery_address_required: "Укажите город и адрес доставки.",
     delivery_postal_code_required: "Укажите шестизначный индекс.",
-    delivery_quote_required: "Сначала рассчитайте доставку СДЭК и завершите выбор способа доставки.",
-    delivery_quote_invalid: "Расчёт СДЭК больше недействителен. Рассчитайте доставку заново.",
-    delivery_quote_expired: "Срок расчёта СДЭК истёк. Рассчитайте доставку заново.",
+    delivery_quote_required: "Сначала рассчитайте доставку и завершите выбор способа доставки.",
+    delivery_quote_invalid: "Расчёт доставки больше недействителен. Рассчитайте доставку заново.",
+    delivery_quote_expired: "Срок расчёта доставки истёк. Рассчитайте доставку заново.",
     cdek_provider_disabled: "Расчёт СДЭК ещё не включён.",
     cdek_provider_unavailable: "СДЭК временно недоступен. Попробуйте ещё раз.",
     cdek_authorization_failed: "СДЭК не принял ключ интеграции. Проверьте настройки на сервере.",
@@ -341,6 +348,11 @@
     cdek_city_not_found: "СДЭК не нашёл выбранный город.",
     cdek_tariff_unavailable: "Для этого адреса нет подходящего тарифа СДЭК.",
     cdek_points_unavailable: "В этом городе не найдены доступные ПВЗ СДЭК.",
+    russian_post_provider_disabled: "Расчёт Почты России ещё не включён на сервере.",
+    russian_post_provider_unavailable: "Почта России временно недоступна. Попробуйте ещё раз.",
+    russian_post_authorization_failed: "Почта России не приняла ключи интеграции. Проверьте настройки на сервере.",
+    russian_post_provider_rejected: "Почта России не смогла рассчитать доставку по этому индексу.",
+    russian_post_tariff_unavailable: "Для этого индекса нет подходящего тарифа Почты России.",
     catalog_item_unavailable: "Один из товаров больше недоступен. Обновите корзину.",
     order_items_invalid: "Корзина пуста или повреждена.",
     payment_provider_disabled: "Онлайн-оплата временно недоступна. Заказ сохранён.",
@@ -371,7 +383,7 @@
   function updateOrderTotals(nextPricing = pricingFor(activeCart)) {
     const deliveryRubles = deliveryMinor / 100;
     const nextTotal = nextPricing.total + deliveryRubles;
-    page.querySelector("[data-checkout-delivery-price]").textContent = deliveryMinor || cdekQuoteToken
+    page.querySelector("[data-checkout-delivery-price]").textContent = deliveryMinor || cdekQuoteToken || postQuoteToken
       ? money(deliveryRubles)
       : (form.elements.deliveryMethod.value === "pickup" ? "0 ₽" : "после расчёта");
     const originalTotal = page.querySelector("[data-checkout-original-total]");
@@ -404,12 +416,33 @@
     updateOrderTotals();
   }
 
+  function resetPostQuote(message = "Укажите город и шестизначный индекс для расчёта.") {
+    clearTimeout(postQuoteTimer);
+    postQuoteController?.abort();
+    postQuoteController = null;
+    postQuoteToken = "";
+    deliveryMinor = 0;
+    postStatus.textContent = message;
+    postStatus.classList.remove("is-error", "is-success");
+    page.querySelector("[data-checkout-delivery-note]").textContent = "Укажите индекс для расчёта доставки Почтой России.";
+    updateOrderTotals();
+  }
+
+  function schedulePostQuote() {
+    if (form.elements.deliveryMethod.value !== "russian_post") return;
+    if (form.elements.city.value.trim().length < 2 || !/^\d{6}$/.test(form.elements.postalCode.value.trim())) return;
+    clearTimeout(postQuoteTimer);
+    postQuoteTimer = setTimeout(loadPostQuote, 350);
+  }
+
   function updateDeliveryUi({ resetQuote = true } = {}) {
     const method = form.elements.deliveryMethod.value;
     const isCdek = method === "cdek";
+    const isPost = method === "russian_post";
     const requiresAddress = method !== "pickup";
     addressBlock.hidden = !requiresAddress;
     cdekOptions.hidden = !isCdek;
+    postOptions.hidden = !isPost;
     form.elements.city.required = requiresAddress;
     postalField.hidden = isCdek || !requiresAddress;
     form.elements.postalCode.required = method === "russian_post";
@@ -420,6 +453,9 @@
     page.querySelector("[data-postal-hint]").textContent = method === "russian_post" ? "обязательно" : "необязательно";
 
     if (isCdek) {
+      clearTimeout(postQuoteTimer);
+      postQuoteController?.abort();
+      postQuoteToken = "";
       addressField.hidden = true;
       addressLabel.textContent = "Выбранный ПВЗ";
       form.elements.address.readOnly = true;
@@ -445,13 +481,18 @@
     addressLabel.textContent = "Адрес";
     deliveryMinor = 0;
     cdekQuoteToken = "";
+    if (isPost && resetQuote) resetPostQuote();
+    if (!isPost) {
+      clearTimeout(postQuoteTimer);
+      postQuoteController?.abort();
+      postQuoteToken = "";
+    }
     page.querySelector("[data-checkout-delivery-note]").textContent = method === "pickup"
       ? "Забрать заказ можно будет после подтверждения готовности."
-      : "Стоимость доставки уточнит менеджер.";
-    page.querySelector(".checkout-payment-note").textContent = method === "pickup"
-      ? "После оформления вы перейдёте к оплате в ЮKassa."
-      : "Оплата — после подтверждения заказа. Менеджер свяжется с вами.";
+      : (postQuoteToken ? "Доставка рассчитана Почтой России и включена в итоговую сумму." : "Укажите индекс для расчёта доставки Почтой России.");
+    page.querySelector(".checkout-payment-note").textContent = "После оформления вы перейдёте к оплате в ЮKassa.";
     updateOrderTotals();
+    if (isPost && resetQuote) schedulePostQuote();
   }
 
   function updateCartView() {
@@ -469,6 +510,9 @@
     if (form.elements.deliveryMethod.value === "cdek") {
       resetCdekQuote();
       if (cdekCityCode) loadCdekQuote();
+    } else if (form.elements.deliveryMethod.value === "russian_post") {
+      resetPostQuote();
+      schedulePostQuote();
     }
     else updateOrderTotals(nextPricing);
   }
@@ -519,17 +563,70 @@
   form.addEventListener("input", (event) => {
     if (event.target.name === "city") {
       cdekCityCode = null;
-      form.elements.address.value = "";
       clearTimeout(citySearchTimer);
       citySearchController?.abort();
       hideCitySuggestions();
+      if (form.elements.deliveryMethod.value === "russian_post") {
+        resetPostQuote();
+        schedulePostQuote();
+        return;
+      }
       if (form.elements.deliveryMethod.value !== "cdek") return;
+      form.elements.address.value = "";
       resetCdekQuote("");
       const query = form.elements.city.value.trim();
       if (query.length < 2) return;
       citySearchTimer = setTimeout(() => searchCdekCities(query), 300);
     }
+    if (event.target.name === "postalCode" && form.elements.deliveryMethod.value === "russian_post") {
+      resetPostQuote();
+      schedulePostQuote();
+    }
   });
+
+  async function loadPostQuote() {
+    const postalCode = form.elements.postalCode.value.trim();
+    const city = form.elements.city.value.trim();
+    if (form.elements.deliveryMethod.value !== "russian_post" || !/^\d{6}$/.test(postalCode) || city.length < 2) return;
+    postQuoteController?.abort();
+    const controller = new AbortController();
+    postQuoteController = controller;
+    postStatus.textContent = "Считаем стоимость и срок доставки…";
+    postStatus.classList.remove("is-error", "is-success");
+    try {
+      const response = await fetch("/api/delivery/russian-post/quote", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ city, postalCode }),
+        signal: controller.signal,
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw Object.assign(new Error(payload.error || "russian_post_provider_unavailable"), { code: payload.error });
+      if (form.elements.deliveryMethod.value !== "russian_post"
+        || form.elements.postalCode.value.trim() !== postalCode
+        || form.elements.city.value.trim() !== city) return;
+      postQuoteToken = payload.quoteToken;
+      deliveryMinor = Number(payload.deliveryMinor);
+      const period = payload.periodMin && payload.periodMax
+        ? `Примерный срок: ${payload.periodMin}–${payload.periodMax} дн.`
+        : (payload.periodMax ? `Примерный срок: до ${payload.periodMax} дн.` : "Срок Почта России не указала.");
+      postStatus.textContent = `Доставка ${money(deliveryMinor / 100)}. ${period} Расчёт для посылки ${payload.weightGrams} г.`;
+      postStatus.classList.add("is-success");
+      page.querySelector("[data-checkout-delivery-note]").textContent = "Доставка рассчитана Почтой России и включена в итоговую сумму.";
+      updateOrderTotals();
+    } catch (error) {
+      if (error.name === "AbortError") return;
+      postQuoteToken = "";
+      deliveryMinor = 0;
+      postStatus.textContent = errorMessages[error.code] || "Не удалось рассчитать доставку Почтой России. Попробуйте ещё раз.";
+      postStatus.classList.add("is-error");
+      page.querySelector("[data-checkout-delivery-note]").textContent = "Доставка пока не рассчитана и не включена в итог.";
+      updateOrderTotals();
+    } finally {
+      if (postQuoteController === controller) postQuoteController = null;
+    }
+  }
 
   function renderCitySuggestions(cities) {
     citySuggestions.replaceChildren();
@@ -676,11 +773,13 @@
       errorNode.scrollIntoView({ behavior: "smooth", block: "nearest" });
       return;
     }
-    if (form.elements.deliveryMethod.value === "cdek" && !cdekQuoteToken) {
+    const method = form.elements.deliveryMethod.value;
+    if ((method === "cdek" && !cdekQuoteToken) || (method === "russian_post" && !postQuoteToken)) {
       errorNode.textContent = errorMessages.delivery_quote_required;
       errorNode.hidden = false;
-      cdekStatus.classList.add("is-error");
-      cdekStatus.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const status = method === "cdek" ? cdekStatus : postStatus;
+      status.classList.add("is-error");
+      status.scrollIntoView({ behavior: "smooth", block: "nearest" });
       return;
     }
     if (!form.reportValidity()) return;
@@ -701,7 +800,7 @@
           customerPhone: data.get("customerPhone"),
           customerEmail: data.get("customerEmail"),
           deliveryMethod: data.get("deliveryMethod"),
-          deliveryQuoteToken: cdekQuoteToken,
+          deliveryQuoteToken: method === "cdek" ? cdekQuoteToken : postQuoteToken,
           deliveryAddress: {
             city: data.get("city"), address: data.get("address"), postalCode: data.get("postalCode"),
           },
@@ -744,6 +843,10 @@
       errorNode.textContent = errorMessages[error.code] || "Не удалось создать заказ. Проверьте связь и попробуйте ещё раз.";
       errorNode.hidden = false;
       errorNode.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      if (method === "russian_post" && ["delivery_quote_invalid", "delivery_quote_expired"].includes(error.code)) {
+        resetPostQuote("Обновляем расчёт доставки Почтой России…");
+        schedulePostQuote();
+      }
     } finally {
       submit.disabled = false;
       submit.classList.remove("is-loading");
