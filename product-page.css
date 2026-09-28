@@ -289,6 +289,21 @@
   .product-page.shell,.product-breadcrumbs{width:calc(100% - 28px)}
 }
 
+.product-page .product-purchase .volume-option{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.product-page .quantity-control button svg{
+  display:block;
+  width:14px;
+  height:14px;
+  fill:none;
+  stroke:currentColor;
+}
+
 /* Use restrained tracking while preserving Onest Variable's character. */
 h1,h2,h3{letter-spacing:-.02em!important}
 

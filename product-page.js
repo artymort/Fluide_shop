@@ -107,7 +107,15 @@ function bindGallery(images){
 function noteRows(item){
   return [["Верхние ноты",item.notes?.top],["Сердце",item.notes?.middle],["База",item.notes?.base],["Основные ноты",item.notes?.main]]
     .filter(([,values])=>values?.length)
-    .map(([label,values])=>`<div class="pyramid-row"><span>${label}</span><strong>${escapeHtml(values.join(", "))}</strong></div>`).join("");
+    .map(([label,values])=>`<div class="pyramid-row"><span>${label}</span><strong>${escapeHtml(capitalizeNoteSentence(values.join(", ")))}</strong></div>`).join("");
+}
+
+function capitalizeNoteSentence(value){
+  return String(value||"").trim().replace(/(^|[.!?]\s+)(\p{L})/gu,(_,prefix,letter)=>prefix+letter.toLocaleUpperCase("ru-RU"));
+}
+
+function quantityControlMarkup(){
+  return `<div class="quantity-block"><span>Количество</span><div class="quantity-control"><button type="button" data-quantity="-1" aria-label="Уменьшить количество"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#minus"></use></svg></button><output data-product-quantity>1</output><button type="button" data-quantity="1" aria-label="Увеличить количество"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#plus"></use></svg></button></div></div>`;
 }
 
 function productDescription(item){
@@ -156,7 +164,7 @@ function renderCatalogProduct(){
         <div class="product-purchase">
           <div class="product-price" data-product-price>${formatPriceMarkup(priceFor(fragrance))}</div>
           ${fragrance.volume?`<fieldset class="product-choice"><legend>Объем</legend><div class="volume-options"><span class="volume-option is-active product-volume-static">${escapeHtml(fragrance.volume)}</span></div></fieldset>`:""}
-          <div class="quantity-block"><span>Количество</span><div class="quantity-control"><button type="button" data-quantity="-1" aria-label="Уменьшить количество">−</button><output data-product-quantity>1</output><button type="button" data-quantity="1" aria-label="Увеличить количество">+</button></div></div>
+          ${quantityControlMarkup()}
           <div class="product-actions"><button class="product-add" type="button" data-analytics-add data-product-key="${escapeHtml(fragrance.id)}">В корзину</button><button class="product-buy-now" type="button">Купить в 1 клик</button><button class="product-like ${favoriteActive?"is-active":""}" type="button" aria-label="${favoriteActive?"Удалить из избранного":"Добавить в избранное"}"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg></button></div>
           <p class="product-delivery-note"><svg aria-hidden="true"><use href="assets/icons/lucide.svg?v=product-v1#truck"></use></svg>Бесплатная доставка от 5 000 ₽</p>
         </div>
@@ -220,7 +228,7 @@ function renderProduct(){
         <div class="product-purchase">
           <div class="product-price" data-product-price>${formatPriceMarkup(priceFor(fragrance))}</div>
           <fieldset class="product-choice"><legend>Объем</legend><div class="volume-options"><button class="volume-option is-active" type="button" data-size="30">30 мл</button><button class="volume-option" type="button" data-size="50">50 мл</button></div></fieldset>
-          <div class="quantity-block"><span>Количество</span><div class="quantity-control"><button type="button" data-quantity="-1" aria-label="Уменьшить количество">−</button><output data-product-quantity>1</output><button type="button" data-quantity="1" aria-label="Увеличить количество">+</button></div></div>
+          ${quantityControlMarkup()}
           <div class="product-actions"><button class="product-add" type="button" data-analytics-add data-product-key="${escapeHtml(fragrance.id)}">В корзину</button><button class="product-buy-now" type="button">Купить в 1 клик</button><button class="product-like ${favoriteActive?"is-active":""}" type="button" aria-label="${favoriteActive?"Удалить из избранного":"Добавить в избранное"}"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg></button></div>
           <p class="product-delivery-note"><svg aria-hidden="true"><use href="assets/icons/lucide.svg?v=product-v1#truck"></use></svg>Бесплатная доставка от 5 000 ₽</p>
         </div>
@@ -236,7 +244,7 @@ function renderProduct(){
       </div>
       <div class="product-tab-panels">
         <section class="product-tab-panel is-active" id="product-tab-about" role="tabpanel" data-product-panel="about"><div class="product-about-grid"><p>${productDescription(fragrance)}</p><div class="product-about-aside"><div><span>Концентрация</span><strong>${escapeHtml(fragrance.concentration||"—")}</strong></div><div><span>Сезон</span><strong>${escapeHtml(seasons.join(", ")||"В любое время")}</strong></div><div><span>Для кого</span><strong>${escapeHtml(GENDER_LABELS[fragrance.gender]||fragrance.gender||"Унисекс")}</strong></div></div></div></section>
-        <section class="product-tab-panel" id="product-tab-pyramid" role="tabpanel" data-product-panel="pyramid" hidden><div class="pyramid-grid">${noteRows(fragrance)||`<div class="pyramid-row"><span>Ноты</span><strong>${escapeHtml(allNotes(fragrance).join(", ")||fragrance.group||"Парфюмерная композиция")}</strong></div>`}</div></section>
+        <section class="product-tab-panel" id="product-tab-pyramid" role="tabpanel" data-product-panel="pyramid" hidden><div class="pyramid-grid">${noteRows(fragrance)||`<div class="pyramid-row"><span>Ноты</span><strong>${escapeHtml(capitalizeNoteSentence(allNotes(fragrance).join(", ")||fragrance.group||"Парфюмерная композиция"))}</strong></div>`}</div></section>
         ${accords.length?`<section class="product-tab-panel" id="product-tab-accords" role="tabpanel" data-product-panel="accords" hidden><div class="accord-grid">${accords.map(accord=>`<div class="product-accord"><span>${escapeHtml(accord.name)}</span><div class="product-accord-track"><i style="width:${Math.max(4,Math.min(100,Number(accord.weight)||0))}%"></i></div><b>${Math.round(Number(accord.weight)||0)}</b></div>`).join("")}</div></section>`:""}
         <section class="product-tab-panel" id="product-tab-occasion" role="tabpanel" data-product-panel="occasion" hidden><div class="occasion-grid"><div class="occasion-card"><span>Сезон</span><p>${escapeHtml(seasons.join(", ")||"В любое время")}</p></div><div class="occasion-card"><span>Повод</span><p>${escapeHtml(occasions.join(", ")||"На каждый день")}</p></div></div></section>
         <section class="product-tab-panel" id="product-tab-reviews" role="tabpanel" data-product-panel="reviews" hidden><div class="product-reviews-layout"><div class="product-review-list" data-review-list></div><form class="product-review-form" data-review-form ${ownReview?"hidden":""}><fieldset><legend>Ваша оценка</legend><div class="product-review-rating-picker">${ratingButtonsMarkup(Number(ownReview?.rating)||0,"data-form-rating")}</div></fieldset><label>Ваше имя<input name="name" type="text" maxlength="40" autocomplete="name" value="${escapeHtml(ownReview?.name||"")}" required></label><label>Отзыв<textarea name="text" rows="4" maxlength="700" required>${escapeHtml(ownReview?.text||"")}</textarea></label><button type="submit">${ownReview?"Сохранить изменения":"Оставить отзыв"}</button></form></div></section>
