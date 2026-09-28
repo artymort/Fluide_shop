@@ -611,7 +611,7 @@
       const period = payload.periodMin && payload.periodMax
         ? `Примерный срок: ${payload.periodMin}–${payload.periodMax} дн.`
         : (payload.periodMax ? `Примерный срок: до ${payload.periodMax} дн.` : "Срок Почта России не указала.");
-      postStatus.textContent = `Доставка ${money(deliveryMinor / 100)}. ${period} Расчёт для посылки ${payload.weightGrams} г.`;
+      postStatus.textContent = `Доставка ${money(deliveryMinor / 100)}. ${period}`;
       postStatus.classList.add("is-success");
       page.querySelector("[data-checkout-delivery-note]").textContent = "Доставка рассчитана Почтой России и включена в итоговую сумму.";
       updateOrderTotals();
