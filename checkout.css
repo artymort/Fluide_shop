@@ -133,6 +133,7 @@
 .checkout-post-address-suggestion>span{display:block;margin-bottom:7px;color:#656c7d;font-size:12px}
 .checkout-post-address-suggestion>button{display:block;width:100%;min-height:36px;padding:2px 0;background:transparent;color:#111;text-align:left;font-size:14px;line-height:1.45;text-decoration:underline;text-underline-offset:3px}
 .checkout-post-address-suggestion>button:hover,.checkout-post-address-suggestion>button:focus-visible{color:#333;outline:2px solid #111;outline-offset:2px}
+.checkout-post-address-suggestion>p{margin:0;color:#111;font-size:14px;line-height:1.45}
 
 @media(max-width:520px){
   .checkout-cdek{padding:14px}

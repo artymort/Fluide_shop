@@ -89,7 +89,7 @@ export function createDeliveryRouter({ config }) {
       const postalCode = cleanText(request.body?.postalCode, 20);
       const city = cleanText(request.body?.city, 120);
       const address = cleanText(request.body?.address, 300);
-      if (!/^\d{6}$/.test(postalCode)) throw new RussianPostError("delivery_postal_code_required", 400);
+      if (postalCode && !/^\d{6}$/.test(postalCode)) throw new RussianPostError("delivery_postal_code_required", 400);
       if (city.length < 2 || address.length < 7 || !/\d/.test(address)) {
         throw new RussianPostError("delivery_address_required", 400);
       }

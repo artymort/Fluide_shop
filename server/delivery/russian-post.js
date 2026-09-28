@@ -88,17 +88,16 @@ export function normalizeRussianPostAddress(payload, originalAddress = "") {
   const room = clean(entry.room, 40);
   if (!/^\d{6}$/.test(postalCode) || !city || !street || !house) return null;
   const withoutLabel = (value, label) => value.replace(label, "").trim();
-  const apartmentMentioned = /(?:^|[\s,;])кв(?:артира)?\.?\s*\d/i.test(originalAddress);
-  const roomMentioned = /(?:^|[\s,;])(?:оф(?:ис)?|пом(?:ещение)?)\.?\s*\d/i.test(originalAddress);
-  if ((apartmentMentioned || roomMentioned) && !room) return null;
+  const originalUnit = originalAddress.match(/(?:^|[\s,;])(кв(?:артира)?|оф(?:ис)?|пом(?:ещение)?)\.?\s*(\d+[а-яa-z\d/-]{0,15})/i);
   const houseValue = withoutLabel(house, /^(?:дом|д\.?)\s*/i);
   if (!houseValue) return null;
   const slash = clean(entry.slash, 20).replace(/^\//, "");
   const houseNumber = `${houseValue}${slash && !houseValue.includes("/") ? `/${slash}` : ""}`;
-  const roomLabel = /^кв(?:артира)?\.?\s*/i.test(room) ? "кв."
-    : /^оф(?:ис)?\.?\s*/i.test(room) ? "оф."
-      : apartmentMentioned ? "кв." : "пом.";
-  const roomValue = withoutLabel(room, /^(?:кв(?:артира)?|оф(?:ис)?|пом(?:ещение)?)\.?\s*/i);
+  const roomKind = originalUnit?.[1] || room;
+  const roomLabel = /^кв(?:артира)?\.?\s*/i.test(roomKind) ? "кв."
+    : /^оф(?:ис)?\.?\s*/i.test(roomKind) ? "оф." : "пом.";
+  const roomValue = originalUnit?.[2]
+    || withoutLabel(room, /^(?:кв(?:артира)?|оф(?:ис)?|пом(?:ещение)?)\.?\s*/i);
   const address = [
     street,
     `д. ${houseNumber}`,
@@ -152,7 +151,7 @@ export function createRussianPostClient(config, { fetchImpl = globalThis.fetch }
   }
 
   async function normalizeAddress({ city, postalCode, address }) {
-    const originalAddress = `${postalCode}, ${city}, ${address}`;
+    const originalAddress = [postalCode, city, address].filter(Boolean).join(", ");
     let response;
     try {
       response = await fetchImpl("https://otpravka-api.pochta.ru/1.0/clean/address", {

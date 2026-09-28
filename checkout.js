@@ -286,14 +286,14 @@
           <label><input type="radio" name="deliveryMethod" value="pickup"><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>Самовывоз</b><small>Из пространства FLUIDE во Владимире</small></span></span></label>
         </div><div class="checkout-fields checkout-fields--two" data-checkout-address>
           <label class="checkout-city-field" data-city-field><span>Город</span><input name="city" autocomplete="off" maxlength="120" required aria-autocomplete="list" aria-expanded="false" aria-controls="delivery-city-suggestions"><div id="delivery-city-suggestions" class="checkout-city-suggestions" data-city-suggestions role="listbox" hidden></div></label>
-          <label data-postal-field><span>Индекс <small data-postal-hint>обязательно</small></span><input name="postalCode" autocomplete="postal-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required></label>
+          <label data-postal-field><span>Индекс <small data-postal-hint>подберём по адресу</small></span><input name="postalCode" autocomplete="postal-code" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" required></label>
           <label class="checkout-field-wide" data-address-field hidden><span data-address-label>Адрес</span><input name="address" autocomplete="street-address" maxlength="300"></label>
-          <div class="checkout-post-address-suggestion checkout-field-wide" data-post-address-suggestion hidden><span>Почта России предлагает уточнить адрес:</span><button type="button" data-apply-post-address></button></div>
+          <div class="checkout-post-address-suggestion checkout-field-wide" data-post-address-suggestion hidden><span data-post-address-caption>Почта России предлагает уточнить адрес:</span><button type="button" data-apply-post-address></button><p data-post-address-confirmed hidden></p></div>
         </div><div class="checkout-cdek" data-cdek-options>
           <p class="checkout-cdek-status" data-cdek-status></p>
           <label class="checkout-cdek-point" data-cdek-point-field hidden><span>Пункт выдачи</span><select name="cdekPoint"><option value="">Выберите ПВЗ</option></select></label>
         </div><div class="checkout-cdek" data-post-options hidden>
-          <p class="checkout-cdek-status" data-post-status aria-live="polite">Укажите город и шестизначный индекс для расчёта.</p>
+          <p class="checkout-cdek-status" data-post-status aria-live="polite">Введите город и адрес — попробуем определить индекс, либо укажите его вручную.</p>
         </div></section>
         <section class="checkout-section"><h2>Комментарий</h2><label><textarea name="customerComment" rows="3" maxlength="1000" placeholder="Например, удобное время для звонка"></textarea></label></section>
         <label class="checkout-consent"><input type="checkbox" name="consent" required><span>Я согласен на обработку персональных данных</span></label>
@@ -323,7 +323,9 @@
   const postOptions = page.querySelector("[data-post-options]");
   const postStatus = page.querySelector("[data-post-status]");
   const postAddressSuggestion = page.querySelector("[data-post-address-suggestion]");
+  const postAddressCaption = page.querySelector("[data-post-address-caption]");
   const postAddressButton = page.querySelector("[data-apply-post-address]");
+  const postAddressConfirmed = page.querySelector("[data-post-address-confirmed]");
   let deliveryMinor = 0;
   let cdekQuoteToken = "";
   let postQuoteToken = "";
@@ -419,7 +421,8 @@
     const city = form.elements.city.value.trim();
     const postalCode = form.elements.postalCode.value.trim();
     const address = form.elements.address.value.trim();
-    if (city.length < 2 || !/^\d{6}$/.test(postalCode) || address.length < 7 || !/\d/.test(address)) return;
+    if (city.length < 2 || (postalCode && !/^\d{6}$/.test(postalCode))
+      || address.length < 7 || !/\d/.test(address)) return;
     postAddressTimer = setTimeout(checkPostAddress, 850);
   }
 
@@ -446,9 +449,23 @@
       const suggestion = payload.suggestion;
       if (!suggestion || !/^\d{6}$/.test(suggestion.postalCode)
         || typeof suggestion.city !== "string" || typeof suggestion.address !== "string") return;
-      if (suggestion.city === city && suggestion.postalCode === postalCode && suggestion.address === address) return;
-      postAddressCandidate = suggestion;
-      postAddressButton.textContent = `${suggestion.postalCode}, ${suggestion.city}, ${suggestion.address}`;
+      if (!postalCode) {
+        form.elements.postalCode.value = suggestion.postalCode;
+        resetPostQuote();
+        schedulePostQuote();
+      }
+      const fullAddress = `${suggestion.postalCode}, ${suggestion.city}, ${suggestion.address}`;
+      const alreadyMatches = suggestion.city === city
+        && suggestion.postalCode === (postalCode || suggestion.postalCode)
+        && suggestion.address === address;
+      postAddressCandidate = alreadyMatches ? null : suggestion;
+      postAddressCaption.textContent = alreadyMatches
+        ? "Почта России распознала улицу и дом. Адрес для доставки:"
+        : "Почта России предлагает уточнить адрес:";
+      postAddressConfirmed.textContent = fullAddress;
+      postAddressConfirmed.hidden = !alreadyMatches;
+      postAddressButton.textContent = fullAddress;
+      postAddressButton.hidden = alreadyMatches;
       postAddressSuggestion.hidden = false;
     } catch {
       // Address checking is optional: an API failure must not block checkout.
@@ -474,7 +491,7 @@
     updateOrderTotals();
   }
 
-  function resetPostQuote(message = "Укажите город и шестизначный индекс для расчёта.") {
+  function resetPostQuote(message = "Введите город и адрес — попробуем определить индекс, либо укажите его вручную.") {
     clearTimeout(postQuoteTimer);
     postQuoteController?.abort();
     postQuoteController = null;
@@ -512,7 +529,7 @@
     form.elements.postalCode.disabled = method !== "russian_post";
     form.elements.address.disabled = !requiresAddress;
     form.elements.city.autocomplete = requiresAddress ? "off" : "address-level2";
-    page.querySelector("[data-postal-hint]").textContent = method === "russian_post" ? "обязательно" : "необязательно";
+    page.querySelector("[data-postal-hint]").textContent = method === "russian_post" ? "подберём по адресу" : "необязательно";
 
     if (isCdek) {
       clearTimeout(postQuoteTimer);

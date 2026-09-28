@@ -87,7 +87,9 @@ test("Russian Post suggests only a validated complete address", () => {
     city: "Оренбург", postalCode: "460044", address: "ул. Строителей, д. 9Б, кв. 12",
   });
   assert.equal(normalizeRussianPostAddress([{ ...address, "quality-code": "UNDEF_03" }]), null);
-  assert.equal(normalizeRussianPostAddress([{ ...address, room: "" }], "строителей 9б кв 12"), null);
+  assert.deepEqual(normalizeRussianPostAddress([{ ...address, room: "" }], "строителей 9б кв 12"), {
+    city: "Оренбург", postalCode: "460044", address: "ул. Строителей, д. 9Б, кв. 12",
+  });
   assert.equal(normalizeRussianPostAddress([{ ...address, house: "" }]), null);
   assert.deepEqual(normalizeRussianPostAddress([{
     ...address, place: "г. Оренбург", street: "ул. Конституции СССР",
@@ -124,5 +126,11 @@ test("Russian Post client requests only official address normalization", async (
   assert.equal(requests[0].options.headers["X-User-Authorization"], "Basic encoded-user-key");
   assert.deepEqual(JSON.parse(requests[0].options.body), [{
     id: "1", "original-address": "460044, Оренбург, Лесная 5",
+  }]);
+  assert.deepEqual(await client.normalizeAddress({
+    city: "Оренбург", postalCode: "", address: "Лесная 5, кв. 73",
+  }), { city: "Оренбург", postalCode: "460044", address: "улица Лесная, д. 5, кв. 73" });
+  assert.deepEqual(JSON.parse(requests[1].options.body), [{
+    id: "1", "original-address": "Оренбург, Лесная 5, кв. 73",
   }]);
 });
