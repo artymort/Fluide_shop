@@ -87,14 +87,14 @@
     setText("#gifts .gift-card > span", content.gifts?.cardText);
     setText("#gifts .gift-card > small", content.gifts?.cardCaption);
 
-    toggleSection("#brand", content.brand);
-    setText("#brand .plain-label", content.brand?.label);
-    setText("#brand h2", content.brand?.title);
-    const brandParagraphs = document.querySelectorAll("#brand .brand-copy > p:not(.plain-label)");
+    toggleSection("#home-brand", content.brand);
+    setText("#home-brand .plain-label", content.brand?.label);
+    setText("#home-brand h2", content.brand?.title);
+    const brandParagraphs = document.querySelectorAll("#home-brand .brand-copy > p:not(.plain-label)");
     if (brandParagraphs[0]) brandParagraphs[0].textContent = content.brand?.text || "";
     if (brandParagraphs[1]) brandParagraphs[1].textContent = content.brand?.secondaryText || "";
-    setLink("#brand .pill", content.brand?.buttonLabel, content.brand?.buttonUrl);
-    setImage("#brand .brand-photo img", content.brand?.image, content.brand?.imageAlt);
+    setLink("#home-brand .pill", content.brand?.buttonLabel, content.brand?.buttonUrl);
+    setImage("#home-brand .brand-photo img", content.brand?.image, content.brand?.imageAlt);
 
     toggleSection("#voices", content.voices);
     setText("#voices .section-head h2", content.voices?.title);

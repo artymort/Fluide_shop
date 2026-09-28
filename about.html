@@ -3,36 +3,128 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="О парфюмерном бренде FLUIDE Atelier из Владимира.">
+  <meta name="description" content="FLUIDE Atelier — парфюмерный бренд из Владимира. Ароматы для человека, дома и повседневных ритуалов.">
   <title>О компании — FLUIDE Atelier</title>
   <link rel="icon" href="icon_fluide_site.svg?v=1" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=perf-v1">
-  <link rel="stylesheet" href="site-colors.css?v=neutral-text-v14">
+  <link rel="stylesheet" href="catalog-page.css?v=unified-header-v1">
+  <link rel="stylesheet" href="about-page.css?v=about-v42">
+  <link rel="stylesheet" href="cart-drawer-shared.css?v=cart-v1">
+  <link rel="stylesheet" href="site-colors.css?v=neutral-text-v15">
+  <link rel="stylesheet" href="checkout.css?v=payment-flow-v1">
   <link rel="stylesheet" href="site-performance.css?v=perf-v2">
+  <script src="site-icons.js?v=local-v1" defer></script>
+  <script src="auth-session.js?v=vk-auth-v1" defer></script>
   <script src="catalog-data.js?v=perf-v2" defer></script>
   <script src="site-performance.js?v=perf-v2" defer></script>
+  <script src="promotion.js?v=cart-footer-v2" defer></script>
+  <script src="about-page.js?v=about-v2" defer></script>
+  <script src="checkout.js?v=payment-flow-v1" defer></script>
   <script src="analytics.js?v=analytics-v2" defer></script>
 </head>
-<body>
-  <header class="site-header" id="top">
-    <div class="header-main shell">
-      <nav class="desktop-main-nav" aria-label="Основная навигация">
-        <a href="index.html">Главная</a><a href="catalog.html">Каталог</a><a href="index.html#offers">Предложения</a><a href="selection.html">Подбор аромата</a><a class="is-active" href="about.html">О нас</a><a href="index.html#contacts">Контакты</a>
+<body class="about-page">
+  <a class="skip" href="#about-main">К содержимому</a>
+
+  <div class="service">
+    <button type="button" data-service="-1" aria-label="Предыдущее объявление"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg></button>
+    <span id="service-message">Доставка по России · бесплатно от 5 000 ₽</span>
+    <button type="button" data-service="1" aria-label="Следующее объявление"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
+  </div>
+
+  <header class="catalog-header" id="top">
+    <div class="header-inner shell">
+      <a class="brand-logo" href="index.html#top" aria-label="FLUIDE Atelier — на главную"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a>
+      <nav class="desktop-nav" aria-label="Основная навигация">
+        <a href="catalog.html">Каталог</a>
+        <a href="index.html#offers">Предложения</a>
+        <a href="selection.html">Подбор аромата</a>
+        <a class="is-active" href="about.html" aria-current="page">О нас</a>
+        <a href="#contacts">Контакты</a>
       </nav>
-      <a class="brand-logo" href="index.html" aria-label="FLUIDE Atelier — на главную"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a>
-        <a class="text-link about-header-action" href="catalog.html">Открыть каталог <svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-up-right"></use></svg></a>
+      <div class="header-actions">
+        <button class="login-button" type="button" data-account aria-label="Открыть личный кабинет"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#user"></use></svg><span>Кабинет</span></button>
+        <button class="header-icon focus-search" type="button" aria-label="Поиск"><svg><use href="assets/icons/lucide.svg#search"></use></svg></button>
+        <button class="header-icon favorites-button" type="button" aria-label="Избранное"><svg><use href="assets/icons/lucide.svg#heart"></use></svg></button>
+        <button class="header-icon cart-button" type="button" aria-label="Открыть корзину"><svg><use href="assets/icons/lucide.svg?v=cart-v1#shopping-cart"></use></svg><span class="cart-count" hidden></span></button>
+        <button class="menu-toggle" type="button" aria-controls="mobile-nav" aria-expanded="false" aria-label="Открыть меню"><svg><use href="assets/icons/lucide.svg#menu"></use></svg></button>
+      </div>
     </div>
+    <nav class="mobile-nav" id="mobile-nav" aria-label="Мобильная навигация">
+      <a href="catalog.html">Каталог</a><a href="index.html#offers">Предложения</a><a href="selection.html">Подбор аромата</a><a href="about.html" aria-current="page">О нас</a><a href="#contacts">Контакты</a>
+    </nav>
   </header>
-  <main class="about-page">
-    <section class="about-page-hero shell">
-      <div class="about-page-copy"><h1>FLUIDE Atelier</h1><p>Парфюмерный бренд из Владимира, созданный вокруг эмоций, атмосферы и личных ароматических ритуалов.</p></div>
-      <img src="IMG_7435.webp?v=1" alt="Фирменный корнер FLUIDE Atelier" decoding="async">
+
+  <main id="about-main">
+    <section class="about-intro" aria-labelledby="about-title">
+      <div class="about-intro-inner shell">
+        <div class="about-intro-grid">
+          <div class="about-intro-heading">
+            <h1 id="about-title">О нас</h1>
+          </div>
+          <div class="about-intro-copy">
+            <p>Создаём парфюм, ароматы для дома и автомобиля, уходовые продукты и подарки.</p>
+          </div>
+        </div>
+      </div>
     </section>
-    <section class="about-page-story shell">
-      <h2>Ароматы для человека и пространства</h2>
-      <div><p>Мы создаем парфюм, уходовую косметику, ароматы для дома и автомобиля. Каждый продукт проходит ручную сборку и контроль качества.</p><p>FLUIDE соединяет понятные форматы, выразительные композиции и визуальную эстетику, которую хочется сделать частью повседневной жизни.</p></div>
+
+    <section class="about-story shell" id="approach" aria-labelledby="about-story-title">
+      <h2 id="about-story-title">Fluide — локальный парфюмерный бренд из Владимира.</h2>
+      <div class="about-story-copy">
+        <p>Создаём парфюм, ароматы для дома и автомобиля, уходовые продукты и подарки. Работаем небольшими партиями и собираем продукцию вручную.</p>
+      </div>
     </section>
-    <section class="about-page-gallery shell"><img src="IMG_7434.webp?v=1" alt="Корнер FLUIDE Atelier сбоку" loading="lazy" decoding="async"><img src="IMG_7436.webp?v=1" alt="Ассортимент FLUIDE Atelier" loading="lazy" decoding="async"></section>
+
+    <section class="about-values shell" aria-label="О бренде Fluide">
+      <article><h3>Своя коллекция</h3><p>Разрабатываем парфюмерные композиции и продукты для повседневных ароматических ритуалов.</p></article>
+      <article><h3>Сделано во Владимире</h3><p>Тестируем формулы, производим и собираем каждую партию здесь, в нашем городе.</p></article>
+      <article><h3>Пространство Fluide</h3><p>Знакомим с ароматами лично, помогаем сравнить их и проводим парфюмерные мастер-классы.</p></article>
+    </section>
+
+    <section class="about-making shell" aria-labelledby="about-making-title">
+      <div class="about-making-copy">
+        <h2 id="about-making-title">Небольшие партии. Ручная работа.</h2>
+        <p>Каждая композиция проходит несколько этапов: от идеи и первых проб до точной формулы и готового продукта.</p>
+        <p>Так мы можем сохранять внимание к деталям и отвечать за результат на каждом этапе.</p>
+      </div>
+      <div class="about-making-photo"><img src="assets/editorial/perfume-workshop.webp?v=1" alt="Создание аромата в мастерской FLUIDE" loading="lazy" decoding="async"></div>
+    </section>
+
+    <section class="about-place shell" id="space" aria-labelledby="about-space-title">
+      <div class="about-place-copy">
+        <h2 id="about-space-title">Место, где аромат можно услышать.</h2>
+        <p>В нашем пространстве во Владимире можно не спешить: познакомиться с коллекцией, сравнить композиции и найти ту, к которой захочется возвращаться.</p>
+        <p>Здесь же проходят мастер-классы, на которых можно познакомиться с нотами и собрать личную композицию.</p>
+        <address class="about-place-address">г. Владимир, проспект Строителей, 9Б, ТЦ «Черемушки»</address>
+        <a class="about-button" href="#contacts">Связаться с нами <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></a>
+      </div>
+      <div class="about-place-photos">
+        <img src="IMG_7434.webp?v=1" alt="Корнер FLUIDE Atelier" loading="lazy" decoding="async">
+      </div>
+    </section>
+
+    <section class="about-closing shell">
+      <p>Ваша история может начаться с одного аромата.</p>
+      <a class="about-button" href="catalog.html">Перейти в каталог <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></a>
+    </section>
   </main>
+
+  <footer class="catalog-footer shell" id="contacts">
+    <a href="index.html#top" class="footer-logo"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a>
+    <div><h3>Коллекции</h3><a href="catalog.html?section=perfume">Парфюм</a><a href="catalog.html?section=home">Для дома</a><a href="index.html#gifts">Подарки</a></div>
+    <div><h3>О бренде</h3><a href="about.html">О компании</a><a href="#space">Пространство во Владимире</a><a href="#about-making-title">Мастер-классы</a></div>
+    <div><h3>Покупателям</h3><button type="button" data-info="delivery">Доставка и оплата</button><button type="button" data-info="contacts">Связаться с нами</button><button type="button" data-info="privacy">Персональные данные</button></div>
+    <div class="footer-bottom"><span>© FLUIDE Atelier, 2026</span><span>Сделано с чувством.</span><button type="button" data-cookie-settings>Настройки cookie</button></div>
+  </footer>
+
+  <div class="drawer-backdrop"></div>
+  <aside class="cart-drawer" aria-hidden="true" aria-label="Корзина">
+    <div class="drawer-head"><h2>Корзина</h2><button class="drawer-close" type="button" aria-label="Закрыть корзину"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div>
+    <div class="cart-items"></div>
+    <div class="cart-footer" hidden><div><span>Итого</span><strong class="cart-total"></strong></div><button class="checkout-button" type="button">Оформить заказ</button></div>
+  </aside>
+
+  <dialog class="info-dialog" id="info-dialog"><div class="dialog-head"><h2 class="info-title"></h2><button class="info-close" type="button" aria-label="Закрыть"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="info-content"></div></dialog>
+  <div class="cookie" hidden><p>Используем cookie для корзины<br>и анонимной статистики.</p><button type="button" data-cookie-accept>Хорошо</button></div>
+  <div class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

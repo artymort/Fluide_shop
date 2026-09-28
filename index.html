@@ -5,18 +5,19 @@
 <title>FLUIDE Atelier — ароматы для жизни</title>
 <link rel="icon" href="icon_fluide_site.svg?v=1" type="image/svg+xml">
 <meta name="description" content="FLUIDE — парфюмерный бренд из Владимира. Парфюм, ароматы для дома, подарки и персональный подбор.">
+<script>if(location.hash==="#brand")location.replace("about.html");</script>
 <link rel="preload" as="image" type="image/webp" href="assets/media/hero-fluide-product-studio-blue-desktop-v1.webp?v=1" media="(min-width: 701px)">
 <link rel="preload" as="image" type="image/webp" href="assets/media/hero-woman-product-family-blue-mobile-v1.webp?v=1" media="(max-width: 700px)">
-<link rel="stylesheet" href="home-atelier.css?v=side-sheets-v2">
+<link rel="stylesheet" href="home-atelier.css?v=unified-header-v1">
 <link rel="stylesheet" href="cart-drawer-shared.css?v=cart-v1">
 <link rel="stylesheet" href="site-colors.css?v=neutral-text-v14">
 <link rel="stylesheet" href="checkout.css?v=payment-flow-v1">
-<link rel="stylesheet" href="site-performance.css?v=perf-v2">
+<link rel="stylesheet" href="site-performance.css?v=anchor-cleanup-v1">
 <script src="auth-session.js?v=vk-auth-v1" defer></script>
 <script src="catalog-data.js?v=perf-v2" defer></script>
 <script src="site-performance.js?v=perf-v2" defer></script>
 <script src="promotion.js?v=cart-footer-v2" defer></script>
-<script src="home-content.js?v=cms-content-v2" defer></script>
+<script src="home-content.js?v=anchor-cleanup-v1" defer></script>
 <script src="home-atelier.js?v=perf-v4" defer></script>
 <script src="checkout.js?v=payment-flow-v1" defer></script>
 <script src="analytics.js?v=analytics-v2" defer></script>
@@ -44,7 +45,7 @@
 <div class="service"><button data-service="-1" aria-label="Предыдущее объявление"><svg><use href="#arrow-left"/></svg></button><span id="service-message">Доставка по России · бесплатно от 5 000 ₽</span><button data-service="1" aria-label="Следующее объявление"><svg><use href="#arrow-right"/></svg></button></div>
 <header class="header">
 <a class="logo" href="index.html" aria-label="FLUIDE Atelier — главная"><img src="assets/brand/logo-white.svg" alt="FLUIDE Atelier"></a>
-<nav class="nav" aria-label="Главная навигация"><a href="catalog.html">Каталог</a><a href="#offers">Предложения</a><a href="selection.html">Подбор аромата</a><a href="#brand">О нас</a><a href="#contacts">Контакты</a></nav>
+<nav class="nav" aria-label="Главная навигация"><a href="catalog.html">Каталог</a><a href="#offers">Предложения</a><a href="selection.html">Подбор аромата</a><a href="about.html">О нас</a><a href="#contacts">Контакты</a></nav>
 <div class="header-tools"><button class="login-button" data-open="login" aria-label="Войти или зарегистрироваться"><svg aria-hidden="true"><use href="#user"/></svg><span>Войти</span></button><button class="icon-btn" data-open="search" aria-label="Поиск"><svg><use href="#search"/></svg></button><button class="icon-btn" data-open="favorites" aria-label="Избранное"><svg><use href="#heart"/></svg></button><button class="icon-btn bag-button" data-open="cart" aria-label="Корзина"><svg><use href="#shopping-cart"/></svg><span id="cart-count" hidden></span></button><button class="icon-btn menu-button" data-open="menu" aria-label="Открыть меню"><svg><use href="#menu"/></svg></button></div>
 </header>
 <main id="main">
@@ -76,7 +77,7 @@
 <div class="finder-visual"><img src="assets/media/finder-selection-blue-4k-v1.webp?v=1" alt="Коллекция ароматов для персонального подбора FLUIDE" loading="lazy" decoding="async"></div>
 </section>
 <section class="gifts section" id="gifts"><div class="gift-art" aria-label="Подарочный сертификат FLUIDE"><div class="gift-envelope"></div><div class="gift-card"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"><span>Для ваших<br>новых ощущений.</span><small>Подарочный сертификат</small></div></div><div class="gift-copy"><h2>Красиво дарить.<br>Приятно выбирать.</h2><p>Сертификат оставляет выбор за близким человеком. Набор ароматов превращает этот выбор в маленькое открытие.</p><div class="gift-options"><button data-gift="Электронный сертификат">Электронный сертификат <svg aria-hidden="true"><use href="#arrow-up-right"/></svg></button><button data-gift="Физический сертификат">Сертификат в конверте <svg aria-hidden="true"><use href="#arrow-up-right"/></svg></button><a href="catalog.html">Подарочные наборы <svg aria-hidden="true"><use href="#arrow-up-right"/></svg></a></div></div></section>
-<section class="brand section" id="brand"><div class="brand-photo"><img src="IMG_7435.webp?v=1" alt="Пространство FLUIDE Atelier во Владимире" loading="lazy" decoding="async"></div><div class="brand-copy"><p class="plain-label">О FLUIDE Atelier</p><h2>Ближе,<br>чем кажется.</h2><p>Мы — парфюмерный бренд из Владимира. Создаем ароматы для человека и пространства и помогаем найти тот, с которым хорошо именно вам.</p><p>Приходите знакомиться, пробовать новое и открывать мир ароматов на наших мастер-классах.</p><a class="pill outline" href="about.html">Подробнее о компании <svg aria-hidden="true"><use href="#arrow-up-right"/></svg></a></div></section>
+<section class="brand section" id="home-brand"><div class="brand-photo"><img src="IMG_7435.webp?v=1" alt="Пространство FLUIDE Atelier во Владимире" loading="lazy" decoding="async"></div><div class="brand-copy"><p class="plain-label">О FLUIDE Atelier</p><h2>Ближе,<br>чем кажется.</h2><p>Мы — парфюмерный бренд из Владимира. Создаем ароматы для человека и пространства и помогаем найти тот, с которым хорошо именно вам.</p><p>Приходите знакомиться, пробовать новое и открывать мир ароматов на наших мастер-классах.</p><a class="pill outline" href="about.html">Подробнее о компании <svg aria-hidden="true"><use href="#arrow-up-right"/></svg></a></div></section>
 <section class="voices section" id="voices"><div class="section-head"><h2>О FLUIDE говорят</h2><span>Люди, встречи и любовь к ароматам.</span></div><div class="voice-grid">
 <article><div class="voice-photo"><img src="assets/editorial/expert-perfume.webp?v=1" alt="Знакомство с парфюмом" loading="lazy" decoding="async"></div><div class="voice-text"><span>Личный взгляд</span><h3>Аромат как часть образа</h3><p>Разговор о нотах, впечатлениях и собственном выборе.</p></div></article>
 <article class="voice-middle"><div class="voice-photo"><img src="assets/editorial/perfume-workshop.webp?v=1" alt="Парфюмерные материалы и ручная работа" loading="lazy" decoding="async"></div><div class="voice-text"><span>За кулисами</span><h3>От идеи до флакона</h3><p>Материалы и детали, из которых рождается композиция.</p></div></article>
