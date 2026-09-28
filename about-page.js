@@ -116,7 +116,6 @@ aboutCartItems.addEventListener("click", event => {
 });
 document.addEventListener("keydown", event => { if (event.key === "Escape" && aboutCartDrawer.classList.contains("is-open")) closeAboutCart(); });
 
-document.querySelector("[data-account]").addEventListener("click", () => { window.location.href = "account.html"; });
 document.querySelector(".focus-search").addEventListener("click", () => { window.location.href = "catalog.html#catalog-search"; });
 document.querySelector(".favorites-button").addEventListener("click", () => { window.location.href = "account.html#favorites"; });
 aboutMenuToggle.addEventListener("click", () => {
@@ -131,13 +130,6 @@ aboutMobileNav.querySelectorAll("a").forEach(link => link.addEventListener("clic
 document.querySelectorAll("[data-info]").forEach(button => button.addEventListener("click", () => openAboutInfo(button.dataset.info)));
 document.querySelector(".info-close").addEventListener("click", () => aboutInfoDialog.close());
 aboutInfoDialog.addEventListener("click", event => { if (event.target === aboutInfoDialog) aboutInfoDialog.close(); });
-
-const aboutNotices = ["Доставка по России · бесплатно от 5 000 ₽", "Три любимых аромата по цене двух", "Откройте свой аромат с FLUIDE"];
-let aboutNoticeIndex = 0;
-document.querySelectorAll("[data-service]").forEach(button => button.addEventListener("click", () => {
-  aboutNoticeIndex = (aboutNoticeIndex + Number(button.dataset.service) + aboutNotices.length) % aboutNotices.length;
-  document.querySelector("#service-message").textContent = aboutNotices[aboutNoticeIndex];
-}));
 
 const aboutCookie = document.querySelector(".cookie");
 try { aboutCookie.hidden = localStorage.getItem("fluide-cookie-consent") === "accepted"; } catch { aboutCookie.hidden = false; }

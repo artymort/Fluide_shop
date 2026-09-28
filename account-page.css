@@ -9,7 +9,7 @@
 .account-breadcrumb a{color:#171717}
 .account-shell{display:grid;grid-template-columns:230px minmax(0,1fr);column-gap:42px;align-items:start}
 
-.account-sidebar{position:sticky;top:128px;grid-column:1;min-width:0}
+.account-sidebar{position:sticky;top:96px;grid-column:1;min-width:0}
 .account-nav{display:grid;gap:4px}
 .account-nav button{display:flex;width:100%;min-height:48px;align-items:center;gap:13px;padding:0 12px;border-radius:10px;color:#242424;font-size:15px;text-align:left;transition:background .18s ease,color .18s ease}
 .account-nav button:hover{background:#fff}

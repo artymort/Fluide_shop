@@ -123,8 +123,6 @@ function restartHero(){clearTimeout(heroTimer)}
 function pauseHero(value){paused=value;$("[data-hero-pause]").textContent=paused?"▶":"Ⅱ";$("[data-hero-pause]").setAttribute("aria-label",paused?"Запустить слайдер":"Остановить слайдер");restartHero()}
 $(".hero").addEventListener("mouseenter",()=>clearTimeout(heroTimer));$(".hero").addEventListener("mouseleave",restartHero);$(".hero").addEventListener("focusin",()=>clearTimeout(heroTimer));$(".hero").addEventListener("focusout",restartHero);document.addEventListener("visibilitychange",restartHero);
 window.addEventListener("scroll",()=>$(".header").classList.toggle("scrolled",scrollY>60),{passive:true});
-const notices=["Доставка по России · бесплатно от 5 000 ₽","Три любимых аромата по цене двух","Откройте свой аромат с FLUIDE"];let notice=0;
-$$("[data-service]").forEach(b=>b.onclick=()=>{notice=(notice+Number(b.dataset.service)+notices.length)%notices.length;$("#service-message").textContent=notices[notice]});
 const stories=[
  ["Cherry 33","Спелая вишня, яркое начало и теплый след.","assets/media/fluide-editorial-stilllife-v1.webp?v=1","catalog.html","Открыть коллекцию"],
  ["Три аромата. Ваш выбор.","Соберите личный набор по предложению 2+1.","assets/media/category-perfume-studio-v1.webp?v=1","catalog.html","Выбрать ароматы"],

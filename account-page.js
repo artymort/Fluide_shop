@@ -619,13 +619,6 @@ function initAccountPage(initialAccount) {
     menuToggle.setAttribute("aria-expanded", String(open));
   });
 
-  const notices = ["Доставка по России · бесплатно от 5 000 ₽", "Три любимых аромата по цене двух", "Откройте свой аромат с FLUIDE"];
-  let notice = 0;
-  document.querySelectorAll("[data-service]").forEach((button) => button.addEventListener("click", () => {
-    notice = (notice + Number(button.dataset.service) + notices.length) % notices.length;
-    document.querySelector("#service-message").textContent = notices[notice];
-  }));
-
   applyLoyaltyTheme(localStorage.getItem("fluide-loyalty-theme") || "cobalt", false);
   loadOrders();
   activateTab(location.hash.replace("#", "") || "overview", false);

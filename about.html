@@ -6,30 +6,24 @@
   <meta name="description" content="FLUIDE Atelier — парфюмерный бренд из Владимира. Ароматы для человека, дома и повседневных ритуалов.">
   <title>О компании — FLUIDE Atelier</title>
   <link rel="icon" href="icon_fluide_site.svg?v=1" type="image/svg+xml">
-  <link rel="stylesheet" href="catalog-page.css?v=unified-header-v1">
-  <link rel="stylesheet" href="about-page.css?v=about-v42">
+  <link rel="stylesheet" href="catalog-page.css?v=header-only-v1">
+  <link rel="stylesheet" href="about-page.css?v=header-auth-v1">
   <link rel="stylesheet" href="cart-drawer-shared.css?v=cart-v1">
   <link rel="stylesheet" href="site-colors.css?v=neutral-text-v15">
   <link rel="stylesheet" href="checkout.css?v=payment-flow-v1">
   <link rel="stylesheet" href="site-performance.css?v=perf-v2">
   <link rel="stylesheet" href="site-theme-black.css?v=1">
   <script src="site-icons.js?v=local-v1" defer></script>
-  <script src="auth-session.js?v=vk-auth-v1" defer></script>
+  <script src="auth-session.js?v=auth-backdrop-v1" defer></script>
   <script src="catalog-data.js?v=perf-v2" defer></script>
   <script src="site-performance.js?v=perf-v2" defer></script>
   <script src="promotion.js?v=cart-footer-v2" defer></script>
-  <script src="about-page.js?v=about-v2" defer></script>
+  <script src="about-page.js?v=header-auth-v1" defer></script>
   <script src="checkout.js?v=payment-flow-v1" defer></script>
   <script src="analytics.js?v=analytics-v2" defer></script>
 </head>
 <body class="about-page">
   <a class="skip" href="#about-main">К содержимому</a>
-
-  <div class="service">
-    <button type="button" data-service="-1" aria-label="Предыдущее объявление"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg></button>
-    <span id="service-message">Доставка по России · бесплатно от 5 000 ₽</span>
-    <button type="button" data-service="1" aria-label="Следующее объявление"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></button>
-  </div>
 
   <header class="catalog-header" id="top">
     <div class="header-inner shell">
@@ -42,7 +36,7 @@
         <a href="#contacts">Контакты</a>
       </nav>
       <div class="header-actions">
-        <button class="login-button" type="button" data-account aria-label="Открыть личный кабинет"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#user"></use></svg><span>Кабинет</span></button>
+        <button class="login-button" type="button" data-login aria-label="Войти или зарегистрироваться"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#user"></use></svg><span>Войти</span></button>
         <button class="header-icon focus-search" type="button" aria-label="Поиск"><svg><use href="assets/icons/lucide.svg#search"></use></svg></button>
         <button class="header-icon favorites-button" type="button" aria-label="Избранное"><svg><use href="assets/icons/lucide.svg#heart"></use></svg></button>
         <button class="header-icon cart-button" type="button" aria-label="Открыть корзину"><svg><use href="assets/icons/lucide.svg?v=cart-v1#shopping-cart"></use></svg><span class="cart-count" hidden></span></button>
@@ -125,6 +119,7 @@
   </aside>
 
   <dialog class="info-dialog" id="info-dialog"><div class="dialog-head"><h2 class="info-title"></h2><button class="info-close" type="button" aria-label="Закрыть"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="info-content"></div></dialog>
+  <dialog class="account-dialog" id="account-dialog"><div class="account-dialog-head"><h2>Личный кабинет</h2><button type="button" data-account-close aria-label="Закрыть"><svg><use href="assets/icons/lucide.svg#x"></use></svg></button></div><div class="account-dialog-body" id="account-dialog-body"></div></dialog>
   <div class="cookie" hidden><p>Используем cookie для корзины<br>и анонимной статистики.</p><button type="button" data-cookie-accept>Хорошо</button></div>
   <div class="toast" role="status" aria-live="polite"></div>
 </body>

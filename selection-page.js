@@ -373,13 +373,6 @@ menuToggle.addEventListener("click", () => {
   menuToggle.setAttribute("aria-expanded", String(open));
 });
 
-const serviceMessages = ["Доставка по России · бесплатно от 5 000 ₽", "Три любимых аромата по цене двух", "Откройте свой аромат с FLUIDE"];
-let serviceIndex = 0;
-document.querySelectorAll("[data-service]").forEach((button) => button.addEventListener("click", () => {
-  serviceIndex = (serviceIndex + Number(button.dataset.service) + serviceMessages.length) % serviceMessages.length;
-  document.querySelector("#service-message").textContent = serviceMessages[serviceIndex];
-}));
-
 const pageHeader = document.querySelector(".catalog-header");
 window.addEventListener("scroll", () => pageHeader.classList.toggle("scrolled", scrollY > 60), { passive: true });
 

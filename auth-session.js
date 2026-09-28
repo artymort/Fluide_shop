@@ -315,6 +315,14 @@
 
   function init() {
     updateHeaderAuth();
+    const accountDialog = document.querySelector("#account-dialog");
+    accountDialog?.addEventListener("click", (event) => {
+      if (event.target !== accountDialog) return;
+      const bounds = accountDialog.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
+        closeAuth(accountDialog);
+      }
+    });
     document.querySelectorAll("dialog").forEach((dialog) => dialog.addEventListener("close", () => {
       if (!document.querySelector("dialog[open]")) {
         document.body.classList.remove("is-locked");

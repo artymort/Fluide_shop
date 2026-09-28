@@ -18,7 +18,7 @@
 .price-ruble{font-family:inherit;font-size:1em;font-style:inherit;font-weight:500;letter-spacing:inherit;line-height:inherit;vertical-align:baseline;-webkit-text-stroke:.15px currentColor}
 
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:110px;scrollbar-gutter:stable}
+html{scroll-behavior:smooth;scroll-padding-top:80px;scrollbar-gutter:stable}
 body{margin:0;background:#fff;color:var(--ink);font:400 15px/1.5 Onest,Arial,sans-serif}
 body.is-locked{overflow:hidden}
 a{color:inherit;text-decoration:none}
@@ -41,7 +41,7 @@ fieldset{border:0;padding:0;margin:0}
 .service button{display:grid;place-items:center;width:36px;height:26px;color:#fff}
 .service svg{width:15px;height:15px}
 
-.catalog-header{position:sticky;top:32px;z-index:50;height:76px;background:#fff;border-bottom:1px solid var(--line);transition:height .25s}
+.catalog-header{position:sticky;top:0;z-index:50;height:76px;background:#fff;border-bottom:1px solid var(--line);transition:height .25s}
 .catalog-header.scrolled{height:76px}
 .header-inner{height:100%;display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
 .brand-logo{width:128px;justify-self:start}
@@ -113,7 +113,7 @@ fieldset{border:0;padding:0;margin:0}
 .active-chip{display:flex;min-height:32px;flex:0 0 auto;align-items:center;gap:10px;padding:6px 10px;background:#e8eef8;color:var(--blue);font-size:12px}.active-chip svg{width:15px;height:15px}
 
 .catalog-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:14px;padding-top:24px;align-items:start}
-.filter-panel{position:sticky;top:104px;height:var(--filter-panel-height,calc(100dvh - 120px));padding-right:12px;overflow-y:scroll;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:rgba(67,72,101,.42) rgba(67,72,101,.07)}
+.filter-panel{position:sticky;top:80px;height:var(--filter-panel-height,calc(100dvh - 96px));padding-right:12px;overflow-y:scroll;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:rgba(67,72,101,.42) rgba(67,72,101,.07)}
 .filter-panel::-webkit-scrollbar{width:5px}
 .filter-panel::-webkit-scrollbar-thumb{background:rgba(67,72,101,.42)}
 .filter-panel::-webkit-scrollbar-track{background:rgba(67,72,101,.07)}

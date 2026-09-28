@@ -350,7 +350,7 @@ function focusLoadedSelectionResults(){
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     const target=document.querySelector("#catalog-results");
     if(!target)return;
-    const stickyOffset=document.querySelector(".service").offsetHeight+catalogHeader.offsetHeight+20;
+    const stickyOffset=catalogHeader.offsetHeight+20;
     const targetTop=window.scrollY+target.getBoundingClientRect().top-stickyOffset;
     window.scrollTo({top:Math.max(0,targetTop),behavior:"auto"});
   }));
@@ -641,10 +641,6 @@ document.querySelector(".info-close").addEventListener("click",()=>infoDialog.cl
 cartItems.addEventListener("click",event=>{const quantityButton=event.target.closest("[data-cart-index]");if(quantityButton){const row=cart[Number(quantityButton.dataset.cartIndex)];if(row){row.quantity=(Number(row.quantity)||0)+Number(quantityButton.dataset.cartDelta);cart=cart.filter(item=>item.quantity>0);saveCart();renderCart()}return}const button=event.target.closest("[data-remove-cart]");if(!button)return;cart=cart.filter(item=>item.id!==button.dataset.removeCart);saveCart();renderCart()});
 document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;closeFilter();closeCart()});
 document.querySelectorAll("[data-info]").forEach(button=>button.addEventListener("click",()=>openInfo(button.dataset.info)));
-
-const serviceMessages=["Доставка по России · бесплатно от 5 000 ₽","Три любимых аромата по цене двух","Откройте свой аромат с FLUIDE"];
-let serviceIndex=0;
-document.querySelectorAll("[data-service]").forEach(button=>button.addEventListener("click",()=>{serviceIndex=(serviceIndex+Number(button.dataset.service)+serviceMessages.length)%serviceMessages.length;document.querySelector("#service-message").textContent=serviceMessages[serviceIndex]}));
 
 const cookie=document.querySelector(".cookie");
 try{cookie.hidden=localStorage.getItem("fluide-cookie-consent")==="accepted"}catch{cookie.hidden=false}

@@ -1,7 +1,7 @@
 .selection-page{background:#fff}
 .selection-page .catalog-header{box-shadow:none}
 .selection-main{border-bottom:1px solid var(--line)}
-.selection-shell{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(360px,.82fr);min-height:calc(100dvh - 108px)}
+.selection-shell{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(360px,.82fr);min-height:calc(100dvh - 76px)}
 .selection-workspace{display:flex;min-width:0;flex-direction:column;padding:58px clamp(44px,5vw,82px) 58px 0}
 .selection-progress-row{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:14px}
 .selection-progress-label{color:var(--blue)}

@@ -11,7 +11,7 @@
 
 .about-page .catalog-header { box-shadow: none; }
 .about-page main { overflow: hidden; }
-.about-page h1, .about-page h2, .about-page h3, .about-page p { margin: 0; text-align: left; }
+.about-page main :where(h1, h2, h3, p) { margin: 0; text-align: left; }
 .about-page figure { margin-block: 0; }
 .about-page img { display: block; max-width: 100%; }
 .about-page a { text-decoration: none; }
@@ -104,7 +104,7 @@
   padding-bottom: clamp(90px, 10vw, 150px);
 }
 
-.about-place-copy { position: sticky; top: 135px; }
+.about-place-copy { position: sticky; top: 103px; }
 .about-place-copy h2 { font-size: clamp(36px, 4vw, 62px); font-weight: 400; line-height: 1; letter-spacing: -.045em; }
 .about-place-copy p { max-width: 520px; margin-top: 28px; color: var(--about-muted); font-size: 15px; line-height: 1.7; }
 .about-place-copy p + p { margin-top: 16px; }

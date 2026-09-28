@@ -475,10 +475,6 @@ document.querySelectorAll("[data-info]").forEach(button=>button.addEventListener
 document.querySelector(".info-close").addEventListener("click",()=>infoDialog.close());
 infoDialog.addEventListener("click",event=>{if(event.target===infoDialog)infoDialog.close()});
 
-const serviceMessages=["Доставка по России · бесплатно от 5 000 ₽","Три любимых аромата по цене двух","Откройте свой аромат с FLUIDE"];
-let serviceIndex=0;
-document.querySelectorAll("[data-service]").forEach(button=>button.addEventListener("click",()=>{serviceIndex=(serviceIndex+Number(button.dataset.service)+serviceMessages.length)%serviceMessages.length;document.querySelector("#service-message").textContent=serviceMessages[serviceIndex]}));
-
 function syncHeaderHeight(){catalogHeader.classList.toggle("scrolled",scrollY>60)}
 window.addEventListener("scroll",syncHeaderHeight,{passive:true});
 syncHeaderHeight();
