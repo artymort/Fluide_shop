@@ -29,6 +29,7 @@
   .account-page .account-support-card a,
   .account-page .account-empty a,
   .account-page .account-orders-error button,
+  .about-page .about-button,
   .checkout-page .checkout-submit,
   .checkout-page .checkout-success > a,
   .checkout-page .checkout-empty > a,
@@ -72,6 +73,7 @@
   .account-page .account-support-card a,
   .account-page .account-empty a,
   .account-page .account-orders-error button,
+  .about-page .about-button,
   .checkout-page .checkout-submit,
   .checkout-page .checkout-success > a,
   .checkout-page .checkout-empty > a,
@@ -113,6 +115,7 @@
   .account-page .account-support-card a,
   .account-page .account-empty a,
   .account-page .account-orders-error button,
+  .about-page .about-button,
   .checkout-page .checkout-submit,
   .checkout-page .checkout-success > a,
   .checkout-page .checkout-empty > a,
@@ -126,7 +129,7 @@
 .volume-option.is-active small,
 .catalog-page .volume-option.is-active small { color: inherit !important; }
 
-/* White actions on dark panels turn black on hover. */
+/* White actions on dark panels turn blue on hover. */
 :is(
   .home-page .promo .pill.light,
   .home-page .finder-copy .pill.light,
@@ -146,8 +149,8 @@
   .home-page .hero .pill.light,
   .account-page .account-loyalty-detail .account-primary-link
 ):not(:disabled):is(:hover, :focus-visible) {
-  border-color: #000 !important;
-  background: #000 !important;
+  border-color: var(--site-action, #373863) !important;
+  background: var(--site-action, #373863) !important;
   color: #fff !important;
 }
 
@@ -163,3 +166,15 @@
 }
 
 .home-page .hero-copy .pill.light::before { display: none !important; }
+
+/* The first sign-in step is an outlined button, not a black-text control. */
+.auth-panel:not(.auth-panel--phone) .auth-phone-button {
+  border-color: var(--site-action, #373863) !important;
+  background: #fff !important;
+  color: var(--site-action, #373863) !important;
+}
+
+.auth-panel:not(.auth-panel--phone) .auth-phone-button:not(:disabled):is(:hover, :focus-visible) {
+  background: var(--site-action, #373863) !important;
+  color: #fff !important;
+}
