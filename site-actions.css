@@ -1,0 +1,165 @@
+/* Preserve the original blue and grey palette while keeping action states consistent. */
+:is(
+  .button--dark,
+  .pill.dark,
+  .add-button,
+  .button-outline,
+  .apply-filters,
+  .selection-return-action,
+  .selection-next,
+  .product-add,
+  .related-card-add,
+  .product-error a,
+  .product-review-form > button,
+  .product-reviews-empty button,
+  .volume-option.is-active,
+  .catalog-page .catalog-category.is-active,
+  .cart-footer > button,
+  .cart-summary-checkout,
+  .cookie button,
+  .search-form button,
+  .subscribe-form button,
+  .filter.is-active,
+  .favorite.is-active,
+  .auth-panel--phone .auth-phone-button,
+  .account-page .account-primary-button,
+  .account-page .account-primary-link,
+  .account-page .account-light-button,
+  .account-page .account-save,
+  .account-page .account-support-card a,
+  .account-page .account-empty a,
+  .account-page .account-orders-error button,
+  .checkout-page .checkout-submit,
+  .checkout-page .checkout-success > a,
+  .checkout-page .checkout-empty > a,
+  .checkout-payment-retry,
+  .pending-payment-reminder button:not([data-pending-cancel])
+) {
+  box-sizing: border-box;
+  border: 1px solid var(--site-action, #373863) !important;
+  background: var(--site-action, #373863) !important;
+  color: #fff !important;
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease !important;
+}
+
+:is(
+  .button--dark,
+  .pill.dark,
+  .add-button,
+  .button-outline,
+  .apply-filters,
+  .selection-return-action,
+  .selection-next,
+  .product-add,
+  .related-card-add,
+  .product-error a,
+  .product-review-form > button,
+  .product-reviews-empty button,
+  .volume-option.is-active,
+  .catalog-page .catalog-category.is-active,
+  .cart-footer > button,
+  .cart-summary-checkout,
+  .cookie button,
+  .search-form button,
+  .subscribe-form button,
+  .filter.is-active,
+  .favorite.is-active,
+  .auth-panel--phone .auth-phone-button,
+  .account-page .account-primary-button,
+  .account-page .account-primary-link,
+  .account-page .account-light-button,
+  .account-page .account-save,
+  .account-page .account-support-card a,
+  .account-page .account-empty a,
+  .account-page .account-orders-error button,
+  .checkout-page .checkout-submit,
+  .checkout-page .checkout-success > a,
+  .checkout-page .checkout-empty > a,
+  .checkout-payment-retry,
+  .pending-payment-reminder button:not([data-pending-cancel])
+):not(:disabled):is(:hover, :focus-visible) {
+  border-color: var(--site-action, #373863) !important;
+  background: #fff !important;
+  color: var(--site-action, #373863) !important;
+}
+
+:is(
+  .button--dark,
+  .pill.dark,
+  .add-button,
+  .button-outline,
+  .apply-filters,
+  .selection-return-action,
+  .selection-next,
+  .product-add,
+  .related-card-add,
+  .product-error a,
+  .product-review-form > button,
+  .product-reviews-empty button,
+  .volume-option.is-active,
+  .catalog-page .catalog-category.is-active,
+  .cart-footer > button,
+  .cart-summary-checkout,
+  .cookie button,
+  .search-form button,
+  .subscribe-form button,
+  .filter.is-active,
+  .favorite.is-active,
+  .auth-panel--phone .auth-phone-button,
+  .account-page .account-primary-button,
+  .account-page .account-primary-link,
+  .account-page .account-light-button,
+  .account-page .account-save,
+  .account-page .account-support-card a,
+  .account-page .account-empty a,
+  .account-page .account-orders-error button,
+  .checkout-page .checkout-submit,
+  .checkout-page .checkout-success > a,
+  .checkout-page .checkout-empty > a,
+  .checkout-payment-retry,
+  .pending-payment-reminder button:not([data-pending-cancel])
+) svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+
+.volume-option.is-active small,
+.catalog-page .volume-option.is-active small { color: inherit !important; }
+
+/* White actions on dark panels turn black on hover. */
+:is(
+  .home-page .promo .pill.light,
+  .home-page .finder-copy .pill.light,
+  .home-page .brand-copy .pill,
+  .home-page .hero .pill.light,
+  .account-page .account-loyalty-detail .account-primary-link
+) {
+  border: 1px solid #fff !important;
+  background: #fff !important;
+  color: var(--site-action, #373863) !important;
+}
+
+:is(
+  .home-page .promo .pill.light,
+  .home-page .finder-copy .pill.light,
+  .home-page .brand-copy .pill,
+  .home-page .hero .pill.light,
+  .account-page .account-loyalty-detail .account-primary-link
+):not(:disabled):is(:hover, :focus-visible) {
+  border-color: #000 !important;
+  background: #000 !important;
+  color: #fff !important;
+}
+
+:is(
+  .home-page .promo .pill.light,
+  .home-page .finder-copy .pill.light,
+  .home-page .brand-copy .pill,
+  .home-page .hero .pill.light,
+  .account-page .account-loyalty-detail .account-primary-link
+) svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+
+.home-page .hero-copy .pill.light::before { display: none !important; }
