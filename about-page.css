@@ -68,18 +68,30 @@
 .about-story-copy { display: grid; gap: 22px; }
 .about-story-copy p { color: var(--about-muted); font-size: 16px; line-height: 1.68; }
 
-.about-values {
+.about-mission {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  padding-top: 48px;
-  padding-bottom: 80px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr);
+  gap: clamp(40px, 8vw, 120px);
+  align-items: end;
+  box-sizing: border-box;
+  padding-inline: clamp(28px, 4vw, 72px);
+  padding-top: clamp(64px, 7vw, 100px);
+  padding-bottom: clamp(64px, 7vw, 100px);
+  background: #f6ebdd;
 }
 
-.about-values article { display: flex; flex-direction: column; justify-content: center; min-height: 230px; padding: 0 34px; border-left: 1px solid var(--about-line); }
-.about-values article:first-child { padding-left: 0; border-left: 0; }
-.about-values article:last-child { padding-right: 0; }
-.about-values h3 { font-size: 23px; font-weight: 400; line-height: 1.12; letter-spacing: -.025em; }
-.about-values p { max-width: 330px; margin-top: 15px; color: var(--about-muted); font-size: 14px; line-height: 1.58; }
+.about-mission h2 { max-width: 850px; font-size: clamp(34px, 3.6vw, 54px); font-weight: 400; line-height: 1.08; letter-spacing: -.04em; }
+.about-mission p { max-width: 500px; color: #454753; font-size: 16px; line-height: 1.7; }
+
+.about-values { padding-top: clamp(72px, 8vw, 110px); padding-bottom: clamp(72px, 8vw, 110px); }
+.about-values-heading { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr); gap: clamp(40px, 8vw, 120px); align-items: end; padding-bottom: 48px; }
+.about-values-heading h2 { font-size: clamp(36px, 4vw, 62px); font-weight: 400; line-height: 1; letter-spacing: -.045em; }
+.about-values-heading p { max-width: 500px; color: var(--about-muted); font-size: 16px; line-height: 1.68; }
+.about-values-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--about-line); }
+.about-values article { display: flex; flex-direction: column; justify-content: center; min-height: 220px; padding: 34px clamp(24px, 4vw, 60px); border-bottom: 1px solid var(--about-line); }
+.about-values article:nth-child(odd) { padding-left: 0; border-right: 1px solid var(--about-line); }
+.about-values h3 { font-size: 25px; font-weight: 400; line-height: 1.12; letter-spacing: -.025em; }
+.about-values article p { max-width: 530px; margin-top: 16px; color: var(--about-muted); font-size: 15px; line-height: 1.65; }
 
 .about-making {
   display: grid;
@@ -137,16 +149,16 @@
 .about-page .toast.visible { opacity: 1; transform: translate(-50%, 0); }
 
 @media (max-width: 900px) {
-  .about-story, .about-making, .about-place { grid-template-columns: 1fr; }
+  .about-story, .about-mission, .about-values-heading, .about-making, .about-place { grid-template-columns: 1fr; }
   .about-intro-inner { min-height: 250px; padding-top: 36px; padding-bottom: 36px; }
   .about-intro-grid { grid-template-columns: 1fr; gap: 24px; }
   .about-intro-copy { max-width: 620px; justify-self: start; text-align: left; }
   .about-intro-copy p { text-align: left; }
   .about-story { gap: 36px; }
   .about-story-copy { max-width: 620px; }
-  .about-values { grid-template-columns: 1fr; padding-top: 20px; }
-  .about-values article, .about-values article:first-child, .about-values article:last-child { min-height: 0; padding: 34px 0; border-top: 1px solid var(--about-line); border-left: 0; }
-  .about-values article:first-child { border-top: 0; }
+  .about-mission, .about-values-heading { gap: 30px; }
+  .about-values-grid { grid-template-columns: 1fr; }
+  .about-values article, .about-values article:nth-child(odd) { min-height: 0; padding: 34px 0; border-right: 0; }
   .about-making { min-height: 0; }
   .about-making-photo { height: 470px; }
   .about-making-copy { min-height: 430px; }
@@ -160,7 +172,11 @@
   .about-intro-copy p, .about-story-copy p { font-size: 14px; }
   .about-story { padding-top: 70px; padding-bottom: 56px; }
   .about-story h2 { font-size: 40px; }
+  .about-mission { padding-top: 58px; padding-bottom: 58px; }
+  .about-mission h2, .about-values-heading h2 { font-size: 38px; }
+  .about-mission p, .about-values-heading p { font-size: 14px; }
   .about-values { padding-bottom: 60px; }
+  .about-values-heading { padding-bottom: 32px; }
   .about-making-photo { height: 330px; }
   .about-making-copy { min-height: 390px; padding: 40px 24px; }
   .about-making-copy h2, .about-place-copy h2 { font-size: 40px; }
