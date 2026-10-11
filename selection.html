@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="checkout.css?v=mobile-cart-footer-v1">
   <link rel="stylesheet" href="site-performance.css?v=perf-v2">
   <link rel="stylesheet" href="site-actions.css?v=blue-actions-v2">
+  <link rel="stylesheet" href="site-mobile-menu.css?v=unified-menu-v1">
   <script src="site-icons.js?v=local-v1" defer></script>
   <script src="selection-engine.js?v=selection-v1" defer></script>
   <script src="auth-session.js?v=auth-backdrop-v1" defer></script>
@@ -21,6 +22,7 @@
   <script src="selection-page.js?v=header-only-v1" defer></script>
   <script src="checkout.js?v=payment-flow-v1" defer></script>
   <script src="analytics.js?v=analytics-v2" defer></script>
+  <script src="site-mobile-menu.js?v=unified-menu-v1" defer></script>
 </head>
 <body class="selection-page">
   <a class="skip" href="#selection-main">К подбору</a>
@@ -44,7 +46,8 @@
       </div>
     </div>
     <nav class="mobile-nav" id="mobile-nav" aria-label="Мобильная навигация">
-      <a href="catalog.html">Каталог</a><a href="index.html#offers">Предложения</a><a href="selection.html" aria-current="page">Подбор аромата</a><a href="about.html">О нас</a><a href="index.html#contacts">Контакты</a>
+      <div class="mobile-nav-head"><a class="mobile-nav-logo" href="index.html#top" aria-label="FLUIDE Atelier — на главную"><img src="assets/brand/logo-white.svg" alt="FLUIDE Atelier"></a><button class="mobile-nav-close" type="button" aria-label="Закрыть меню"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#x"></use></svg></button></div>
+      <div class="mobile-nav-links"><a href="catalog.html">Каталог</a><a href="index.html#offers">Предложения</a><a href="selection.html" aria-current="page">Подбор аромата</a><a href="about.html">О компании</a><a href="index.html#contacts">Контакты</a></div>
     </nav>
   </header>
 
