@@ -6,8 +6,8 @@
   <meta name="description" content="Личный кабинет FLUIDE Atelier: избранное, подбор ароматов, корзина и профиль.">
   <title>Личный кабинет — FLUIDE Atelier</title>
   <link rel="icon" href="icon_fluide_site.svg?v=1" type="image/svg+xml">
-  <link rel="stylesheet" href="catalog-page.css?v=header-only-v1">
-  <link rel="stylesheet" href="account-page.css?v=header-only-v1">
+  <link rel="stylesheet" href="catalog-page.css?v=unified-mobile-header-v2">
+  <link rel="stylesheet" href="account-page.css?v=mobile-section-menu-v5">
   <link rel="stylesheet" href="site-colors.css?v=neutral-text-v15">
   <link rel="stylesheet" href="checkout.css?v=payment-flow-v1">
   <link rel="stylesheet" href="site-performance.css?v=perf-v2">
@@ -18,7 +18,7 @@
   <script src="catalog-data.js?v=perf-v2" defer></script>
   <script src="site-performance.js?v=perf-v2" defer></script>
   <script src="promotion.js?v=cart-footer-v2" defer></script>
-  <script src="account-page.js?v=header-only-v1" defer></script>
+  <script src="account-page.js?v=mobile-section-menu-v4" defer></script>
   <script src="checkout.js?v=payment-flow-v1" defer></script>
   <script src="analytics.js?v=analytics-v2" defer></script>
 </head>
@@ -53,6 +53,17 @@
 
     <div class="account-shell shell">
       <aside class="account-sidebar">
+        <div class="account-mobile-section">
+          <button class="account-mobile-section-toggle" type="button" aria-expanded="false" aria-controls="account-mobile-section-menu"><span class="visually-hidden">Раздел кабинета: </span><span id="account-mobile-section-current">Профиль</span><svg aria-hidden="true"><use href="assets/icons/lucide.svg#chevron-down"></use></svg></button>
+          <div class="account-mobile-section-menu" id="account-mobile-section-menu" hidden>
+            <button type="button" data-account-tab="overview"><span>Профиль</span></button>
+            <button type="button" data-account-tab="profile"><span>Личные данные</span></button>
+            <button type="button" data-account-tab="orders"><span>Мои заказы</span></button>
+            <button type="button" data-account-tab="loyalty"><span>Карта FLUIDE</span></button>
+            <button type="button" data-account-tab="favorites"><span>Избранное</span></button>
+            <button type="button" data-account-cart><span>Корзина</span></button>
+          </div>
+        </div>
         <nav class="account-nav" aria-label="Разделы личного кабинета">
           <button class="is-active" type="button" data-account-tab="overview" aria-current="page"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#user"></use></svg><span>Профиль</span></button>
           <button type="button" data-account-tab="profile"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#sliders-horizontal"></use></svg><span>Личные данные</span></button>
@@ -182,6 +193,8 @@
           </form>
         </section>
       </div>
+
+      <button class="account-logout account-logout--mobile" type="button" data-account-logout><svg aria-hidden="true"><use href="assets/icons/lucide.svg#arrow-left"></use></svg><span>Выйти из аккаунта</span></button>
 
     </div>
   </main>

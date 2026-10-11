@@ -85,13 +85,10 @@
 
 @media(max-width:700px){
   .selection-shell{width:calc(100% - 40px)}
-  .selection-summary{min-height:170px;grid-template-columns:140px 1fr}
-  .selection-summary-visual{min-height:170px}
-  .selection-summary-copy{padding:22px 20px}
-  .selection-summary-copy>p{font-size:12px}
-  .selection-summary-copy h2{font-size:21px}
-  .selection-answer-list{margin-top:14px;gap:5px}
-  .selection-answer-list span{min-height:25px;padding:3px 7px;font-size:10px}
+  .selection-summary{display:block;width:calc(100% + 40px);height:clamp(145px,42vw,185px);min-height:0;margin:0 -20px;border:0;background:#07152e}
+  .selection-summary-visual{height:100%;min-height:0;aspect-ratio:auto}
+  .selection-summary-visual img{width:100%;height:100%;object-fit:cover;object-position:right center;transform:scale(1.5);transform-origin:right center}
+  .selection-summary-copy{display:none}
   .selection-workspace{padding-top:36px}
   .selection-form{padding-top:36px}
   .selection-question h1{font-size:36px}
@@ -99,15 +96,23 @@
   .selection-options{grid-template-columns:1fr;margin-top:28px}
   .selection-option{min-height:78px;padding:14px 16px}
   .selection-option-title{font-size:16px}
-  .selection-controls{grid-template-columns:1fr auto;margin-top:28px;gap:12px}
+  .selection-controls{position:sticky;bottom:0;z-index:4;grid-template-columns:1fr auto;gap:12px;margin:28px -20px 0;padding:12px 20px max(12px,env(safe-area-inset-bottom));border-top:0;background:#fff;box-shadow:none}
   .selection-back{grid-column:1}
   .selection-skip{grid-column:2}
   .selection-next{grid-column:1/-1;grid-row:2;width:100%}
 }
 
 @media(max-width:420px){
-  .selection-summary{grid-template-columns:110px 1fr}
-  .selection-summary-copy h2{font-size:18px}
-  .selection-answer-list span:nth-child(n+4){display:none}
   .selection-question h1{font-size:32px}
+}
+
+@media(max-width:360px){
+  .selection-summary{height:120px}
+  .selection-workspace{padding-top:24px}
+  .selection-form{padding-top:24px}
+  .selection-kicker{margin-bottom:8px}
+  .selection-question h1{font-size:30px}
+  .selection-help{margin-top:8px}
+  .selection-options{gap:6px;margin-top:14px}
+  .selection-option{min-height:68px;padding:10px 14px}
 }

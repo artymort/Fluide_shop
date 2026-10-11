@@ -134,3 +134,41 @@
 /* Use the same neutral product-image surface across cards and product pages. */
 .product-gallery-stage,
 .product-gallery .product-thumbnail{background-color:#f3f3f3}
+
+/* Mobile product summary: keep the product and the purchase controls in one scan. */
+@media(max-width:700px){
+  .product-breadcrumbs{min-height:44px}
+  .product-breadcrumbs a{gap:7px;color:#666;font-size:13px;font-weight:400;line-height:1.4}
+  .product-breadcrumbs a svg{width:19px;height:19px}
+  .product-overview{gap:16px}
+  .product-gallery-stage{height:270px}
+  .product-gallery-stage>img,
+  .catalog-product-detail .catalog-product-gallery .product-main-image{width:68%;height:246px}
+  .product-gallery-stage .fragrance-placeholder{height:246px}
+  .product-details{padding:0 0 28px}
+  .product-details h1{color:#171717;font-size:clamp(24px,6.5vw,27px);line-height:1.17}
+  .product-inspiration{margin-top:6px;color:#666;font-size:13px;line-height:1.4}
+  .product-rating{margin-top:10px;color:#252525}
+  .product-rating>button,.product-rating-stars button{color:#252525}
+  .product-purchase{margin-top:17px;padding-top:16px;border-top:1px solid #e8e8e8}
+  .product-price{margin-bottom:16px;color:#151515;font-size:28px}
+  .product-choice legend,.quantity-block>span{color:#363636;font-size:13px}
+  .volume-options{justify-content:flex-start;gap:8px}
+  .product-page .product-purchase .volume-option{flex:0 0 82px;width:82px;min-width:82px;height:44px;min-height:44px;padding:0 8px;border:1px solid #d5d5d5;border-radius:0;background:#fff;color:#222}
+  .quantity-block{margin-top:14px}
+  .quantity-control{width:124px;border-color:#d5d5d5;border-radius:0;color:#252525}
+  .product-actions{margin-top:18px}
+  .product-add,.product-buy-now,.product-actions .product-like{border-radius:0}
+  .product-buy-now{min-height:44px;font-size:13px;text-decoration:underline;text-underline-offset:3px}
+  .product-actions .product-like{border-color:#d5d5d5;color:#252525}
+  .related-head h2,.related-card-info{color:#171717}
+  .product-rating-stars button.is-filled svg,
+  .product-review-rating-picker button.is-filled svg{fill:#252525!important;stroke:#252525!important}
+}
+
+@media(max-width:360px){
+  .product-gallery-stage{height:252px}
+  .product-gallery-stage>img,
+  .catalog-product-detail .catalog-product-gallery .product-main-image{height:230px}
+  .product-gallery-stage .fragrance-placeholder{height:230px}
+}

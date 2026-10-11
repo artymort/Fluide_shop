@@ -178,3 +178,31 @@
   background: var(--site-action, #373863) !important;
   color: #fff !important;
 }
+
+/* On the mobile product page, size is a quiet selection rather than a second CTA. */
+@media(max-width:700px){
+  .product-page .product-purchase .volume-option:not(.is-active){
+    border-color:#d5d5d5 !important;
+    background:#fff !important;
+    color:#252525 !important;
+  }
+  .product-page .product-purchase .volume-option.is-active,
+  .product-page .product-purchase .volume-option.is-active:is(:hover,:focus-visible){
+    border:2px solid #252525 !important;
+    background:#fff !important;
+    color:#171717 !important;
+    font-weight:600;
+  }
+  .product-page .product-buy-now,
+  .product-page .product-buy-now:is(:hover,:focus-visible){
+    border-color:transparent !important;
+    background:transparent !important;
+    color:#363636 !important;
+  }
+  .product-page .product-like{
+    border-color:#d5d5d5 !important;
+    background:#fff !important;
+    color:#252525 !important;
+  }
+  .product-page .product-like svg{color:#252525 !important}
+}

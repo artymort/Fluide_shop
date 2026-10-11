@@ -4,9 +4,20 @@ const accountReady = window.FluideAccount?.ready
   || Promise.resolve(window.FluideAccount?.read());
 const accountCatalogReady = window.FluideCatalogData?.load()
   || Promise.reject(new Error("catalog_loader_unavailable"));
+const isLocalPreview = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+  && new URLSearchParams(window.location.search).get("preview") === "1";
 
 accountReady.then((account) => {
-  if (!account) {
+  if (isLocalPreview) {
+    initAccountPage({
+      source: "preview",
+      name: "Просмотр",
+      phone: "—",
+      email: "",
+      createdAt: new Date().toISOString(),
+      loyalty: { balance: 300, welcomeBonus: 300, currencyRate: 1, awardedAt: new Date().toISOString() },
+    });
+  } else if (!account) {
     window.location.replace("index.html?login=1");
   } else if (!account.phoneRequired) {
     initAccountPage(account);
@@ -349,8 +360,26 @@ function initAccountPage(initialAccount) {
     toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 2600);
   }
 
+  const mobileSectionToggle = document.querySelector(".account-mobile-section-toggle");
+  const mobileSectionMenu = document.querySelector("#account-mobile-section-menu");
+  function setMobileSectionOpen(open) {
+    if (!mobileSectionToggle || !mobileSectionMenu) return;
+    mobileSectionMenu.hidden = !open;
+    mobileSectionToggle.setAttribute("aria-expanded", String(open));
+  }
+
   function activateTab(name, updateHash = true) {
     const safeName = ["overview", "loyalty", "favorites", "orders", "profile"].includes(name) ? name : "overview";
+    const mobileOption = mobileSectionMenu?.querySelector(`[data-account-tab="${safeName}"]`);
+    const mobileCurrent = document.querySelector("#account-mobile-section-current");
+    if (mobileCurrent && mobileOption) mobileCurrent.textContent = mobileOption.textContent.trim();
+    mobileSectionMenu?.querySelectorAll("[data-account-tab]").forEach((button) => {
+      const active = button.dataset.accountTab === safeName;
+      button.classList.toggle("is-current", active);
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    });
+    setMobileSectionOpen(false);
     document.querySelectorAll("[data-account-panel]").forEach((panel) => {
       const active = panel.dataset.accountPanel === safeName;
       panel.hidden = !active;
@@ -362,7 +391,10 @@ function initAccountPage(initialAccount) {
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
-    if (updateHash) history.replaceState(null, "", safeName === "overview" ? "account.html" : `account.html#${safeName}`);
+    if (updateHash) {
+      const path = isLocalPreview ? "account.html?preview=1" : "account.html";
+      history.replaceState(null, "", safeName === "overview" ? path : `${path}#${safeName}`);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -524,6 +556,11 @@ function initAccountPage(initialAccount) {
     });
 
   document.addEventListener("click", async (event) => {
+    if (event.target.closest(".account-mobile-section-toggle")) {
+      setMobileSectionOpen(mobileSectionMenu.hidden);
+      return;
+    }
+    if (!event.target.closest(".account-mobile-section")) setMobileSectionOpen(false);
     const loyaltyFilter = event.target.closest("[data-loyalty-filter]");
     if (loyaltyFilter) {
       renderLoyaltyHistory(loyaltyFilter.dataset.loyaltyFilter);
@@ -557,8 +594,14 @@ function initAccountPage(initialAccount) {
       return;
     }
     const tab = event.target.closest("[data-account-tab]");
-    if (tab) activateTab(tab.dataset.accountTab);
-    if (event.target.closest(".cart-button") || event.target.closest("[data-account-cart]")) openCart();
+    if (tab) {
+      activateTab(tab.dataset.accountTab);
+      if (tab.closest(".account-mobile-section-menu")) mobileSectionToggle?.focus();
+    }
+    if (event.target.closest(".cart-button") || event.target.closest("[data-account-cart]")) {
+      setMobileSectionOpen(false);
+      openCart();
+    }
     if (event.target.closest(".drawer-close") || event.target.matches(".drawer-backdrop")) closeCart();
     const quantityButton = event.target.closest("[data-cart-index]");
     if (quantityButton) {
@@ -585,13 +628,17 @@ function initAccountPage(initialAccount) {
       await window.FluideAccount.clear();
       window.location.href = "index.html";
     }
-    if (event.target.closest("[data-orders-retry]")) loadOrders();
+    if (event.target.closest("[data-orders-retry]") && !isLocalPreview) loadOrders();
   });
 
   document.querySelector("#account-profile-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const status = document.querySelector("#account-form-status");
+    if (isLocalPreview) {
+      status.textContent = "Это локальный просмотр. Данные не сохраняются.";
+      return;
+    }
     status.textContent = "Сохраняем…";
     try {
       const updated = await window.FluideAccount.updateProfile({
@@ -609,7 +656,13 @@ function initAccountPage(initialAccount) {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeCart();
+    if (event.key === "Escape") {
+      closeCart();
+      if (!mobileSectionMenu?.hidden) {
+        setMobileSectionOpen(false);
+        mobileSectionToggle?.focus();
+      }
+    }
   });
 
   const menuToggle = document.querySelector(".menu-toggle");
@@ -620,7 +673,8 @@ function initAccountPage(initialAccount) {
   });
 
   applyLoyaltyTheme(localStorage.getItem("fluide-loyalty-theme") || "cobalt", false);
-  loadOrders();
+  if (isLocalPreview) renderOrders();
+  else loadOrders();
   activateTab(location.hash.replace("#", "") || "overview", false);
   window.addEventListener("hashchange", () => {
     activateTab(location.hash.replace("#", "") || "overview", false);

@@ -166,7 +166,6 @@ function renderCatalogProduct(){
           ${fragrance.volume?`<fieldset class="product-choice"><legend>Объем</legend><div class="volume-options"><span class="volume-option is-active product-volume-static">${escapeHtml(fragrance.volume)}</span></div></fieldset>`:""}
           ${quantityControlMarkup()}
           <div class="product-actions"><button class="product-add" type="button" data-analytics-add data-product-key="${escapeHtml(fragrance.id)}">В корзину</button><button class="product-buy-now" type="button">Купить в 1 клик</button><button class="product-like ${favoriteActive?"is-active":""}" type="button" aria-label="${favoriteActive?"Удалить из избранного":"Добавить в избранное"}"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg></button></div>
-          <p class="product-delivery-note"><svg aria-hidden="true"><use href="assets/icons/lucide.svg?v=product-v1#truck"></use></svg>Бесплатная доставка от 5 000 ₽</p>
         </div>
       </section>
     </div>
@@ -230,7 +229,6 @@ function renderProduct(){
           <fieldset class="product-choice"><legend>Объем</legend><div class="volume-options"><button class="volume-option is-active" type="button" data-size="30">30 мл</button><button class="volume-option" type="button" data-size="50">50 мл</button></div></fieldset>
           ${quantityControlMarkup()}
           <div class="product-actions"><button class="product-add" type="button" data-analytics-add data-product-key="${escapeHtml(fragrance.id)}">В корзину</button><button class="product-buy-now" type="button">Купить в 1 клик</button><button class="product-like ${favoriteActive?"is-active":""}" type="button" aria-label="${favoriteActive?"Удалить из избранного":"Добавить в избранное"}"><svg aria-hidden="true"><use href="assets/icons/lucide.svg#heart"></use></svg></button></div>
-          <p class="product-delivery-note"><svg aria-hidden="true"><use href="assets/icons/lucide.svg?v=product-v1#truck"></use></svg>Бесплатная доставка от 5 000 ₽</p>
         </div>
       </section>
     </div>

@@ -247,8 +247,10 @@ svg{stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .product-copy p.product-inspiration{margin-top:7px;font-size:12px}.product-notes{font-size:10px;margin:6px 0 15px}
 .product-purchase{display:block;padding-top:12px}
 .product-price{font-size:13px;margin-bottom:10px}
-.product-action-buttons{width:100%;min-width:0;gap:7px}
-.product-details,.product-add{width:100%;height:38px;padding:0 7px;font-size:12px}.product-add span{font-size:12px}
+.product-action-buttons{width:100%;min-width:0;grid-template-columns:1fr}
+.product-details{display:none}
+.product-add{width:100%;min-height:46px;height:auto;padding:10px 8px;font-size:14px;line-height:1.2}
+.product-add span{font-size:14px;line-height:1.2;white-space:nowrap}
 }
 
 /* Unified homepage rhythm: every gap starts at the visible content edge. */
@@ -348,11 +350,43 @@ html{scrollbar-gutter:stable}
 .hero-copy .pill.light:hover::before,.hero-copy .pill.light:focus-visible::before{transform:scaleX(1)}
 @media(prefers-reduced-motion:reduce){.hero-copy .pill.light::before{transition:none}}
 
+/* The mobile hero uses the same product photograph as desktop. */
+@media(max-width:700px){
+  .hero-slide:first-child{background:#080e20}
+  .hero-slide:first-child .hero-media{top:auto;height:72%;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 18%);mask-image:linear-gradient(to bottom,transparent,#000 18%)}
+  .hero-slide:first-child .hero-media>img{object-position:65% center}
+  .hero-slide:first-child:after{background:linear-gradient(180deg,rgba(8,14,32,.72),rgba(8,14,32,0) 58%)}
+  .hero-slide:first-child .hero-copy{top:28px;left:20px;right:20px;bottom:0;width:auto;max-width:none}
+  .hero-slide:first-child .hero-copy h1{font-size:clamp(26px,8vw,33px);line-height:1.16;margin-bottom:18px}
+  .hero-slide:first-child .hero-copy h1 .mobile-title-line{display:block}
+  .hero-slide:first-child .hero-copy h1 .desktop-title-break{display:none}
+  .hero-slide:first-child .hero-copy p{font-size:14px;line-height:1.45;max-width:290px;margin-bottom:16px}
+  .hero-slide:first-child .hero-copy p .mobile-line{display:block}
+  .hero-slide:first-child .hero-copy .pill{position:absolute;left:0;bottom:50px;min-height:44px;padding:11px 18px;font-size:14px}
+  .header-tools{gap:0}
+  .header-tools .login-button,.header-tools>.icon-btn{width:36px;min-width:36px;min-height:36px;flex:0 0 36px;padding:0;margin:0;display:grid;place-items:center}
+  .header-tools .login-button svg{width:21px;height:21px;flex:none}
+  .header-tools>.icon-btn svg{width:20px;height:20px;flex:none}
+  .header-tools>.menu-button svg{width:28px;height:28px}
+}
+@media(max-width:350px){
+  .hero-slide:first-child .hero-media>img{object-position:60% center}
+}
+
+/* Keep the bestseller filter chevron inside the mobile content edge. */
+@media(max-width:700px){
+  .bestsellers .product-filter-menu summary{padding-right:12px}
+}
+
 /* Unified product surfaces, cart state and volume typography. */
 .product-image{background:#f3f3f3}
 .bag-button span{right:0;top:0;min-width:16px;height:16px;padding:0 4px;font-size:9px;font-weight:600}
 .panel[open]{display:flex;flex-direction:column}
 .panel-top{flex:0 0 auto}
+.panel-menu-logo{display:none}
+.panel.menu-panel .panel-menu-logo{display:block;width:100px;flex:none}
+.panel.menu-panel .panel-menu-logo img{display:block;width:100%;filter:brightness(0) saturate(100%);opacity:.82}
+.panel.menu-panel #panel-title{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 #panel-body{min-height:0;flex:1}
 .cart-panel-body{display:flex;flex-direction:column;padding-top:0!important}
 .cart-panel-body .cart-empty{display:grid;height:100%;place-items:center;text-align:center}

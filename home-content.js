@@ -45,7 +45,23 @@
 
     toggleSection(".hero", content.hero);
     setText(".hero-copy h1", content.hero?.title);
+    const heroTitle = document.querySelector(".hero-copy h1");
+    if (heroTitle?.textContent?.replace(/\s+/g, " ").trim() === "Чувствовать больше Быть собой") {
+      const mobileLine = document.createElement("span");
+      mobileLine.className = "mobile-title-line";
+      mobileLine.textContent = "больше";
+      const desktopBreak = document.createElement("br");
+      desktopBreak.className = "desktop-title-break";
+      heroTitle.replaceChildren("Чувствовать ", mobileLine, desktopBreak, "Быть собой");
+    }
     setText(".hero-copy p", content.hero?.subtitle);
+    const heroSubtitle = document.querySelector(".hero-copy p");
+    if (heroSubtitle?.textContent?.trim() === "Ароматы, которые становятся частью вас") {
+      const secondLine = document.createElement("span");
+      secondLine.className = "mobile-line";
+      secondLine.textContent = "становятся частью вас";
+      heroSubtitle.replaceChildren("Ароматы, которые ", secondLine);
+    }
     setLink(".hero-copy .pill", content.hero?.buttonLabel, content.hero?.buttonUrl);
     const heroSource = document.querySelector(".hero-media source");
     if (heroSource && content.hero?.mobileImage) heroSource.srcset = safeImageUrl(content.hero.mobileImage, heroSource.srcset);

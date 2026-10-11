@@ -6,11 +6,10 @@
 <link rel="icon" href="icon_fluide_site.svg?v=1" type="image/svg+xml">
 <meta name="description" content="FLUIDE — парфюмерный бренд из Владимира. Парфюм, ароматы для дома, подарки и персональный подбор.">
 <script>if(location.hash==="#brand")location.replace("about.html");</script>
-<link rel="preload" as="image" type="image/webp" href="assets/media/hero-fluide-product-studio-blue-desktop-v1.webp?v=1" media="(min-width: 701px)">
-<link rel="preload" as="image" type="image/webp" href="assets/media/hero-woman-product-family-blue-mobile-v1.webp?v=1" media="(max-width: 700px)">
-<link rel="stylesheet" href="home-atelier.css?v=header-only-v1">
+<link rel="preload" as="image" type="image/webp" href="assets/media/hero-fluide-product-studio-blue-desktop-v1.webp?v=1">
+<link rel="stylesheet" href="home-atelier.css?v=mobile-filter-chevron-v11">
 <link rel="stylesheet" href="cart-drawer-shared.css?v=cart-v1">
-<link rel="stylesheet" href="site-colors.css?v=neutral-text-v14">
+<link rel="stylesheet" href="site-colors.css?v=mobile-header-v2">
 <link rel="stylesheet" href="checkout.css?v=payment-flow-v1">
 <link rel="stylesheet" href="site-performance.css?v=anchor-cleanup-v1">
 <link rel="stylesheet" href="site-actions.css?v=blue-actions-v2">
@@ -18,8 +17,8 @@
 <script src="catalog-data.js?v=perf-v2" defer></script>
 <script src="site-performance.js?v=perf-v2" defer></script>
 <script src="promotion.js?v=cart-footer-v2" defer></script>
-<script src="home-content.js?v=anchor-cleanup-v1" defer></script>
-<script src="home-atelier.js?v=header-only-v1" defer></script>
+<script src="home-content.js?v=mobile-hero-type-v8" defer></script>
+<script src="home-atelier.js?v=mobile-menu-logo-v2" defer></script>
 <script src="checkout.js?v=payment-flow-v1" defer></script>
 <script src="analytics.js?v=analytics-v2" defer></script>
 </head>
@@ -50,7 +49,7 @@
 </header>
 <main id="main">
 <section class="hero" aria-label="Главный баннер FLUIDE">
-<article class="hero-slide active"><picture class="hero-media"><source media="(max-width: 700px)" srcset="assets/media/hero-woman-product-family-blue-mobile-v1.webp?v=1" type="image/webp"><img src="assets/media/hero-fluide-product-studio-blue-desktop-v1.webp?v=1" alt="Спрей для волос Devils Intrigue, аромат Matsukita и спрей для дома Citrus Rush FLUIDE" fetchpriority="high" decoding="async"></picture><div class="hero-copy"><h1>Чувствовать больше<br>Быть собой</h1><p>Ароматы, которые становятся частью вас</p><a class="pill light" href="catalog.html"><span>В Каталог</span><svg aria-hidden="true"><use href="#move-right"/></svg></a></div></article>
+<article class="hero-slide active"><picture class="hero-media"><img src="assets/media/hero-fluide-product-studio-blue-desktop-v1.webp?v=1" alt="Спрей для волос Devils Intrigue, аромат Matsukita и спрей для дома Citrus Rush FLUIDE" fetchpriority="high" decoding="async"></picture><div class="hero-copy"><h1>Чувствовать <span class="mobile-title-line">больше</span><br class="desktop-title-break">Быть собой</h1><p>Ароматы, которые <span class="mobile-line">становятся частью вас</span></p><a class="pill light" href="catalog.html"><span>В Каталог</span><svg aria-hidden="true"><use href="#move-right"/></svg></a></div></article>
 </section>
 <section class="stories" aria-label="Истории FLUIDE">
 <button data-story="0"><span><img src="assets/product-line/fragrance-cherry.webp?v=1" alt="" loading="lazy" decoding="async"></span>Cherry 33</button>
@@ -88,7 +87,7 @@
 <footer id="contacts" class="footer section"><a href="index.html" class="footer-logo"><img src="assets/brand/logo-blue.svg" alt="FLUIDE Atelier"></a><div><h3>Коллекции</h3><a href="catalog.html">Парфюм</a><a href="catalog.html?category=home">Для дома</a><a href="#gifts">Подарки</a></div><div><h3>О бренде</h3><a href="about.html">О компании</a><a href="about.html">Пространство во Владимире</a><a href="about.html">Мастер-классы</a></div><div><h3>Покупателям</h3><button data-info="delivery">Доставка и оплата</button><button data-info="contacts">Связаться с нами</button><button data-info="privacy">Персональные данные</button></div><div class="footer-bottom"><span>© FLUIDE Atelier, 2026</span><span>Сделано с чувством.</span><button data-cookie-settings>Настройки cookie</button></div></footer>
 <div class="drawer-backdrop home-cart-backdrop"></div>
 <aside class="cart-drawer home-cart-drawer" aria-hidden="true" aria-label="Корзина"><div class="drawer-head"><h2>Корзина</h2><button class="drawer-close" type="button" data-home-cart-close aria-label="Закрыть корзину"><svg><use href="#x"/></svg></button></div><div class="cart-items home-cart-items"></div><div class="cart-footer" hidden></div></aside>
-<dialog id="panel" class="panel"><div class="panel-top"><h2 id="panel-title"></h2><button class="icon-btn" data-close aria-label="Закрыть"><svg><use href="#x"/></svg></button></div><div id="panel-body"></div></dialog>
+<dialog id="panel" class="panel"><div class="panel-top"><a class="panel-menu-logo" href="index.html" aria-label="FLUIDE Atelier — главная"><img src="assets/brand/logo-white.svg" alt="FLUIDE Atelier"></a><h2 id="panel-title"></h2><button class="icon-btn" data-close aria-label="Закрыть"><svg><use href="#x"/></svg></button></div><div id="panel-body"></div></dialog>
 <dialog id="story" class="story-dialog"><div class="story-progress"></div><button class="icon-btn story-close" data-close aria-label="Закрыть историю"><svg><use href="#x"/></svg></button><div id="story-body"></div><button class="story-back" aria-label="Предыдущая история"><svg><use href="#chevron-left"/></svg></button><button class="story-next" aria-label="Следующая история"><svg><use href="#chevron-right"/></svg></button></dialog>
 <div class="cookie" hidden><p>Используем cookie для корзины<br>и анонимной статистики.</p><button class="pill dark" data-cookie-accept>Хорошо</button></div>
 <div id="toast" role="status"></div>

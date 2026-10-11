@@ -460,6 +460,17 @@ textarea::placeholder {
   stroke: currentColor !important;
 }
 
+/* On mobile the homepage header is white, including before it becomes sticky. */
+@media (max-width: 700px) {
+  .home-page .header:not(.scrolled),
+  .home-page .header:not(.scrolled) a,
+  .home-page .header:not(.scrolled) button,
+  .home-page .header:not(.scrolled) svg {
+    color: var(--site-text) !important;
+    stroke: currentColor !important;
+  }
+}
+
 /* Catalogue copy is neutral black; indigo remains an action colour only. */
 .catalog-page {
   --ink: var(--site-text);

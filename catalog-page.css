@@ -246,7 +246,7 @@ fieldset{border:0;padding:0;margin:0}
 
 @media(max-width:900px){
   :root{--content:calc(100vw - 64px)}
-  .catalog-header{height:76px}.desktop-nav{display:none}.brand-logo{width:112px}.menu-toggle{display:grid}
+  .catalog-header{height:76px}.desktop-nav{display:none}.header-inner{grid-template-columns:auto minmax(0,1fr)}.brand-logo{width:112px}.menu-toggle{display:grid}
   .catalog-header.scrolled{height:76px}.catalog-header.scrolled .mobile-nav{top:76px}
   .mobile-nav{position:absolute;top:76px;left:0;right:0;display:flex;flex-direction:column;gap:18px;padding:25px 32px;border-bottom:1px solid var(--line);background:#fff;font-size:14px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:.18s}.mobile-nav.is-open{opacity:1;visibility:visible;transform:none}
   .catalog-intro,.catalog-intro-inner{min-height:230px}.catalog-intro-grid{grid-template-columns:1fr;gap:20px}.catalog-intro-copy{max-width:520px;justify-self:start;text-align:left}.catalog-intro-copy p{margin-bottom:15px}
@@ -266,10 +266,13 @@ fieldset{border:0;padding:0;margin:0}
   .catalog-header,.catalog-header.scrolled{height:70px}.mobile-nav,.catalog-header.scrolled .mobile-nav{top:70px}
   .header-actions{gap:1px}.login-button{width:32px;min-height:36px;padding:0}.login-button span,.favorites-button{display:none}.header-icon,.menu-toggle{width:32px}.cart-count{right:-4px;top:-2px}
   .catalog-intro,.catalog-intro-inner{min-height:235px}.catalog-intro h1{font-size:38px}.catalog-intro-copy p{font-size:14px}
-  .catalog-shell{padding-bottom:90px}.catalog-categories{gap:8px;margin-top:18px}.catalog-category{height:70px;min-width:max-content;flex:0 0 172px;padding:5px 14px 5px 5px}.catalog-category-visual{width:58px;height:58px;flex-basis:58px}.catalog-category-copy{font-size:14px}.catalog-category small{font-size:12px}.catalog-toolbar{grid-template-columns:1fr auto;gap:12px;padding-top:18px}.catalog-search{grid-column:1/-1;width:100%}.filter-toggle{height:46px;padding-left:0}.sort-control{width:auto;min-width:240px;height:46px;padding-left:14px;gap:10px}.sort-trigger{padding-right:14px}.sort-menu{right:-1px;width:calc(100% + 2px)}.active-filters{overflow:auto;flex-wrap:nowrap}.active-chip{white-space:nowrap}
+  .catalog-shell{padding-bottom:90px}.catalog-categories{gap:8px;margin-top:18px}.catalog-category{height:60px;min-width:max-content;flex:0 0 160px;gap:5px;padding:4px 8px 4px 4px}.catalog-category:nth-child(-n+2){min-width:0;flex-basis:calc((100% - 8px)/2)}.catalog-category-visual{width:44px;height:44px;flex-basis:44px}.catalog-category-copy{gap:3px;font-size:14px}.catalog-category small{font-size:12px}.catalog-toolbar{grid-template-columns:1fr auto;gap:12px;padding-top:18px}.catalog-search{grid-column:1/-1;width:100%}.filter-toggle{height:46px;padding-left:0}.sort-control{width:auto;min-width:240px;height:46px;padding-left:14px;gap:10px}.sort-trigger{padding-right:14px}.sort-menu{right:-1px;width:calc(100% + 2px)}.active-filters{overflow:auto;flex-wrap:nowrap}.active-chip{white-space:nowrap}
   .results-heading{margin-bottom:20px}.results-heading h2{font-size:30px}.result-count{font-size:14px}
   .fragrance-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.fragrance-media{height:220px;padding:44px 16px 22px}.fragrance-media img{max-height:160px}.fragrance-badge{left:9px;top:9px;padding:6px 7px;font-size:8px}.favorite-toggle{right:5px;top:4px;width:32px;height:32px}.favorite-toggle svg{width:16px;height:16px}
   .fragrance-info{min-height:158px;padding:14px 12px 12px}.fragrance-title-row h3{font-size:15px}.fragrance-original{margin-top:7px;font-size:12px}.card-actions{padding-top:12px}.card-price{margin-bottom:10px;font-size:13px}.card-action-buttons{gap:7px}.details-button,.add-button{height:38px;padding:0 7px;font-size:12px}
+  .card-action-buttons{grid-template-columns:1fr;gap:0}
+  .card-action-buttons .details-button{display:none}
+  .card-action-buttons .add-button{width:100%;min-height:46px;height:auto;padding:10px 8px;font-size:14px;line-height:1.2;white-space:nowrap}
   .catalog-footer{grid-template-columns:1fr 1fr;gap:35px;padding-bottom:20px}.footer-logo{grid-column:1/-1}.catalog-footer h3{font-size:14px}.catalog-footer>div>a,.catalog-footer>div>button{font-size:13px}.footer-bottom{align-items:flex-start;flex-direction:column;font-size:11px}.footer-bottom button{font-size:11px!important}
   .cart-drawer{padding:28px 22px}.volume-dialog,.info-dialog{padding:24px}.drawer-head h2,.dialog-head h2{font-size:29px}.account-dialog{padding:22px}.auth-content{padding:30px 0 25px}.auth-title{font-size:32px}.auth-subtitle{margin-bottom:35px}.auth-providers{gap:28px}.auth-provider>span,.auth-provider img{width:58px;height:58px}
   .cookie{left:10px;right:10px;bottom:10px;justify-content:space-between;gap:12px;padding:13px 15px}.cookie p{font-size:11px}
@@ -364,6 +367,28 @@ h1,h2,h3{letter-spacing:-.02em!important}
 @media(max-width:700px){
   .cart-count{right:0;top:0}
   .cart-drawer{padding:28px 22px}
+}
+
+/* Match the homepage's four-action mobile header on every storefront page. */
+@media(max-width:700px){
+  .catalog-header .brand-logo{width:100px}
+  .catalog-header .header-actions{gap:0}
+  .catalog-header .header-actions .login-button,
+  .catalog-header .header-actions .header-icon,
+  .catalog-header .header-actions .menu-toggle{width:36px;min-width:36px;height:36px;min-height:36px;flex:0 0 36px;padding:0;margin:0;display:grid;place-items:center}
+  .catalog-header .header-actions .login-button span,
+  .catalog-header .header-actions .favorites-button,
+  .catalog-header .header-actions .product-favorite,
+  .catalog-header .header-actions .header-icon[aria-label="Избранное"]{display:none}
+  .catalog-header .header-actions .login-button svg{width:21px;height:21px}
+  .catalog-header .header-actions .header-icon svg{width:20px;height:20px}
+  .catalog-header .header-actions .menu-toggle svg{width:28px;height:28px}
+  .account-page .catalog-header .login-button:after{display:none}
+}
+
+@media(max-width:350px){
+  .catalog-category-visual{width:40px;height:40px;flex-basis:40px}
+  .catalog-category small{display:none}
 }
 
 /* Catalogue keeps its strict geometry; only the account action colour is shared. */
