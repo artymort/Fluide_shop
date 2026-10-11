@@ -75,10 +75,11 @@
 .cart-footer>.checkout-button{width:250px;height:52px;justify-self:end;font-size:13px}
 
 @media(max-width:520px){
-  .cart-footer:not([hidden]){gap:12px}
-  .cart-footer>.cart-compact-values{gap:12px}
-  .cart-compact-values>span{min-width:auto}
-  .cart-footer>.checkout-button{width:210px}
+  .cart-footer:not([hidden]){width:100%;min-width:0;grid-template-columns:minmax(0,1fr);gap:14px;box-sizing:border-box}
+  .cart-footer>.cart-compact-values{width:100%;min-width:0;justify-self:stretch;justify-content:flex-end;gap:12px}
+  .cart-compact-values>.cart-compact-discount-group{margin-right:auto}
+  .cart-compact-values>span{min-width:0}
+  .cart-footer>.checkout-button{width:100%;max-width:100%;min-width:0;justify-self:stretch;white-space:normal}
 }
 
 /* One roomy desktop sheet width for cart, filters and sign-in. */
