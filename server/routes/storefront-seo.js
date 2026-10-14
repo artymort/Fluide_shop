@@ -204,7 +204,8 @@ export function createStorefrontSeoRouter(pool) {
     try {
       const { product } = await templates;
       const { rows, items, archived } = await catalogSnapshot();
-      const row = rows.find((candidate) => candidate.slug === request.params.slug);
+      const row = rows.find((candidate) => candidate.slug === request.params.slug ||
+        productPath(candidate).split("/").at(-2) === request.params.slug);
       if (!row) return response.status(archived.some((candidate) => candidate.slug === request.params.slug) ? 410 : 404)
         .send(archived.some((candidate) => candidate.slug === request.params.slug) ? renderGone(product) : renderNotFound(product));
       const canonical = productPath(row);

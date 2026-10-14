@@ -14,7 +14,14 @@ export function sectionForProduct(product) {
 }
 
 export function productPath(product) {
-  return `/catalog/${sectionForProduct(product)}/${encodeURIComponent(product.slug)}/`;
+  let slug = product.slug;
+  const legacyNumber = /^fragrance-(\d{3})$/.exec(String(product.legacy_id || product.legacyId || ""))?.[1];
+  if (legacyNumber) {
+    const repeatedNumber = String(Number(legacyNumber));
+    const prefix = `${legacyNumber}-${repeatedNumber}-`;
+    if (slug.startsWith(prefix)) slug = `${legacyNumber}-${slug.slice(prefix.length)}`;
+  }
+  return `/catalog/${sectionForProduct(product)}/${encodeURIComponent(slug)}/`;
 }
 
 export function normalizeLegacyId(value) {

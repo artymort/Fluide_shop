@@ -5,7 +5,7 @@ import { createStorefrontSeoRouter } from "../routes/storefront-seo.js";
 import { normalizeLegacyId, productPath, sectionForProduct } from "../catalog/urls.js";
 
 const product = {
-  id: "p1", legacy_id: "fragrance-025", sku: "FL-025", slug: "025-baccarat",
+  id: "p1", legacy_id: "fragrance-025", sku: "FL-025", slug: "025-25-baccarat",
   kind: "fragrance", name: "FLUIDE 25 Baccarat", product_type: "fragrance",
   type_label: "Парфюм", status: "published", fulfillment_mode: "made_to_order",
   short_description: "По мотивам Baccarat Rouge", description: "Шафран и жасмин",
@@ -24,6 +24,7 @@ const pool = {
 
 test("catalog URL maps fragrance and legacy number consistently", () => {
   assert.equal(productPath(product), "/catalog/perfume/025-baccarat/");
+  assert.equal(productPath({ ...product, legacy_id: undefined, legacyId: "fragrance-025" }), "/catalog/perfume/025-baccarat/");
   assert.equal(sectionForProduct({ kind: "product", product_type: "candle" }), "home");
   assert.equal(normalizeLegacyId("25"), "fragrance-025");
   assert.equal(normalizeLegacyId("025"), "fragrance-025");
@@ -46,6 +47,10 @@ test("storefront serves product HTML, one-hop legacy redirect, 404 and current s
     assert.match(html, /3[\s\u00a0]?490 ₽/);
     assert.match(html, /<link rel="canonical" href="https:\/\/fluide-atelier.ru\/catalog\/perfume\/025-baccarat\/">/);
     assert.match(html, /application\/ld\+json/);
+
+    const duplicateNumber = await fetch(`${base}/catalog/perfume/025-25-baccarat/`, { redirect: "manual" });
+    assert.equal(duplicateNumber.status, 301);
+    assert.equal(duplicateNumber.headers.get("location"), "/catalog/perfume/025-baccarat/");
 
     const filtered = await fetch(`${base}/catalog/perfume/025-baccarat/?utm_source=test`);
     assert.match(await filtered.text(), /<meta name="robots" content="noindex,follow">/);
