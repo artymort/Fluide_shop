@@ -10,6 +10,7 @@ import { createOrdersRouter } from "./routes/orders.js";
 import { createContentRouter } from "./routes/content.js";
 import { createPaymentsRouter } from "./routes/payments.js";
 import { createDeliveryRouter } from "./routes/delivery.js";
+import { createStorefrontSeoRouter } from "./routes/storefront-seo.js";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
@@ -21,6 +22,7 @@ export function createApp({ pool, config }) {
   app.set("trust proxy", "loopback");
   app.use(helmet());
   app.use(express.json({ limit: "32kb", strict: true }));
+  app.use(createStorefrontSeoRouter(pool));
 
   app.use((request, response, next) => {
     if (SAFE_METHODS.has(request.method)) return next();

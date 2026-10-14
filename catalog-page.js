@@ -99,7 +99,7 @@ let catalogProducts = [];
 let visibleLimit = 12;
 let favoritesOnly = false;
 let selectionMode = new URLSearchParams(window.location.search).get("mode") === "selection";
-let activeCatalogSection = selectionMode ? "perfume" : new URLSearchParams(window.location.search).get("section") || (new URLSearchParams(window.location.search).get("category")==="home" ? "home" : "all");
+let activeCatalogSection = selectionMode ? "perfume" : (location.pathname.match(/^\/catalog\/(perfume|solid|home|care|car)\/?$/)?.[1] || new URLSearchParams(window.location.search).get("section") || (new URLSearchParams(window.location.search).get("category")==="home" ? "home" : "all"));
 if(!CATALOG_SECTIONS.hasOwnProperty(activeCatalogSection))activeCatalogSection="all";
 let focusSelectionResultsOnLoad = selectionMode && new URLSearchParams(window.location.search).get("view") === "results";
 let toastTimer;
@@ -195,16 +195,18 @@ function initializeFiltersFromUrl(){
 }
 
 function syncSelectionUrl(){
-  if(!selectionMode)return;
   const params=new URLSearchParams();
-  params.set("mode","selection");
+  if(selectionMode)params.set("mode","selection");
   const gender=getGender();
   if(gender)params.set("gender",gender);
   ["category","family","occasion","season"].forEach(name=>getChecked(name).forEach(value=>params.append(name,value)));
   if(searchInput.value.trim())params.set("q",searchInput.value.trim());
   if(favoritesOnly)params.set("favorites","1");
   if(sortSelect.value!=="featured")params.set("sort",sortSelect.value);
-  history.replaceState(null,"",`${location.pathname}?${params.toString()}`);
+  const path=selectionMode||activeCatalogSection==="all"?"/catalog/":`/catalog/${activeCatalogSection}/`;
+  const localStatic=location.hostname==="localhost"&&location.port==="8765";
+  if(localStatic&&!selectionMode&&activeCatalogSection!=="all")params.set("section",activeCatalogSection);
+  history.replaceState(null,"",`${localStatic?location.pathname:path}${params.size?`?${params}`:""}`);
 }
 
 function currentFiltered(){
@@ -231,7 +233,7 @@ function currentFiltered(){
         item.id,item.name,item.title,item.original,item.group,item.category,item.gender,item.notesRaw,
         ...(item.families||[]),...(item.accords||[]).map(accord=>accord.name)
       ].join(" "));
-    if(query && !searchText.includes(query))return false;
+    if(query && (window.FluideSearch?.score(item,query)??(searchText.includes(query)?1:-1))<0)return false;
     if(perfumeFiltersActive){
       if(!matchesAny(item.category,categories))return false;
       if(!selectionMode&&gender&&item.gender!==gender)return false;
@@ -254,7 +256,8 @@ function currentFiltered(){
     case "name": sorted.sort((a,b)=>prettyTitle(a.title).localeCompare(prettyTitle(b.title),"ru")); break;
     case "price-asc": sorted.sort((a,b)=>getPrice(a)-getPrice(b)||catalogItemKey(a).localeCompare(catalogItemKey(b),"ru",{numeric:true})); break;
     case "price-desc": sorted.sort((a,b)=>getPrice(b)-getPrice(a)||catalogItemKey(a).localeCompare(catalogItemKey(b),"ru",{numeric:true})); break;
-    default: if(!selectionMode)sorted.sort((a,b)=>{
+    default: if(query)sorted.sort((a,b)=>(window.FluideSearch?.score(b,query)||0)-(window.FluideSearch?.score(a,query)||0));
+    else if(!selectionMode)sorted.sort((a,b)=>{
       if(activeCatalogSection === "all"){
         const aRank=FEATURED_CATALOG_ORDER.indexOf(catalogItemKey(a));
         const bRank=FEATURED_CATALOG_ORDER.indexOf(catalogItemKey(b));
@@ -276,7 +279,7 @@ function cardTemplate(fragrance,index){
   const imageLoading=index<4?"eager":"lazy";
   if(isCatalogProduct(fragrance)){
     const productMeta=[fragrance.typeLabel,fragrance.volume].filter(Boolean).join(" · ");
-    const productHref=`product.html?id=${encodeURIComponent(fragrance.id)}`;
+    const productHref=fragrance.url||`product.html?id=${encodeURIComponent(fragrance.id)}`;
     return `<article class="fragrance-card catalog-product-card" data-id="${escapeHtml(fragrance.id)}">
       <div class="fragrance-media-shell">
         <span class="fragrance-badge">${escapeHtml(fragrance.typeLabel)}</span>
@@ -296,10 +299,11 @@ function cardTemplate(fragrance,index){
   }
   const title = prettyTitle(fragrance.title);
   const cardName = `FLUIDE ${Number(fragrance.id)} ${title}`;
+  const productHref=fragrance.url||`product.html?id=${encodeURIComponent(fragrance.id)}`;
   return `<article class="fragrance-card" data-id="${escapeHtml(fragrance.id)}">
     <div class="fragrance-media-shell">
       <span class="fragrance-badge">${escapeHtml(fragrance.isNew?"Новинка":fragrance.category)}</span>
-      <a class="fragrance-media" href="product.html?id=${encodeURIComponent(fragrance.id)}" aria-label="Открыть страницу аромата ${escapeHtml(title)}">
+      <a class="fragrance-media" href="${productHref}" aria-label="Открыть страницу аромата ${escapeHtml(title)}">
         ${productVisual(fragrance,imageLoading)}
       </a>
       <button class="favorite-toggle ${active?"is-active":""}" type="button" data-favorite="${escapeHtml(id)}" aria-label="${active?"Удалить из избранного":"Добавить в избранное"}">
@@ -307,10 +311,10 @@ function cardTemplate(fragrance,index){
       </button>
     </div>
     <div class="fragrance-info">
-      <div class="fragrance-title-row"><h3><a href="product.html?id=${encodeURIComponent(fragrance.id)}">${escapeHtml(cardName)}</a></h3></div>
+      <div class="fragrance-title-row"><h3><a href="${productHref}">${escapeHtml(cardName)}</a></h3></div>
       <p class="fragrance-original">По мотивам ${escapeHtml(fragrance.original)}</p>
       <p class="fragrance-notes">${escapeHtml(noteSummary(fragrance))}</p>
-      <div class="card-actions"><strong class="card-price">от ${formatPriceMarkup(getPrice(fragrance))}</strong><div class="card-action-buttons"><a class="details-button" href="product.html?id=${encodeURIComponent(fragrance.id)}">Подробнее</a><button class="add-button" type="button" data-add="${escapeHtml(fragrance.id)}" aria-label="Добавить ${escapeHtml(title)} в корзину">В корзину</button></div></div>
+      <div class="card-actions"><strong class="card-price">от ${formatPriceMarkup(getPrice(fragrance))}</strong><div class="card-action-buttons"><a class="details-button" href="${productHref}">Подробнее</a><button class="add-button" type="button" data-add="${escapeHtml(fragrance.id)}" aria-label="Добавить ${escapeHtml(title)} в корзину">В корзину</button></div></div>
     </div>
   </article>`;
 }
@@ -378,12 +382,7 @@ function renderCatalogSectionCounts(){
 
 function syncCatalogSectionUrl(){
   if(selectionMode)return;
-  const params=new URLSearchParams(location.search);
-  params.delete("category");
-  if(activeCatalogSection==="all")params.delete("section");
-  else params.set("section",activeCatalogSection);
-  const query=params.toString();
-  history.replaceState(null,"",`${location.pathname}${query?`?${query}`:""}`);
+  syncSelectionUrl();
 }
 
 function setCatalogSection(section){

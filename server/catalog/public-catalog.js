@@ -1,3 +1,5 @@
+import { productPath } from "./urls.js";
+
 const money = (minor) => Number(minor || 0) / 100;
 
 const fragranceTitle = (product) => String(product.name || "")
@@ -24,6 +26,7 @@ export function serializePublicCatalog(products, variants, media) {
       result.fragrances.push({
         ...attributes,
         id,
+        url: productPath(product),
         name: product.name,
         title: fragranceTitle(product),
         image,
@@ -44,6 +47,7 @@ export function serializePublicCatalog(products, variants, media) {
     result.products.push({
       ...attributes,
       id: product.legacy_id || `product-${product.slug}`,
+      url: productPath(product),
       kind: "product",
       name: product.name,
       title: product.name,
