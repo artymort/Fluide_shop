@@ -84,6 +84,18 @@ PY
 nginx -t
 systemctl restart fluide-api
 systemctl is-active --quiet fluide-api
+api_ready=0
+for attempt in {1..30}; do
+  if curl --noproxy '*' --silent --fail --max-time 2 http://127.0.0.1:3000/api/health > /dev/null; then
+    api_ready=1
+    break
+  fi
+  sleep 1
+done
+if [[ "$api_ready" -ne 1 ]]; then
+  echo "FLUIDE API did not become ready within 30 seconds." >&2
+  false
+fi
 systemctl reload nginx
 
 check_status() {
