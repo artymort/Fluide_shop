@@ -451,10 +451,18 @@
       staff.push({ id: `demo-staff-${Date.now()}`, email: payload.email, display_name: payload.displayName, role: payload.role, status: "active", last_login_at: null, created_at: now() });
       return json({ staff: staff.at(-1) }, 201);
     }
-    if (/^\/staff\//.test(path) && method === "PATCH") {
-      const person = staff.find((item) => item.id === path.split("/").at(-1));
-      Object.assign(person, body(options));
-      return json({ staff: person });
+    const staffMatch = path.match(/^\/staff\/([^/]+)(\/password)?$/);
+    if (staffMatch) {
+      const person = staff.find((item) => item.id === staffMatch[1]);
+      if (!person) return json({ error: "staff_not_found" }, 404);
+      if (method === "GET" && !staffMatch[2]) return json({ staff: person });
+      if (method === "PATCH" && staffMatch[2]) return String(body(options).newPassword || "").length >= 12
+        ? new Response(null, { status: 204 }) : json({ error: "password_invalid" }, 400);
+      if (method === "PATCH" && !staffMatch[2]) {
+        const payload = body(options);
+        Object.assign(person, { display_name: payload.displayName, email: payload.email, role: payload.role, status: payload.status });
+        return json({ staff: person });
+      }
     }
     if (path === "/media" && method === "POST") {
       const file = options.body.get("file");

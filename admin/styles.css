@@ -7,6 +7,12 @@ html{overflow-y:scroll;scrollbar-gutter:stable}
 @media(max-width:980px){.stats{grid-template-columns:repeat(2,1fr)}.cms{grid-template-columns:1fr}.sidebar{position:fixed;z-index:20;left:0;transform:translateX(-100%);transition:.2s}.cms.menu-open .sidebar{transform:translateX(0)}.mobile-head{display:flex;align-items:center;justify-content:space-between;margin:-26px 0 30px}.mobile-head button{padding:8px 12px;border-radius:8px;background:#fff}.workspace{padding:32px 20px}}
 @media(max-width:620px){.stats{grid-template-columns:1fr}.page-head{align-items:flex-start;flex-direction:column}.page-head h1{font-size:31px}.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.variant-row{grid-template-columns:1fr 1fr}.variant-row .remove-row{grid-column:2;justify-self:end}.toolbar>*{width:100%!important;max-width:none!important}}
 .generated-password{margin-top:22px;padding:18px;border:1px solid #c9d7cd;border-radius:12px;background:#edf7f0;color:#245d3f;white-space:pre-wrap;word-break:break-word}.preview-banner{margin:-20px 0 28px;padding:12px 16px;border-radius:10px;background:#fff0c7;color:#6e5115;font-size:13px}
+.staff-detail-dialog{width:min(680px,calc(100% - 24px))}
+.staff-detail-meta{margin:20px 0;color:var(--muted);font-size:13px}
+.staff-reset-form{border-top:1px solid var(--line)}
+.staff-reset-form h3{margin:0 0 8px;font-size:18px;font-weight:500}
+.staff-reset-form>p:not(.form-message){margin:0 0 18px;color:var(--muted);font-size:13px}
+.staff-reset-form>.secondary{margin-top:12px}
 
 /* Unified CMS typography */
 body{font-size:14px;font-weight:400;line-height:1.45;letter-spacing:-.01em;font-synthesis:none;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}

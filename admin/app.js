@@ -32,6 +32,8 @@ const elements = Object.fromEntries([
   "apply-import", "cancel-import", "import-result",
   "staff-rows", "new-staff-button", "staff-dialog", "staff-form", "staff-password",
   "staff-message", "cancel-staff",
+  "staff-detail-dialog", "staff-detail-title", "staff-detail-form", "staff-detail-meta",
+  "staff-detail-message", "cancel-staff-detail", "staff-reset-form", "staff-reset-message",
   "change-password-button", "password-dialog", "password-form", "password-message", "cancel-password",
   "content-status", "content-form", "content-product-count", "content-selected-products",
   "content-product-search", "content-product-list", "content-offer-list", "content-voice-list",
@@ -1062,11 +1064,6 @@ async function loadAnalytics() {
   }
 }
 
-async function updateStaff(id, role, status) {
-  await api(`/staff/${id}`, { method: "PATCH", body: { role, status } });
-  await loadStaff();
-}
-
 async function loadStaff() {
   const { staff } = await api("/staff");
   elements["staff-rows"].replaceChildren(...staff.map((person) => {
@@ -1078,38 +1075,42 @@ async function loadStaff() {
     email.className = "subtle";
     email.textContent = person.email;
     identity.append(name, email);
-
-    const roleCell = document.createElement("td");
-    const roleSelect = document.createElement("select");
-    roleSelect.style.minWidth = "150px";
-    Object.entries(roleLabels).forEach(([value, label]) => {
-      if (value === "owner" && state.admin.role !== "owner" && person.role !== "owner") return;
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = label;
-      option.selected = value === person.role;
-      roleSelect.append(option);
+    const actionCell = document.createElement("td");
+    const openButton = document.createElement("button");
+    openButton.className = "secondary";
+    openButton.type = "button";
+    openButton.textContent = "Открыть";
+    openButton.addEventListener("click", () => openStaffDetail(person.id).catch(console.error));
+    actionCell.append(openButton);
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      openStaffDetail(person.id).catch(console.error);
     });
-    const protectedOwner = person.role === "owner" && state.admin.role !== "owner";
-    roleSelect.disabled = protectedOwner;
-    roleSelect.addEventListener("change", () => updateStaff(person.id, roleSelect.value, person.status).catch(() => loadStaff()));
-    roleCell.append(roleSelect);
-
-    const statusCell = document.createElement("td");
-    const statusButton = document.createElement("button");
-    statusButton.className = "secondary";
-    statusButton.type = "button";
-    statusButton.textContent = person.status === "active" ? "Активен" : "Заблокирован";
-    statusButton.disabled = person.id === state.admin.id || protectedOwner;
-    statusButton.addEventListener("click", () => updateStaff(
-      person.id,
-      person.role,
-      person.status === "active" ? "blocked" : "active",
-    ).catch(() => loadStaff()));
-    statusCell.append(statusButton);
-    row.append(identity, roleCell, statusCell, makeCell(formatDate(person.last_login_at)), makeCell(formatDate(person.created_at)));
+    row.append(identity, makeCell(roleLabels[person.role] || person.role),
+      makeCell(person.status === "active" ? "Активен" : "Заблокирован"),
+      makeCell(formatDate(person.last_login_at)), makeCell(formatDate(person.created_at)), actionCell);
     return row;
   }));
+}
+
+async function openStaffDetail(id) {
+  const { staff } = await api(`/staff/${id}`);
+  const form = elements["staff-detail-form"];
+  form.reset();
+  form.elements.id.value = staff.id;
+  form.elements.displayName.value = staff.display_name;
+  form.elements.email.value = staff.email;
+  form.elements.role.value = staff.role;
+  form.elements.status.value = staff.status;
+  form.elements.role.disabled = staff.id === state.admin.id;
+  form.elements.status.disabled = staff.id === state.admin.id;
+  elements["staff-detail-title"].textContent = staff.display_name;
+  elements["staff-detail-meta"].textContent = `Создан: ${formatDate(staff.created_at)} · Последний вход: ${formatDate(staff.last_login_at)}`;
+  elements["staff-detail-message"].textContent = "";
+  elements["staff-reset-form"].reset();
+  elements["staff-reset-form"].hidden = staff.id === state.admin.id;
+  elements["staff-reset-message"].textContent = "";
+  elements["staff-detail-dialog"].showModal();
 }
 
 const contentProductKey = (product) => String(product.legacyId || product.id || "");
@@ -1854,6 +1855,51 @@ elements["new-staff-button"].addEventListener("click", () => {
   elements["staff-dialog"].showModal();
 });
 elements["cancel-staff"].addEventListener("click", () => elements["staff-dialog"].close());
+elements["cancel-staff-detail"].addEventListener("click", () => elements["staff-detail-dialog"].close());
+elements["staff-detail-form"].addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = elements["staff-detail-message"];
+  message.textContent = "Сохраняем…";
+  try {
+    const { staff } = await api(`/staff/${form.elements.id.value}`, {
+      method: "PATCH",
+      body: {
+        displayName: form.elements.displayName.value,
+        email: form.elements.email.value,
+        role: form.elements.role.value,
+        status: form.elements.status.value,
+      },
+    });
+    elements["staff-detail-title"].textContent = staff.display_name;
+    message.textContent = "Изменения сохранены.";
+    await loadStaff();
+  } catch (error) {
+    message.textContent = error.status === 409 ? "Сотрудник с таким email уже существует."
+      : error.data?.error === "last_owner_required" ? "Нельзя убрать последнего активного владельца."
+        : "Не удалось сохранить изменения. Проверьте поля.";
+  }
+});
+elements["staff-reset-form"].addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = elements["staff-reset-message"];
+  const newPassword = form.elements.newPassword.value;
+  if (newPassword !== form.elements.confirmPassword.value) {
+    message.textContent = "Пароли не совпадают.";
+    return;
+  }
+  message.textContent = "Сохраняем…";
+  try {
+    await api(`/staff/${elements["staff-detail-form"].elements.id.value}/password`, {
+      method: "PATCH", body: { newPassword },
+    });
+    form.reset();
+    message.textContent = "Пароль изменён. Сотруднику нужно войти заново.";
+  } catch {
+    message.textContent = "Не удалось сменить пароль. Проверьте, что он содержит от 12 до 256 символов.";
+  }
+});
 elements["staff-form"].addEventListener("submit", async (event) => {
   event.preventDefault();
   const formData = new FormData(event.currentTarget);

@@ -350,6 +350,27 @@ export function createAdminRouter({ pool, config }) {
     }
   });
 
+  router.get("/staff/:id", async (request, response, next) => {
+    if (!STAFF_MANAGE_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    try {
+      const result = await pool.query(
+        `SELECT id, email, display_name, role, status, last_login_at, created_at
+           FROM admin_users WHERE id = $1`,
+        [request.params.id],
+      );
+      if (!result.rowCount) {
+        response.status(404).json({ error: "staff_not_found" });
+        return;
+      }
+      response.json({ staff: result.rows[0] });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   router.post("/staff", async (request, response, next) => {
     if (!STAFF_MANAGE_ROLES.has(request.admin.role)) {
       response.status(403).json({ error: "forbidden" });
@@ -390,7 +411,10 @@ export function createAdminRouter({ pool, config }) {
     }
     const role = String(request.body?.role || "");
     const status = String(request.body?.status || "");
+    const email = String(request.body?.email || "").trim().toLowerCase();
+    const displayName = cleanText(request.body?.displayName, 120);
     if (!STAFF_ROLES.has(role) || !new Set(["active", "blocked"]).has(status)
+      || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320 || !displayName
       || (role === "owner" && request.admin.role !== "owner")
       || (request.params.id === request.admin.id && status === "blocked")) {
       response.status(400).json({ error: "staff_invalid" });
@@ -417,12 +441,50 @@ export function createAdminRouter({ pool, config }) {
         }
       }
       const result = await pool.query(
-        `UPDATE admin_users SET role = $2, status = $3 WHERE id = $1
+        `UPDATE admin_users SET role = $2, status = $3, email = $4, display_name = $5 WHERE id = $1
          RETURNING id, email, display_name, role, status, last_login_at, created_at`,
-        [request.params.id, role, status],
+        [request.params.id, role, status, email, displayName],
       );
-      await audit(pool, request, "admin.staff_updated", "admin_user", request.params.id, { role, status });
+      await audit(pool, request, "admin.staff_updated", "admin_user", request.params.id, { email, role, status });
       response.json({ staff: result.rows[0] });
+    } catch (error) {
+      if (error?.code === "23505") {
+        response.status(409).json({ error: "staff_email_exists" });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  router.patch("/staff/:id/password", async (request, response, next) => {
+    if (!STAFF_MANAGE_ROLES.has(request.admin.role)) {
+      response.status(403).json({ error: "forbidden" });
+      return;
+    }
+    if (request.params.id === request.admin.id) {
+      response.status(400).json({ error: "use_own_password_change" });
+      return;
+    }
+    const newPassword = String(request.body?.newPassword || "");
+    if (newPassword.length < 12 || newPassword.length > 256) {
+      response.status(400).json({ error: "password_invalid" });
+      return;
+    }
+    try {
+      const result = await pool.query(
+        `UPDATE admin_users SET password_hash = $2 WHERE id = $1 RETURNING id`,
+        [request.params.id, hashAdminPassword(newPassword)],
+      );
+      if (!result.rowCount) {
+        response.status(404).json({ error: "staff_not_found" });
+        return;
+      }
+      await pool.query(
+        "UPDATE admin_sessions SET revoked_at = COALESCE(revoked_at, NOW()) WHERE admin_user_id = $1 AND revoked_at IS NULL",
+        [request.params.id],
+      );
+      await audit(pool, request, "admin.staff_password_reset", "admin_user", request.params.id);
+      response.status(204).end();
     } catch (error) {
       next(error);
     }
