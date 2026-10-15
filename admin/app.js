@@ -1243,7 +1243,6 @@ function fillContentForm(content) {
     heroTitle: content.hero?.title, heroSubtitle: content.hero?.subtitle,
     heroButtonLabel: content.hero?.buttonLabel, heroButtonUrl: content.hero?.buttonUrl,
     heroImageAlt: content.hero?.imageAlt, heroDesktopImage: content.hero?.desktopImage,
-    heroMobileImage: content.hero?.mobileImage,
     bestsellersTitle: content.bestsellers?.title, offersTitle: content.offers?.title,
     finderTitle: content.finder?.title, finderText: content.finder?.text,
     finderButtonLabel: content.finder?.buttonLabel, finderButtonUrl: content.finder?.buttonUrl,
@@ -1260,7 +1259,7 @@ function fillContentForm(content) {
   Object.entries(values).forEach(([name, value]) => setContentField(name, value));
   ["hero", "bestsellers", "offers", "finder", "gifts", "brand", "voices", "club"].forEach((name) => setContentField(`${name}Enabled`, content[name]?.enabled, true));
   setContentField("bestsellersShowFilters", content.bestsellers?.showFilters, true);
-  ["heroDesktopImage", "heroMobileImage", "finderImage", "brandImage"].forEach((name) => {
+  ["heroDesktopImage", "finderImage", "brandImage"].forEach((name) => {
     const preview = elements["content-form"].querySelector(`[data-content-preview="${name}"]`);
     if (preview) preview.src = contentPreviewUrl(elements["content-form"].elements[name].value);
   });
@@ -1280,7 +1279,7 @@ function serializeContentForm() {
   const form = elements["content-form"].elements;
   return {
     seo: { title: form.seoTitle.value.trim(), description: form.seoDescription.value.trim() },
-    hero: { enabled: form.heroEnabled.checked, title: form.heroTitle.value.trim(), subtitle: form.heroSubtitle.value.trim(), buttonLabel: form.heroButtonLabel.value.trim(), buttonUrl: form.heroButtonUrl.value.trim(), desktopImage: form.heroDesktopImage.value.trim(), mobileImage: form.heroMobileImage.value.trim(), imageAlt: form.heroImageAlt.value.trim() },
+    hero: { enabled: form.heroEnabled.checked, title: form.heroTitle.value.trim(), subtitle: form.heroSubtitle.value.trim(), buttonLabel: form.heroButtonLabel.value.trim(), buttonUrl: form.heroButtonUrl.value.trim(), desktopImage: form.heroDesktopImage.value.trim(), mobileImage: state.homeContent?.hero?.mobileImage || form.heroDesktopImage.value.trim(), imageAlt: form.heroImageAlt.value.trim() },
     bestsellers: { enabled: form.bestsellersEnabled.checked, title: form.bestsellersTitle.value.trim(), showFilters: form.bestsellersShowFilters.checked, productIds: [...state.selectedBestsellerIds] },
     offers: { enabled: form.offersEnabled.checked, title: form.offersTitle.value.trim(), items: serializeContentItems(elements["content-offer-list"]) },
     finder: { enabled: form.finderEnabled.checked, title: form.finderTitle.value.trim(), text: form.finderText.value.trim(), buttonLabel: form.finderButtonLabel.value.trim(), buttonUrl: form.finderButtonUrl.value.trim(), image: form.finderImage.value.trim(), imageAlt: form.finderImageAlt.value.trim() },
@@ -1724,7 +1723,7 @@ elements["analytics-period"].addEventListener("change", () => loadAnalytics().ca
 elements["content-product-search"].addEventListener("input", renderBestsellerCatalog);
 elements["content-form"].addEventListener("input", (event) => {
   if (event.target === elements["content-product-search"]) return;
-  if (event.target.name && ["heroDesktopImage", "heroMobileImage", "finderImage", "brandImage"].includes(event.target.name)) {
+  if (event.target.name && ["heroDesktopImage", "finderImage", "brandImage"].includes(event.target.name)) {
     const preview = elements["content-form"].querySelector(`[data-content-preview="${event.target.name}"]`);
     if (preview) preview.src = contentPreviewUrl(event.target.value);
   }

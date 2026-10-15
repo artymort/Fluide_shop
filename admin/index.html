@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="styles.css?v=32">
   <script src="../site-icons.js?v=local-v1" defer></script>
   <script src="preview.js?v=18" defer></script>
-  <script src="app.js?v=26" defer></script>
+  <script src="app.js?v=27" defer></script>
 </head>
 <body>
   <section class="login-shell" id="login-view" hidden>
@@ -168,7 +168,7 @@
           </section>
 
           <section class="content-card">
-            <div class="content-card-head"><div><h2>Главный баннер</h2><p>Первый экран главной страницы. Для телефона используется отдельное изображение.</p></div><label class="content-toggle"><input name="heroEnabled" type="checkbox"><span>Показывать</span></label></div>
+            <div class="content-card-head"><div><h2>Главный баннер</h2><p>Первый экран главной страницы. На компьютере и телефоне используется одно изображение; на телефоне оно кадрируется под экран.</p></div><label class="content-toggle"><input name="heroEnabled" type="checkbox"><span>Показывать</span></label></div>
             <div class="form-grid">
               <label class="wide">Заголовок<textarea name="heroTitle" rows="2" maxlength="240" required></textarea></label>
               <label class="wide">Подзаголовок<textarea name="heroSubtitle" rows="2" maxlength="500" required></textarea></label>
@@ -176,10 +176,7 @@
               <label>Ссылка кнопки<input name="heroButtonUrl" maxlength="1000" required></label>
               <label class="wide">Описание изображения<input name="heroImageAlt" maxlength="240"></label>
             </div>
-            <div class="content-image-grid">
-              <div class="content-image-editor"><img data-content-preview="heroDesktopImage" alt=""><div><strong>Изображение для компьютера</strong><label>Путь к файлу<input name="heroDesktopImage" maxlength="1000" required></label><label class="secondary content-upload">Загрузить<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" data-content-upload="heroDesktopImage" hidden></label></div></div>
-              <div class="content-image-editor"><img data-content-preview="heroMobileImage" alt=""><div><strong>Изображение для телефона</strong><label>Путь к файлу<input name="heroMobileImage" maxlength="1000" required></label><label class="secondary content-upload">Загрузить<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" data-content-upload="heroMobileImage" hidden></label></div></div>
-            </div>
+            <div class="content-image-editor content-image-editor-wide"><img data-content-preview="heroDesktopImage" alt=""><div><strong>Изображение баннера для всех экранов</strong><label>Путь к файлу<input name="heroDesktopImage" maxlength="1000" required></label><label class="secondary content-upload">Загрузить<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" data-content-upload="heroDesktopImage" hidden></label></div></div>
           </section>
 
           <section class="content-card">
