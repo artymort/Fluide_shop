@@ -53,7 +53,12 @@ assert content.count(server_name) == 2, "Unexpected main server blocks"
 assert content.count(performance) == 1, "Unexpected performance include"
 assert content.count(legacy_redirect) in (0, 2), "Unexpected HTTP redirects"
 
-canonical_rules = """    # Canonical host and index before choosing a location (one redirect hop).
+canonical_rules = """    # Canonical host before choosing a location.
+    if ($host = www.fluide-atelier.ru) {
+        return 301 https://fluide-atelier.ru$request_uri;
+    }
+"""
+unsafe_rules = """    # Canonical host and index before choosing a location (one redirect hop).
     if ($uri = /index.html) {
         return 301 https://fluide-atelier.ru/$is_args$args;
     }
@@ -61,7 +66,9 @@ canonical_rules = """    # Canonical host and index before choosing a location (
         return 301 https://fluide-atelier.ru$request_uri;
     }
 """
-if "# Canonical host and index before choosing a location" not in content:
+if unsafe_rules in content:
+    content = content.replace(unsafe_rules, canonical_rules, 1)
+elif "# Canonical host before choosing a location" not in content:
     content = content.replace(server_name, server_name + canonical_rules, 1)
 seo_include = "    include /etc/nginx/snippets/fluide-seo-routes.conf;"
 if seo_include not in content:
@@ -106,9 +113,10 @@ check_status() {
 }
 
 check_status 200 /catalog/
+check_status 200 /
 check_status 200 /catalog/home/
 check_status 301 '/product.html?id=025'
-check_status 301 /index.html
+check_status 200 /index.html
 check_status 200 /sitemap.xml
 check_status 200 /api/health
 
