@@ -119,7 +119,7 @@ export function resolveRussianPostDelivery(payload, config) {
       weightGrams: quote.weightGrams,
       periodMin: quote.periodMin,
       periodMax: quote.periodMax,
-      shipmentCreation: false,
+      shipmentCreation: Boolean(config.russianPost.createOrders),
     },
   };
 }

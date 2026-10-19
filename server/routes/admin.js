@@ -714,7 +714,7 @@ export function createAdminRouter({ pool, config }) {
     }
     try {
       await maintainOrderLifecycle(pool);
-      const [orderResult, itemsResult, paymentsResult, historyResult, cdekShipmentResult] = await Promise.all([
+      const [orderResult, itemsResult, paymentsResult, historyResult, cdekShipmentResult, russianPostShipmentResult] = await Promise.all([
         pool.query(
           `SELECT o.*,
                   o.archived_at + INTERVAL '14 days' AS purge_at,
@@ -779,6 +779,11 @@ export function createAdminRouter({ pool, config }) {
              FROM cdek_shipments WHERE order_id = $1`,
           [request.params.id],
         ),
+        pool.query(
+          `SELECT status, external_number, shipping_point, post_order_id, barcode, last_error, updated_at
+             FROM russian_post_shipments WHERE order_id = $1`,
+          [request.params.id],
+        ),
       ]);
       if (!orderResult.rowCount) {
         response.status(404).json({ error: "order_not_found" });
@@ -790,6 +795,7 @@ export function createAdminRouter({ pool, config }) {
         payments: paymentsResult.rows,
         history: historyResult.rows,
         cdekShipment: cdekShipmentResult.rows[0] || null,
+        russianPostShipment: russianPostShipmentResult.rows[0] || null,
       });
     } catch (error) {
       next(error);

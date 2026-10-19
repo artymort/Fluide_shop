@@ -4,10 +4,11 @@ const QUOTE_TTL_SECONDS = 15 * 60;
 const MAX_DELIVERY_MINOR = 500_000;
 
 export class RussianPostError extends Error {
-  constructor(code, status = 502) {
+  constructor(code, status = 502, details = null) {
     super(code);
     this.code = code;
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -111,6 +112,35 @@ export function normalizeRussianPostAddress(payload, originalAddress = "") {
 }
 
 export function createRussianPostClient(config, { fetchImpl = globalThis.fetch } = {}) {
+  async function request(path, { method = "GET", body = null, query = null } = {}) {
+    const url = new URL(`https://otpravka-api.pochta.ru${path}`);
+    Object.entries(query || {}).forEach(([key, value]) => url.searchParams.set(key, String(value)));
+    let response;
+    try {
+      response = await fetchImpl(String(url), {
+        method,
+        headers: {
+          Authorization: `AccessToken ${config.token}`,
+          "X-User-Authorization": `Basic ${config.userKey}`,
+          "Content-Type": "application/json;charset=UTF-8",
+          Accept: "application/json",
+        },
+        body: body === null ? undefined : JSON.stringify(body),
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch {
+      throw new RussianPostError("russian_post_provider_unavailable", 503);
+    }
+    const payload = await response.json().catch(() => null);
+    if (response.status === 401 || response.status === 403) {
+      throw new RussianPostError("russian_post_authorization_failed", 502);
+    }
+    if (!response.ok) {
+      throw new RussianPostError("russian_post_provider_rejected", 502, { status: response.status });
+    }
+    return payload;
+  }
+
   async function quote(postalCode) {
     if (!/^\d{6}$/.test(postalCode)) throw new RussianPostError("delivery_postal_code_required", 400);
     const body = {
@@ -150,30 +180,56 @@ export function createRussianPostClient(config, { fetchImpl = globalThis.fetch }
     return normalizeRussianPostTariff(payload);
   }
 
-  async function normalizeAddress({ city, postalCode, address }) {
+  async function cleanAddress({ city, postalCode, address }) {
     const originalAddress = [postalCode, city, address].filter(Boolean).join(", ");
-    let response;
-    try {
-      response = await fetchImpl("https://otpravka-api.pochta.ru/1.0/clean/address", {
-        method: "POST",
-        headers: {
-          Authorization: `AccessToken ${config.token}`,
-          "X-User-Authorization": `Basic ${config.userKey}`,
-          "Content-Type": "application/json;charset=UTF-8",
-          Accept: "application/json",
-        },
-        body: JSON.stringify([{ id: "1", "original-address": originalAddress }]),
-        signal: AbortSignal.timeout(12_000),
-      });
-    } catch {
-      throw new RussianPostError("russian_post_provider_unavailable", 503);
-    }
-    const payload = await response.json().catch(() => null);
-    if (response.status === 401 || response.status === 403) {
-      throw new RussianPostError("russian_post_authorization_failed", 502);
-    }
-    if (!response.ok) throw new RussianPostError("russian_post_provider_rejected", 502);
+    return request("/1.0/clean/address", {
+      method: "POST", body: [{ id: "1", "original-address": originalAddress }],
+    });
+  }
+
+  async function normalizeAddress({ city, postalCode, address }) {
+    const payload = await cleanAddress({ city, postalCode, address });
     return normalizeRussianPostAddress(payload, address);
   }
-  return Object.freeze({ quote, normalizeAddress });
+
+  async function normalizedAddressForShipment(input) {
+    const payload = await cleanAddress(input);
+    if (!normalizeRussianPostAddress(payload, input.address)) {
+      throw new RussianPostError("russian_post_address_invalid", 422);
+    }
+    return payload[0];
+  }
+
+  async function normalizeRecipientName(name) {
+    const payload = await request("/1.0/clean/physical", {
+      method: "POST", body: [{ id: "1", "original-fio": name }],
+    });
+    const person = Array.isArray(payload) ? payload[0] : null;
+    if (!person?.valid || !cleanText(person.name) || !cleanText(person.surname)) {
+      throw new RussianPostError("russian_post_recipient_name_invalid", 422);
+    }
+    return person;
+  }
+
+  async function shippingPoints() {
+    const payload = await request("/1.0/user-shipping-points");
+    if (!Array.isArray(payload)) throw new RussianPostError("russian_post_shipping_points_unavailable", 502);
+    return payload.filter((point) => point.enabled && /^\d{6}$/.test(String(point["operator-postcode"] || "")));
+  }
+
+  async function registerOrder(order) {
+    return request("/2.0/user/backlog", { method: "PUT", body: [order] });
+  }
+
+  async function searchOrder(number) {
+    try {
+      return await request("/1.0/backlog/search", { query: { query: number } });
+    } catch (error) {
+      if (error instanceof RussianPostError && error.details?.status === 404) return [];
+      throw error;
+    }
+  }
+
+  return Object.freeze({ quote, normalizeAddress, normalizedAddressForShipment,
+    normalizeRecipientName, shippingPoints, registerOrder, searchOrder });
 }

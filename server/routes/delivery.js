@@ -71,7 +71,7 @@ export function createDeliveryRouter({ config }) {
         ...quote,
         deliveryPrice: tariff.deliveryMinor / 100,
         tariffName: "Посылка онлайн",
-        shipmentCreation: false,
+        shipmentCreation: Boolean(config.russianPost.createOrders),
         quoteToken: signRussianPostQuote(quote, config.session.secret),
       });
     } catch (error) {

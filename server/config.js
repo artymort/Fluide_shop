@@ -46,6 +46,9 @@ export function loadConfig() {
   const russianPostToken = readString("RUSSIAN_POST_TOKEN");
   const russianPostUserKey = readString("RUSSIAN_POST_USER_KEY");
   const russianPostFromIndex = readString("RUSSIAN_POST_FROM_INDEX");
+  const russianPostCreateOrders = readBoolean("RUSSIAN_POST_CREATE_ORDERS", false);
+  const russianPostOrderPrefix = readString("RUSSIAN_POST_ORDER_PREFIX", "FLUIDE-");
+  const russianPostContentsApproved = readBoolean("RUSSIAN_POST_CONTENTS_APPROVED", false);
   const telegramBotToken = readString("TELEGRAM_BOT_TOKEN");
   const telegramOrderChatId = readString("TELEGRAM_ORDER_CHAT_ID");
 
@@ -97,6 +100,10 @@ export function loadConfig() {
   }
   if (russianPostFromIndex && !/^\d{6}$/.test(russianPostFromIndex)) {
     throw new Error("RUSSIAN_POST_FROM_INDEX must contain six digits");
+  }
+  if (russianPostCreateOrders && (!russianPostToken || !russianPostUserKey || !russianPostFromIndex
+    || !russianPostContentsApproved || !/^[A-Za-z0-9_-]{2,20}$/.test(russianPostOrderPrefix))) {
+    throw new Error("Live Russian Post orders require credentials, a shipping point, eligible contents approval and an order prefix");
   }
   if (Boolean(telegramBotToken) !== Boolean(telegramOrderChatId)) {
     throw new Error("TELEGRAM_BOT_TOKEN and TELEGRAM_ORDER_CHAT_ID must be set together");
@@ -196,6 +203,9 @@ export function loadConfig() {
     }),
     russianPost: Object.freeze({
       enabled: Boolean(russianPostToken && russianPostUserKey),
+      createOrders: russianPostCreateOrders,
+      orderPrefix: russianPostOrderPrefix,
+      contentsApproved: russianPostContentsApproved,
       token: russianPostToken,
       userKey: russianPostUserKey,
       fromIndex: russianPostFromIndex,

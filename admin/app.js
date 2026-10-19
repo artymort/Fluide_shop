@@ -616,7 +616,7 @@ function formatDeliveryAddress(address = {}) {
     .join(", ") || "Не указан";
 }
 
-function renderOrderDetail(order, items = [], payments = [], history = [], cdekShipment = null) {
+function renderOrderDetail(order, items = [], payments = [], history = [], cdekShipment = null, russianPostShipment = null) {
   const overview = document.createElement("section");
   overview.className = "order-overview";
   const status = document.createElement("article");
@@ -688,6 +688,21 @@ function renderOrderDetail(order, items = [], payments = [], history = [], cdekS
       ...(cdekShipment?.last_error ? [orderDetailItem("Ошибка СДЭК", cdekShipment.last_error)] : []),
     );
   }
+  if (order.delivery_method === "russian_post") {
+    const labels = {
+      queued: "Готовится отправление", submitting: "Отправляется в Почту России",
+      awaiting_barcode: "Создано; ожидает ШПИ", created: "ШПИ получен",
+      needs_review: "Требуется проверка", failed: "Почта отклонила отправление",
+    };
+    delivery.append(
+      orderDetailItem("Отправление Почты", russianPostShipment
+        ? labels[russianPostShipment.status] || russianPostShipment.status : "Не создавалось"),
+      ...(russianPostShipment?.post_order_id ? [orderDetailItem("Номер в Почте", russianPostShipment.post_order_id)] : []),
+      ...(russianPostShipment?.barcode ? [orderDetailItem("ШПИ", russianPostShipment.barcode)] : []),
+      ...(russianPostShipment?.shipping_point ? [orderDetailItem("Индекс сдачи", russianPostShipment.shipping_point)] : []),
+      ...(russianPostShipment?.last_error ? [orderDetailItem("Ошибка Почты", russianPostShipment.last_error)] : []),
+    );
+  }
   info.append(buyer, delivery);
 
   const paymentSection = document.createElement("section");
@@ -755,10 +770,10 @@ async function openOrder(id) {
   elements["order-archive-actions"].hidden = true;
   if (!elements["order-dialog"].open) elements["order-dialog"].showModal();
   try {
-    const { order, items, payments, history, cdekShipment } = await api(`/orders/${id}`);
+    const { order, items, payments, history, cdekShipment, russianPostShipment } = await api(`/orders/${id}`);
     state.currentOrder = order;
     elements["order-dialog-title"].textContent = `Заказ ${order.order_number}`;
-    renderOrderDetail(order, items || [], payments || [], history || [], cdekShipment);
+    renderOrderDetail(order, items || [], payments || [], history || [], cdekShipment, russianPostShipment);
     const canArchiveOrders = ["owner", "admin"].includes(state.admin?.role);
     elements["order-incomplete-message"].hidden = true;
     elements["order-status-label"].hidden = false;
