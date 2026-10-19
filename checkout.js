@@ -278,7 +278,7 @@
         <section class="checkout-section"><h2>Контакты</h2><div class="checkout-fields checkout-fields--two">
           <label><span>Имя и фамилия</span><input name="customerName" autocomplete="name" required maxlength="120"></label>
           <label><span>Телефон</span><input name="customerPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+7 999 000-00-00" required></label>
-          <label class="checkout-field-wide"><span>Email <small>необязательно</small></span><input name="customerEmail" type="email" autocomplete="email" maxlength="320"></label>
+          <label class="checkout-field-wide"><span>Email для электронного чека</span><input name="customerEmail" type="email" autocomplete="email" maxlength="320" required></label>
         </div></section>
         <section class="checkout-section"><h2>Доставка</h2><div class="checkout-delivery">
           <label><input type="radio" name="deliveryMethod" value="cdek" checked><span class="checkout-delivery-choice"><span class="checkout-delivery-copy"><b>СДЭК</b><small>В пункт выдачи</small></span><img src="assets/brand/cdek.svg" alt="" aria-hidden="true"></span></label>
@@ -343,6 +343,7 @@
     customer_name_invalid: "Укажите имя и фамилию.",
     customer_phone_invalid: "Проверьте номер телефона.",
     customer_email_invalid: "Проверьте email.",
+    customer_email_required: "Укажите email для электронного чека.",
     delivery_address_required: "Укажите город и адрес доставки.",
     delivery_postal_code_required: "Укажите шестизначный индекс.",
     delivery_quote_required: "Сначала рассчитайте доставку и завершите выбор способа доставки.",

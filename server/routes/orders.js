@@ -216,6 +216,9 @@ export function createOrdersRouter({ pool, config }) {
     let payload;
     try {
       payload = normalizeOrderPayload(request.body);
+      if (config.yooKassa?.enabled && !config.yooKassa.testMode && !payload.email) {
+        throw new OrderRequestError("customer_email_required");
+      }
     } catch (error) {
       if (error instanceof OrderRequestError) {
         response.status(error.status).json({ error: error.code });

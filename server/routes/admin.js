@@ -18,6 +18,7 @@ import { hashSessionToken, readCookie } from "../security/sessions.js";
 import { createCatalogWorkbook, parseCatalogWorkbook } from "../catalog/workbook.js";
 import { slugify } from "../catalog/source-catalog.js";
 import { prepareHomeContent } from "../content/home-content.js";
+import { buildReceiptItems, createFinalReceipt, YooKassaError } from "../payments/yookassa.js";
 
 const PRODUCT_EDIT_ROLES = new Set(["owner", "admin", "editor"]);
 const CONTENT_EDIT_ROLES = new Set(["owner", "admin", "editor"]);
@@ -891,6 +892,52 @@ export function createAdminRouter({ pool, config }) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
+      const existingResult = await client.query(
+        "SELECT * FROM commerce_orders WHERE id = $1 AND archived_at IS NULL FOR UPDATE",
+        [request.params.id],
+      );
+      const existing = existingResult.rows[0];
+      if (!existing) {
+        await client.query("ROLLBACK");
+        response.status(404).json({ error: "order_not_found" });
+        return;
+      }
+      if (status === "delivered" && existing.payment_status === "paid"
+        && existing.payment_provider === "yookassa" && !existing.final_receipt_id) {
+        const paymentResult = await client.query(
+          `SELECT provider_transaction_id, metadata FROM commerce_payments
+            WHERE order_id = $1 AND provider = 'yookassa' AND operation = 'payment'
+              AND status = 'succeeded' ORDER BY created_at DESC LIMIT 1`,
+          [existing.id],
+        );
+        const paidPayment = paymentResult.rows[0];
+        if (!paidPayment || typeof paidPayment.metadata?.test !== "boolean") {
+          throw new YooKassaError("payment_receipt_payment_missing", 409);
+        }
+        if (paidPayment && paidPayment.metadata?.test === false) {
+          if (config.yooKassa.testMode || !config.yooKassa.enabled) {
+            throw new YooKassaError("payment_receipt_provider_unavailable", 503);
+          }
+          const itemsResult = await client.query(
+            `SELECT product_name, variant_name, quantity, unit_price_minor
+               FROM commerce_order_items WHERE order_id = $1 ORDER BY created_at, id`,
+            [existing.id],
+          );
+          buildReceiptItems(existing, itemsResult.rows, "full_payment");
+          const receipt = await createFinalReceipt(config.yooKassa, {
+            order: existing,
+            orderItems: itemsResult.rows,
+            paymentId: paidPayment.provider_transaction_id,
+          });
+          if (!receipt?.id || receipt.status === "canceled") {
+            throw new YooKassaError("payment_receipt_rejected", 502);
+          }
+          await client.query(
+            `UPDATE commerce_orders SET final_receipt_id = $2, final_receipt_status = $3 WHERE id = $1`,
+            [existing.id, receipt.id, receipt.status],
+          );
+        }
+      }
       const result = await client.query(
         `UPDATE commerce_orders
             SET status = $2,
@@ -916,6 +963,10 @@ export function createAdminRouter({ pool, config }) {
       response.json({ order: result.rows[0] });
     } catch (error) {
       await client.query("ROLLBACK");
+      if (error instanceof YooKassaError) {
+        response.status(error.status).json({ error: error.code });
+        return;
+      }
       next(error);
     } finally {
       client.release();

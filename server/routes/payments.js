@@ -25,7 +25,8 @@ const paymentLimit = rateLimit({
 const loadOrder = async (database, id, { includeArchived = false } = {}) => {
   if (!UUID_PATTERN.test(String(id || ""))) return null;
   const result = await database.query(
-    `SELECT id, order_number, status, payment_status, total_minor, currency,
+    `SELECT id, order_number, status, payment_status, customer_email,
+            subtotal_minor, discount_minor, delivery_minor, total_minor, currency,
             delivery_method, delivery_address, checkout_token_hash, archived_at
        FROM commerce_orders
       WHERE id = $1 AND ($2::BOOLEAN OR archived_at IS NULL)
@@ -200,6 +201,10 @@ async function providerPaymentForOrder(database, order, config, enqueueTelegram 
     [order.id, YOOKASSA_PROVIDER],
   );
   const row = result.rows[0];
+  if (row?.provider_transaction_id && typeof row.metadata?.test === "boolean"
+    && row.metadata.test !== config.testMode) {
+    return { row: null, payment: null, legacyMode: true };
+  }
   if (!row?.provider_transaction_id) return { row, payment: null };
   const payment = verifyPaymentForOrder(
     await getPayment(config, row.provider_transaction_id),
@@ -256,12 +261,22 @@ export function createPaymentsRouter({ pool, config }) {
       assertOrderAccess(order, request.body?.checkoutToken);
       if (order.status === "cancelled") throw new YooKassaError("order_cancelled", 409);
       if (order.payment_status === "paid") {
+        if (!yooKassa.testMode) {
+          const previous = await providerPaymentForOrder(pool, order, yooKassa);
+          if (previous.legacyMode) throw new YooKassaError("legacy_test_order", 409);
+        }
         response.json({ payment: { status: "succeeded", confirmationUrl: null, test: yooKassa.testMode } });
         return;
       }
       if (order.delivery_address?.pricingStatus !== "fixed") {
         throw new YooKassaError("delivery_price_pending", 409);
       }
+
+      const itemsResult = !yooKassa.testMode ? await pool.query(
+        `SELECT product_name, variant_name, quantity, unit_price_minor
+           FROM commerce_order_items WHERE order_id = $1 ORDER BY created_at, id`,
+        [order.id],
+      ) : { rows: [] };
 
       const existing = await providerPaymentForOrder(pool, order, yooKassa, enqueueTelegram, cdekConfig, russianPostConfig);
       if (existing.payment && existing.payment.status !== "canceled") {
@@ -283,7 +298,7 @@ export function createPaymentsRouter({ pool, config }) {
           [order.id, YOOKASSA_PROVIDER, order.total_minor, order.currency, JSON.stringify({ idempotenceKey })],
         );
       const payment = verifyPaymentForOrder(
-        await createPayment(yooKassa, { order, idempotenceKey }),
+        await createPayment(yooKassa, { order, orderItems: itemsResult.rows, idempotenceKey }),
         order,
         yooKassa,
       );

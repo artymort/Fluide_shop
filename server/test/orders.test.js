@@ -16,10 +16,10 @@ const ordersConfig = {
   yooKassa: { enabled: false, testMode: true },
 };
 
-async function withOrdersServer(pool, callback) {
+async function withOrdersServer(pool, callback, config = ordersConfig) {
   const app = express();
   app.use(express.json());
-  app.use("/api/orders", createOrdersRouter({ pool, config: ordersConfig }));
+  app.use("/api/orders", createOrdersRouter({ pool, config }));
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
   const { port } = server.address();
@@ -29,6 +29,25 @@ async function withOrdersServer(pool, callback) {
     await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
   }
 }
+
+test("live checkout requires email for the fiscal receipt before writing an order", async () => {
+  const pool = { connect: () => { throw new Error("Database must not be reached"); } };
+  const config = { ...ordersConfig, yooKassa: { enabled: true, testMode: false } };
+  await withOrdersServer(pool, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        customerName: "Анна Касаткина",
+        customerPhone: "+79990000000",
+        deliveryMethod: "pickup",
+        items: [{ key: "product-01", quantity: 1 }],
+      }),
+    });
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: "customer_email_required" });
+  }, config);
+});
 
 test("cart keys resolve to catalog variant external keys", () => {
   assert.equal(cartKeyToExternalKey("fragrance-011-30"), "fragrance-011-30");

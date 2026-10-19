@@ -37,6 +37,7 @@ export function loadConfig() {
   const yooKassaShopId = readString("YOOKASSA_SHOP_ID");
   const yooKassaSecretKey = readString("YOOKASSA_SECRET_KEY");
   const yooKassaTestMode = readBoolean("YOOKASSA_TEST_MODE", true);
+  const yooKassaReceiptUnmarkedConfirmed = readBoolean("YOOKASSA_RECEIPT_UNMARKED_CONFIRMED", false);
   const cdekAccount = readString("CDEK_ACCOUNT");
   const cdekSecurePassword = readString("CDEK_SECURE_PASSWORD");
   const cdekApiBase = readString("CDEK_API_BASE", "https://api.cdek.ru/v2").replace(/\/+$/, "");
@@ -81,6 +82,9 @@ export function loadConfig() {
   }
   if (!yooKassaTestMode && yooKassaSecretKey.startsWith("test_")) {
     throw new Error("A test YooKassa key cannot be used when YOOKASSA_TEST_MODE=false");
+  }
+  if (yooKassaShopId && !yooKassaTestMode && !yooKassaReceiptUnmarkedConfirmed) {
+    throw new Error("Live YooKassa requires confirmed unmarked goods and VAT-free receipt settings");
   }
   if (Boolean(cdekAccount) !== Boolean(cdekSecurePassword)) {
     throw new Error("CDEK_ACCOUNT and CDEK_SECURE_PASSWORD must be set together");
@@ -177,6 +181,7 @@ export function loadConfig() {
       shopId: yooKassaShopId,
       secretKey: yooKassaSecretKey,
       testMode: yooKassaTestMode,
+      receiptUnmarkedConfirmed: yooKassaReceiptUnmarkedConfirmed,
       returnUrl: readString(
         "YOOKASSA_RETURN_URL",
         nodeEnv === "production"

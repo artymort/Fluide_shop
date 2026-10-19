@@ -32,14 +32,82 @@ export function safeTokenEquals(value, expectedHash, hashToken) {
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-export function buildPaymentPayload(order, config) {
-  return {
+export function buildReceiptItems(order, orderItems, paymentMode = "full_prepayment") {
+  const subtotal = Number(order.subtotal_minor);
+  const discount = Number(order.discount_minor);
+  const delivery = Number(order.delivery_minor);
+  const total = Number(order.total_minor);
+  if (![subtotal, discount, delivery, total].every(Number.isSafeInteger)
+    || subtotal < 0 || discount < 0 || discount >= subtotal || delivery < 0
+    || subtotal - discount + delivery !== total || order.currency !== "RUB") {
+    throw new YooKassaError("payment_receipt_amount_invalid", 409);
+  }
+  const units = [];
+  for (const item of orderItems || []) {
+    const quantity = Number(item.quantity);
+    const price = Number(item.unit_price_minor);
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || !Number.isSafeInteger(price)
+      || price < 1 || units.length + quantity > 80) {
+      throw new YooKassaError("payment_receipt_items_invalid", 409);
+    }
+    const description = [item.product_name, item.variant_name].filter(Boolean).join(" · ").slice(0, 128);
+    if (!description) throw new YooKassaError("payment_receipt_items_invalid", 409);
+    for (let i = 0; i < quantity; i += 1) units.push({ description, price });
+  }
+  if (!units.length || units.reduce((sum, item) => sum + item.price, 0) !== subtotal) {
+    throw new YooKassaError("payment_receipt_amount_invalid", 409);
+  }
+  const shares = units.map((item, index) => ({
+    index,
+    amount: Number(BigInt(discount) * BigInt(item.price) / BigInt(subtotal)),
+    fraction: Number(BigInt(discount) * BigInt(item.price) % BigInt(subtotal)),
+  }));
+  let remainder = discount - shares.reduce((sum, share) => sum + share.amount, 0);
+  shares.sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+  for (const share of shares) {
+    if (remainder === 0) break;
+    share.amount += 1;
+    remainder -= 1;
+  }
+  const discountedByIndex = new Map(shares.map((share) => [share.index, share.amount]));
+  const receiptItems = units.map((unit, index) => ({
+    description: unit.description,
+    quantity: 1,
+    amount: { value: minorToValue(unit.price - discountedByIndex.get(index)), currency: "RUB" },
+    vat_code: 1,
+    payment_mode: paymentMode,
+    payment_subject: "commodity",
+  }));
+  if (delivery > 0) receiptItems.push({
+    description: "Доставка",
+    quantity: 1,
+    amount: { value: minorToValue(delivery), currency: "RUB" },
+    vat_code: 1,
+    payment_mode: paymentMode,
+    payment_subject: "service",
+  });
+  if (receiptItems.length > 80) throw new YooKassaError("payment_receipt_items_invalid", 409);
+  return receiptItems;
+}
+
+export function buildPaymentPayload(order, config, orderItems = []) {
+  const payload = {
     amount: { value: minorToValue(order.total_minor), currency: order.currency },
     capture: true,
     confirmation: { type: "redirect", return_url: config.returnUrl },
     description: `Оплата заказа ${order.order_number}`.slice(0, 128),
     metadata: { orderId: order.id, orderNumber: order.order_number },
   };
+  if (!config.testMode) {
+    if (!/^\S+@\S+\.\S+$/.test(String(order.customer_email || ""))) {
+      throw new YooKassaError("customer_email_required", 409);
+    }
+    payload.receipt = {
+      customer: { email: order.customer_email },
+      items: buildReceiptItems(order, orderItems),
+    };
+  }
+  return payload;
 }
 
 export function mapProviderStatus(status) {
@@ -78,11 +146,11 @@ async function request(config, path, options = {}) {
   return body;
 }
 
-export async function createPayment(config, { order, idempotenceKey }) {
+export async function createPayment(config, { order, orderItems, idempotenceKey }) {
   return request(config, "/payments", {
     method: "POST",
     headers: { "Idempotence-Key": idempotenceKey },
-    body: JSON.stringify(buildPaymentPayload(order, config)),
+    body: JSON.stringify(buildPaymentPayload(order, config, orderItems)),
   });
 }
 
@@ -91,6 +159,31 @@ export async function getPayment(config, paymentId) {
     throw new YooKassaError("payment_id_invalid", 400);
   }
   return request(config, `/payments/${encodeURIComponent(paymentId)}`);
+}
+
+export async function createFinalReceipt(config, { order, orderItems, paymentId }) {
+  if (config.testMode) throw new YooKassaError("payment_receipt_live_only", 409);
+  if (!/^\S+@\S+\.\S+$/.test(String(order.customer_email || ""))) {
+    throw new YooKassaError("customer_email_required", 409);
+  }
+  if (!/^[a-zA-Z0-9-]{8,80}$/.test(String(paymentId || ""))) {
+    throw new YooKassaError("payment_id_invalid", 400);
+  }
+  return request(config, "/receipts", {
+    method: "POST",
+    headers: { "Idempotence-Key": `fluide-final-${order.id}` },
+    body: JSON.stringify({
+      type: "payment",
+      payment_id: paymentId,
+      customer: { email: order.customer_email },
+      send: true,
+      items: buildReceiptItems(order, orderItems, "full_payment"),
+      settlements: [{
+        type: "prepayment",
+        amount: { value: minorToValue(order.total_minor), currency: order.currency },
+      }],
+    }),
+  });
 }
 
 export function verifyPaymentForOrder(payment, order, config) {
