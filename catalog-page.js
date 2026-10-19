@@ -51,6 +51,16 @@ const FEATURED_CATALOG_ORDER = [
   "fragrance-002","product-04","product-12","product-33",
   "fragrance-006","product-03","solid-perfume-fleur-narcotique","product-34"
 ];
+// Sales order by aroma, not bottle size: 30 and 50 ml share one catalog card.
+// Repeated aromas in the sales list keep their first appearance.
+const BESTSELLER_PERFUME_IDS = [
+  3, 512, 198, 34, 45, 47, 500, 526, 48, 185,
+  1, 37, 71, 19, 20, 2, 40, 46, 503, 510,
+  528, 7, 13, 14, 16, 179, 507, 518, 527, 12,
+  15, 17, 25, 28, 31, 32, 35, 43, 49, 505,
+  532, 536, 6
+];
+const bestsellerPerfumeRank = new Map(BESTSELLER_PERFUME_IDS.map((id, index) => [id, index]));
 
 const grid = document.querySelector(".fragrance-grid");
 const catalogHeading = document.querySelector("#catalog-heading");
@@ -258,6 +268,11 @@ function currentFiltered(){
     case "price-desc": sorted.sort((a,b)=>getPrice(b)-getPrice(a)||catalogItemKey(a).localeCompare(catalogItemKey(b),"ru",{numeric:true})); break;
     default: if(query)sorted.sort((a,b)=>(window.FluideSearch?.score(b,query)||0)-(window.FluideSearch?.score(a,query)||0));
     else if(!selectionMode)sorted.sort((a,b)=>{
+      if(activeCatalogSection === "perfume"){
+        const aRank=bestsellerPerfumeRank.get(Number(a.id)) ?? Infinity;
+        const bRank=bestsellerPerfumeRank.get(Number(b.id)) ?? Infinity;
+        if(aRank!==bRank)return aRank-bRank;
+      }
       if(activeCatalogSection === "all"){
         const aRank=FEATURED_CATALOG_ORDER.indexOf(catalogItemKey(a));
         const bRank=FEATURED_CATALOG_ORDER.indexOf(catalogItemKey(b));
@@ -271,6 +286,13 @@ function currentFiltered(){
     });
   }
   return sorted;
+}
+
+function updateSortLabel(){
+  const label=activeCatalogSection==="perfume"&&!selectionMode?"Популярные":"По умолчанию";
+  sortMenu.querySelector('[data-sort-value="featured"]').textContent=label;
+  sortSelect.querySelector('option[value="featured"]').textContent=label;
+  sortValue.textContent=sortSelect.options[sortSelect.selectedIndex].textContent;
 }
 
 function cardTemplate(fragrance,index){
@@ -320,6 +342,7 @@ function cardTemplate(fragrance,index){
 }
 
 function renderProducts(){
+  updateSortLabel();
   const filtered = currentFiltered();
   const shown = filtered.slice(0,selectionMode?6:visibleLimit);
   const perfumeView=selectionMode||activeCatalogSection==="perfume";
