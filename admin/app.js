@@ -616,7 +616,7 @@ function formatDeliveryAddress(address = {}) {
     .join(", ") || "Не указан";
 }
 
-function renderOrderDetail(order, items = [], payments = [], history = []) {
+function renderOrderDetail(order, items = [], payments = [], history = [], cdekShipment = null) {
   const overview = document.createElement("section");
   overview.className = "order-overview";
   const status = document.createElement("article");
@@ -675,6 +675,19 @@ function renderOrderDetail(order, items = [], payments = [], history = []) {
     orderDetailItem("Способ", deliveryMethodLabels[order.delivery_method] || order.delivery_method),
     orderDetailItem("Адрес", formatDeliveryAddress(order.delivery_address)),
   );
+  if (order.delivery_method === "cdek") {
+    const labels = {
+      queued: "Готовится накладная", submitting: "Отправляется в СДЭК",
+      accepted: "СДЭК проверяет заказ", created: "Накладная создана",
+      needs_review: "Требуется проверка", failed: "СДЭК отклонил заказ",
+    };
+    delivery.append(
+      orderDetailItem("Накладная СДЭК", cdekShipment ? labels[cdekShipment.status] || cdekShipment.status : "Не создавалась"),
+      ...(cdekShipment?.cdek_number ? [orderDetailItem("Номер СДЭК", cdekShipment.cdek_number)] : []),
+      ...(cdekShipment?.shipment_point ? [orderDetailItem("Офис сдачи", cdekShipment.shipment_point)] : []),
+      ...(cdekShipment?.last_error ? [orderDetailItem("Ошибка СДЭК", cdekShipment.last_error)] : []),
+    );
+  }
   info.append(buyer, delivery);
 
   const paymentSection = document.createElement("section");
@@ -742,10 +755,10 @@ async function openOrder(id) {
   elements["order-archive-actions"].hidden = true;
   if (!elements["order-dialog"].open) elements["order-dialog"].showModal();
   try {
-    const { order, items, payments, history } = await api(`/orders/${id}`);
+    const { order, items, payments, history, cdekShipment } = await api(`/orders/${id}`);
     state.currentOrder = order;
     elements["order-dialog-title"].textContent = `Заказ ${order.order_number}`;
-    renderOrderDetail(order, items || [], payments || [], history || []);
+    renderOrderDetail(order, items || [], payments || [], history || [], cdekShipment);
     const canArchiveOrders = ["owner", "admin"].includes(state.admin?.role);
     elements["order-incomplete-message"].hidden = true;
     elements["order-status-label"].hidden = false;

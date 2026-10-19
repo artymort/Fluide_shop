@@ -2,11 +2,13 @@ import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createPool } from "./db.js";
 import { startTelegramOrderWorker } from "./telegram/orders.js";
+import { startCdekShipmentWorker } from "./delivery/cdek-shipments.js";
 
 const config = loadConfig();
 const pool = createPool(config.database);
 const app = createApp({ pool, config });
 const stopTelegramOrderWorker = startTelegramOrderWorker(pool, config.telegramOrders);
+const stopCdekShipmentWorker = startCdekShipmentWorker(pool, config.cdek);
 
 const server = app.listen(config.port, config.host, () => {
   console.log(`FLUIDE API listening on http://${config.host}:${config.port}`);
@@ -15,6 +17,7 @@ const server = app.listen(config.port, config.host, () => {
 async function shutdown(signal) {
   console.log(`${signal} received, shutting down`);
   stopTelegramOrderWorker();
+  stopCdekShipmentWorker();
   server.close(async () => {
     await pool.end();
     process.exit(0);

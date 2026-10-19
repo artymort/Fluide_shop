@@ -41,12 +41,12 @@ const assertOrderAccess = (order, token) => {
   }
 };
 
-export async function persistVerifiedPayment(database, order, payment, existingPaymentId = null, idempotenceKey = null, enqueueTelegram = false) {
+export async function persistVerifiedPayment(database, order, payment, existingPaymentId = null, idempotenceKey = null, enqueueTelegram = false, cdekConfig = null) {
   const client = await database.connect();
   try {
     await client.query("BEGIN");
     const paymentRow = await persistPaymentInTransaction(
-      client, order, payment, existingPaymentId, idempotenceKey, enqueueTelegram,
+      client, order, payment, existingPaymentId, idempotenceKey, enqueueTelegram, cdekConfig,
     );
     await client.query("COMMIT");
     return paymentRow;
@@ -58,7 +58,7 @@ export async function persistVerifiedPayment(database, order, payment, existingP
   }
 }
 
-async function persistPaymentInTransaction(client, order, payment, existingPaymentId, idempotenceKey, enqueueTelegram) {
+async function persistPaymentInTransaction(client, order, payment, existingPaymentId, idempotenceKey, enqueueTelegram, cdekConfig) {
   const localStatus = mapProviderStatus(payment.status);
   const metadata = {
     idempotenceKey,
@@ -172,10 +172,18 @@ async function persistPaymentInTransaction(client, order, payment, existingPayme
       [order.id, Boolean(payment.test)],
     );
   }
+  if (localStatus === "succeeded" && !payment.test && order.payment_status !== "paid"
+    && order.delivery_method === "cdek" && cdekConfig?.enabled && cdekConfig.createOrders) {
+    await client.query(
+      `INSERT INTO cdek_shipments (order_id, external_number, shipment_point)
+       VALUES ($1, $2, $3) ON CONFLICT (order_id) DO NOTHING`,
+      [order.id, `${cdekConfig.orderPrefix}${order.order_number}`, cdekConfig.shipmentPoint],
+    );
+  }
   return paymentRow;
 }
 
-async function providerPaymentForOrder(database, order, config, enqueueTelegram = false) {
+async function providerPaymentForOrder(database, order, config, enqueueTelegram = false, cdekConfig = null) {
   const result = await database.query(
     `SELECT * FROM commerce_payments
       WHERE order_id = $1 AND operation = 'payment' AND provider = $2
@@ -190,7 +198,7 @@ async function providerPaymentForOrder(database, order, config, enqueueTelegram 
     order,
     config,
   );
-  await persistVerifiedPayment(database, order, payment, row.id, row.metadata?.idempotenceKey || null, enqueueTelegram);
+  await persistVerifiedPayment(database, order, payment, row.id, row.metadata?.idempotenceKey || null, enqueueTelegram, cdekConfig);
   return { row, payment };
 }
 
@@ -198,6 +206,7 @@ export function createPaymentsRouter({ pool, config }) {
   const router = Router();
   const yooKassa = config.yooKassa;
   const enqueueTelegram = Boolean(config.telegramOrders?.enabled);
+  const cdekConfig = config.cdek;
 
   router.post("/yookassa/webhook", async (request, response, next) => {
     if (!yooKassa.enabled) {
@@ -220,7 +229,7 @@ export function createPaymentsRouter({ pool, config }) {
         return;
       }
       verifyPaymentForOrder(payment, order, yooKassa);
-      await persistVerifiedPayment(pool, order, payment, null, null, enqueueTelegram);
+      await persistVerifiedPayment(pool, order, payment, null, null, enqueueTelegram, cdekConfig);
       response.status(200).end();
     } catch (error) {
       if (error instanceof YooKassaError && error.status < 500) {
@@ -245,7 +254,7 @@ export function createPaymentsRouter({ pool, config }) {
         throw new YooKassaError("delivery_price_pending", 409);
       }
 
-      const existing = await providerPaymentForOrder(pool, order, yooKassa, enqueueTelegram);
+      const existing = await providerPaymentForOrder(pool, order, yooKassa, enqueueTelegram, cdekConfig);
       if (existing.payment && existing.payment.status !== "canceled") {
         response.json({ payment: paymentResponse(existing.payment) });
         return;
@@ -276,6 +285,7 @@ export function createPaymentsRouter({ pool, config }) {
         placeholderResult.rows[0].id,
         idempotenceKey,
         enqueueTelegram,
+        cdekConfig,
       );
       response.status(201).json({ payment: paymentResponse(payment) });
     } catch (error) {
@@ -292,7 +302,7 @@ export function createPaymentsRouter({ pool, config }) {
       if (!yooKassa.enabled) throw new YooKassaError("payment_provider_disabled", 503);
       const order = await loadOrder(pool, request.params.id);
       assertOrderAccess(order, request.body?.checkoutToken);
-      const current = await providerPaymentForOrder(pool, order, yooKassa, enqueueTelegram);
+      const current = await providerPaymentForOrder(pool, order, yooKassa, enqueueTelegram, cdekConfig);
       if (!current.payment) throw new YooKassaError("payment_not_found", 404);
       response.json({
         order: { orderNumber: order.order_number },
@@ -313,7 +323,7 @@ export function createPaymentsRouter({ pool, config }) {
       assertOrderAccess(order, request.body?.checkoutToken);
       if (order.payment_status === "paid") throw new YooKassaError("order_already_paid", 409);
       if (yooKassa.enabled) {
-        const current = await providerPaymentForOrder(pool, order, yooKassa, enqueueTelegram);
+        const current = await providerPaymentForOrder(pool, order, yooKassa, enqueueTelegram, cdekConfig);
         if (current.payment?.status === "succeeded") throw new YooKassaError("order_already_paid", 409);
       }
       const client = await pool.connect();

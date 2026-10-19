@@ -81,13 +81,14 @@ const tariffAmountMinor = (tariff) => {
   return Number.isSafeInteger(minor) && minor >= 0 && minor <= MAX_DELIVERY_MINOR ? minor : null;
 };
 
-export function selectCdekTariff(tariffs, mode) {
+export function selectCdekTariff(tariffs, mode, expectedCode = null) {
   const deliveryModes = mode === "pvz"
     ? new Set([OFFICE_TO_OFFICE])
     : new Set([OFFICE_TO_DOOR]);
   const candidates = (Array.isArray(tariffs) ? tariffs : [])
     .map((tariff) => ({ ...tariff, deliveryMinor: tariffAmountMinor(tariff) }))
-    .filter((tariff) => deliveryModes.has(Number(tariff.delivery_mode)) && tariff.deliveryMinor !== null)
+    .filter((tariff) => deliveryModes.has(Number(tariff.delivery_mode)) && tariff.deliveryMinor !== null
+      && (expectedCode === null || Number(tariff.tariff_code) === Number(expectedCode)))
     .sort((left, right) => left.deliveryMinor - right.deliveryMinor
       || Number(left.period_max || 999) - Number(right.period_max || 999));
   return candidates[0] || null;
@@ -273,7 +274,7 @@ export function createCdekClient(config, { fetchImpl = globalThis.fetch } = {}) 
         }],
       },
     });
-    const tariff = selectCdekTariff(payload?.tariff_codes, mode);
+    const tariff = selectCdekTariff(payload?.tariff_codes, mode, config.tariffCode || null);
     if (!tariff) throw new CdekError("cdek_tariff_unavailable", 422);
     return tariff;
   }
@@ -290,7 +291,24 @@ export function createCdekClient(config, { fetchImpl = globalThis.fetch } = {}) 
       .slice(0, 200);
   }
 
-  return Object.freeze({ findCity, searchCities, quote, pickupPoints });
+  async function registerOrder(order) {
+    return request("orders", { method: "POST", body: order });
+  }
+
+  async function orderByNumber(number) {
+    try {
+      return await request("orders", { query: { im_number: number } });
+    } catch (error) {
+      if (error instanceof CdekError && error.details?.status === 404) return null;
+      throw error;
+    }
+  }
+
+  async function orderByUuid(uuid) {
+    return request(`orders/${encodeURIComponent(uuid)}`);
+  }
+
+  return Object.freeze({ findCity, searchCities, quote, pickupPoints, registerOrder, orderByNumber, orderByUuid });
 }
 
 export function quotePayload({ destination, tariff, mode, address, point = null }) {

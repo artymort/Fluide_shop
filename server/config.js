@@ -41,6 +41,8 @@ export function loadConfig() {
   const cdekSecurePassword = readString("CDEK_SECURE_PASSWORD");
   const cdekApiBase = readString("CDEK_API_BASE", "https://api.cdek.ru/v2").replace(/\/+$/, "");
   const cdekCreateOrders = readBoolean("CDEK_CREATE_ORDERS", false);
+  const cdekShipmentPoint = readString("CDEK_SHIPMENT_POINT");
+  const cdekOrderPrefix = readString("CDEK_ORDER_PREFIX", "FLUIDE-");
   const russianPostToken = readString("RUSSIAN_POST_TOKEN");
   const russianPostUserKey = readString("RUSSIAN_POST_USER_KEY");
   const russianPostFromIndex = readString("RUSSIAN_POST_FROM_INDEX");
@@ -83,8 +85,12 @@ export function loadConfig() {
   if (!["https://api.cdek.ru/v2", "https://api.edu.cdek.ru/v2"].includes(cdekApiBase)) {
     throw new Error("CDEK_API_BASE must be an official CDEK API v2 endpoint");
   }
-  if (cdekCreateOrders) {
-    throw new Error("CDEK_CREATE_ORDERS=true is not supported in read-only delivery mode");
+  if (cdekCreateOrders && (!cdekAccount || !cdekShipmentPoint || cdekApiBase !== "https://api.cdek.ru/v2")) {
+    throw new Error("Live CDEK orders require credentials, a shipment point and the production API");
+  }
+  if (cdekCreateOrders && (!/^[A-Z0-9-]{2,20}$/.test(cdekShipmentPoint)
+    || !/^[A-Za-z0-9_-]{2,20}$/.test(cdekOrderPrefix))) {
+    throw new Error("CDEK_SHIPMENT_POINT or CDEK_ORDER_PREFIX is invalid");
   }
   if (Boolean(russianPostToken) !== Boolean(russianPostUserKey)) {
     throw new Error("RUSSIAN_POST_TOKEN and RUSSIAN_POST_USER_KEY must be set together");
@@ -176,7 +182,10 @@ export function loadConfig() {
       account: cdekAccount,
       securePassword: cdekSecurePassword,
       apiBase: cdekApiBase,
-      createOrders: false,
+      createOrders: cdekCreateOrders,
+      shipmentPoint: cdekShipmentPoint,
+      orderPrefix: cdekOrderPrefix,
+      tariffCode: readInteger("CDEK_TARIFF_CODE", 136, { min: 1, max: 100000 }),
       fromCity: readString("CDEK_FROM_CITY", "Владимир"),
       package: Object.freeze({
         weightGrams: readInteger("CDEK_PACKAGE_WEIGHT_GRAMS", 1000, { min: 1, max: 30_000 }),

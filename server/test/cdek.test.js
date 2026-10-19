@@ -22,6 +22,10 @@ test("CDEK tariff selection keeps the requested delivery mode and lowest price",
 
   assert.equal(tariff.tariff_code, 3);
   assert.equal(tariff.deliveryMinor, 45_000);
+  assert.equal(selectCdekTariff([
+    { tariff_code: 136, delivery_mode: 4, total_sum: 550 },
+    { tariff_code: 234, delivery_mode: 4, total_sum: 450 },
+  ], "pvz", 136).tariff_code, 136);
 });
 
 test("signed CDEK quote detects tampering and expiration", () => {
