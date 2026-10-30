@@ -179,6 +179,7 @@
         valueMinor: Number(pending.valueMinor),
         metadata: { orderNumber: pending.orderNumber },
       });
+      window.FluideEcommerce?.purchase(pending);
       renderPaymentResult({
         title: "Заказ оплачен",
         orderNumber: pending.orderNumber,
@@ -218,6 +219,7 @@
           valueMinor: Number(pending.valueMinor),
           metadata: { orderNumber: pending.orderNumber },
         });
+        window.FluideEcommerce?.purchase(pending);
         renderPaymentResult({
           title: "Заказ оплачен",
           orderNumber: pending.orderNumber,
@@ -606,6 +608,7 @@
     if (action === "decrease" && Number(activeCart[index].quantity) > 1) activeCart[index].quantity -= 1;
     if (action === "remove") activeCart.splice(index, 1);
     localStorage.setItem(CART_KEY, JSON.stringify(activeCart));
+    window.FluideEcommerce?.cartUpdated(activeCart);
     updateCartView();
   });
 
@@ -929,6 +932,15 @@
           orderNumber: payload.order.order_number,
           checkoutToken: payload.checkoutToken,
           valueMinor: Number(payload.order.total_minor),
+          cart: activeCart.map((item) => ({
+            id: item.id,
+            quantity: Number(item.quantity),
+            product: {
+              name: item.product?.name,
+              price: Number(item.product?.price),
+              category: item.product?.category || item.product?.categoryLabel,
+            },
+          })),
         };
         writePendingPayment(pendingPayment);
         await startPendingPayment(pendingPayment);

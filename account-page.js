@@ -610,6 +610,7 @@ function initAccountPage(initialAccount) {
         row.quantity = (Number(row.quantity) || 0) + Number(quantityButton.dataset.cartDelta);
         cart = cart.filter((item) => item.quantity > 0);
         localStorage.setItem("fluide-cart", JSON.stringify(cart));
+        window.FluideEcommerce?.cartUpdated(cart);
         renderStats();
         renderCartPreview();
         renderCartDrawer();
@@ -620,6 +621,7 @@ function initAccountPage(initialAccount) {
     if (removeCart) {
       cart = cart.filter((item) => item.id !== removeCart.dataset.removeCart);
       localStorage.setItem("fluide-cart", JSON.stringify(cart));
+      window.FluideEcommerce?.cartUpdated(cart);
       renderStats();
       renderCartPreview();
       renderCartDrawer();

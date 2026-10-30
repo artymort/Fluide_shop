@@ -262,6 +262,7 @@ function formatPriceMarkup(value) {
 
 function saveCart() {
   localStorage.setItem("fluide-cart", JSON.stringify(cart));
+  window.FluideEcommerce?.cartUpdated(cart);
 }
 
 function renderCart() {

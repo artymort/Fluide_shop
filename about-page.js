@@ -21,7 +21,7 @@ const readAboutCart = () => {
   }
 };
 const saveAboutCart = cart => {
-  try { localStorage.setItem("fluide-cart", JSON.stringify(cart)); } catch {}
+  try { localStorage.setItem("fluide-cart", JSON.stringify(cart)); window.FluideEcommerce?.cartUpdated(cart); } catch {}
 };
 
 let aboutCart = readAboutCart();

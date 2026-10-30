@@ -52,7 +52,7 @@ function renderProducts(){
  more.hidden=list.length<=initialBestsellerCount;
  more.textContent=expanded?'Скрыть':'Показать еще';
 }
-function updateCart(){save("fluide-cart",cart);const quantity=cart.reduce((n,p)=>n+(Number(p.quantity)||1),0);const badge=$("#cart-count");badge.textContent=quantity||"";badge.hidden=quantity===0;renderHomeCart()}
+function updateCart(){save("fluide-cart",cart);window.FluideEcommerce?.cartUpdated(cart);const quantity=cart.reduce((n,p)=>n+(Number(p.quantity)||1),0);const badge=$("#cart-count");badge.textContent=quantity||"";badge.hidden=quantity===0;renderHomeCart()}
 function renderHomeCart(){
  const body=$(".home-cart-items");if(!body)return;
  const detailed=cart.map((row,index)=>({row,index,product:row.product||products.find(product=>product.id===row.id)})).filter(item=>item.product);

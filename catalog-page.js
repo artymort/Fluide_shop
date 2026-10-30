@@ -504,7 +504,7 @@ function closeAccount(){
 }
 
 function saveFavorites(){localStorage.setItem("fluide-favorites",JSON.stringify(favorites))}
-function saveCart(){localStorage.setItem("fluide-cart",JSON.stringify(cart))}
+function saveCart(){localStorage.setItem("fluide-cart",JSON.stringify(cart));window.FluideEcommerce?.cartUpdated(cart)}
 
 function toggleFavorite(key){
   favorites=favorites.includes(key)?favorites.filter(value=>value!==key):[...favorites,key];

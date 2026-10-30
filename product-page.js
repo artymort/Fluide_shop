@@ -345,6 +345,17 @@ function selectSize(size){
   selectedSize=size;
   page.querySelector("[data-product-price]").innerHTML=formatPriceMarkup(priceFor(fragrance,size));
   page.querySelectorAll("[data-size]").forEach(button=>button.classList.toggle("is-active",button.dataset.size===size));
+  trackCurrentProduct();
+}
+
+function trackCurrentProduct(){
+  if(!fragrance)return;
+  window.FluideEcommerce?.productViewed({
+    id:isCatalogProduct(fragrance)?fragrance.id:`fragrance-${fragrance.id}-${selectedSize}`,
+    name:isCatalogProduct(fragrance)?fragrance.title:`FLUIDE ${Number(fragrance.id)||fragrance.id} ${prettyTitle(fragrance.title)} · ${selectedSize} мл`,
+    price:priceFor(fragrance),
+    category:isCatalogProduct(fragrance)?fragrance.typeLabel:"Парфюм",
+  });
 }
 
 function changeQuantity(delta){
@@ -438,7 +449,7 @@ function renderRelated(){
   relatedSection.hidden=false;
 }
 
-function saveCart(){localStorage.setItem("fluide-cart",JSON.stringify(cart))}
+function saveCart(){localStorage.setItem("fluide-cart",JSON.stringify(cart));window.FluideEcommerce?.cartUpdated(cart)}
 function renderCart(){
   const detailed=cart.map((item,index)=>({item,index,product:item.product||HOME_PRODUCT_SNAPSHOTS[item.id]||null})).filter(row=>row.product);
   const quantity=cart.reduce((sum,item)=>sum+(Number(item.quantity)||0),0);
@@ -497,6 +508,7 @@ async function init(){
     fragrance=fragrances.find(item=>item.id===requested.padStart(3,"0"))||catalogProducts.find(item=>item.id===requested);
     if(!fragrance){if(!page.dataset.ssr)renderError();return}
     if(isCatalogProduct(fragrance))renderCatalogProduct();else renderProduct();
+    trackCurrentProduct();
   }catch(error){if(!page.dataset.ssr)renderError();console.error(error)}
 }
 init();

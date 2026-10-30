@@ -7,6 +7,78 @@
   let metrikaStarted = false;
   let visitorId = null;
   let sessionId = null;
+  let cartSnapshot = [];
+  const sentPurchases = new Set();
+
+  try {
+    const storedCart = JSON.parse(localStorage.getItem("fluide-cart") || "[]");
+    if (Array.isArray(storedCart)) cartSnapshot = storedCart;
+  } catch { /* A damaged cart must not stop analytics. */ }
+
+  function ecommerceProduct(row, quantity = Number(row?.quantity) || 1) {
+    const product = row?.product || row;
+    const id = String(row?.id || product?.id || "").trim();
+    const name = String(product?.name || product?.title || "").trim();
+    const price = Number(product?.price);
+    if (!id || !name || !Number.isFinite(price) || price < 0 || !Number.isFinite(quantity) || quantity <= 0) return null;
+    return {
+      id,
+      name,
+      price,
+      quantity,
+      ...(product?.category || product?.categoryLabel ? { category: String(product.category || product.categoryLabel) } : {}),
+    };
+  }
+
+  function pushEcommerce(action, payload) {
+    if (!metrikaStarted) return false;
+    try {
+      window.dataLayer.push({ ecommerce: { currencyCode: "RUB", [action]: payload } });
+      return true;
+    } catch { return false; /* A third-party tracking error must not interrupt shopping. */ }
+  }
+
+  function cartUpdated(nextCart) {
+    if (!Array.isArray(nextCart)) return;
+    const previous = new Map(cartSnapshot.map((row) => [String(row?.id), row]));
+    const next = new Map(nextCart.map((row) => [String(row?.id), row]));
+    const added = [];
+    const removed = [];
+    for (const key of new Set([...previous.keys(), ...next.keys()])) {
+      const before = Number(previous.get(key)?.quantity) || 0;
+      const after = Number(next.get(key)?.quantity) || 0;
+      if (after > before) {
+        const product = ecommerceProduct(next.get(key), after - before);
+        if (product) added.push(product);
+      } else if (before > after) {
+        const product = ecommerceProduct(previous.get(key), before - after);
+        if (product) removed.push(product);
+      }
+    }
+    cartSnapshot = nextCart.map((row) => ({ ...row, product: row.product ? { ...row.product } : row.product }));
+    if (added.length) pushEcommerce("add", { products: added });
+    if (removed.length) pushEcommerce("remove", { products: removed });
+  }
+
+  function productViewed(row) {
+    const product = ecommerceProduct(row);
+    if (product) pushEcommerce("detail", { products: [product] });
+  }
+
+  function purchase({ orderNumber, valueMinor, cart }) {
+    const id = String(orderNumber || "").trim();
+    const revenue = Number(valueMinor) / 100;
+    if (!id || !Number.isFinite(revenue) || revenue < 0 || !Array.isArray(cart)) return;
+    const products = cart.map((row) => ecommerceProduct(row)).filter(Boolean);
+    if (!products.length || !metrikaStarted) return;
+    const marker = `fluide-metrika-purchase-${id}`;
+    if (sentPurchases.has(id)) return;
+    try { if (localStorage.getItem(marker)) return; } catch { /* Continue without persistent deduplication. */ }
+    if (pushEcommerce("purchase", { actionField: { id, revenue }, products })) {
+      sentPurchases.add(id);
+      try { localStorage.setItem(marker, "1"); } catch { /* The transaction is still counted. */ }
+    }
+  }
 
   const accepted = () => {
     try { return localStorage.getItem(CONSENT_KEY) === "accepted"; } catch { return false; }
@@ -15,6 +87,7 @@
   function startMetrika() {
     // Keep local previews out of production statistics.
     if (metrikaStarted || !/^(www\.)?fluide-atelier\.ru$/i.test(location.hostname)) return;
+    window.dataLayer = window.dataLayer || [];
     const source = `https://mc.yandex.ru/metrika/tag.js?id=${METRIKA_ID}`;
     (function (m, e, t, r, i, k, a) {
       m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments); };
@@ -117,6 +190,7 @@
   });
 
   window.FluideAnalytics = { track };
+  window.FluideEcommerce = { cartUpdated, productViewed, purchase };
   try { startMetrika(); } catch { /* Third-party analytics must not affect the store. */ }
   start();
 })();
