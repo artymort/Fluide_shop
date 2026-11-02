@@ -217,6 +217,9 @@ td strong,.product-cell strong{font-size:14px;font-weight:500;line-height:1.4}
 .dashboard-quickbar-actions span{font-size:14px;font-weight:500}
 .dashboard-action-icon{width:22px;height:22px;color:var(--ink)}
 .dashboard-stats{margin-bottom:12px}
+.dashboard-status{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:16px;min-height:88px;padding:18px 20px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+.dashboard-status button{margin-left:auto;padding:9px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+.dashboard-panel-status{margin:0;color:#687089;font-size:14px}
 .dashboard-stat{min-height:96px;padding:15px 18px}
 .dashboard-stat-top span{font-size:14px}
 .dashboard-stat-top i{display:none}

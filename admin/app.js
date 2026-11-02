@@ -176,8 +176,47 @@ function debounce(callback, delay = 280) {
   };
 }
 
+function showDashboardStatus(message, retry = false) {
+  const status = document.createElement("div");
+  status.className = "dashboard-status";
+  status.setAttribute("role", "status");
+  const label = document.createElement("span");
+  label.textContent = message;
+  status.append(label);
+  if (retry) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = "Повторить загрузку";
+    button.addEventListener("click", () => loadDashboard().catch(console.error));
+    status.append(button);
+  }
+  elements["dashboard-stats"].replaceChildren(status);
+  for (const id of ["dashboard-categories", "dashboard-health", "dashboard-recent-products"]) {
+    const note = document.createElement("p");
+    note.className = "dashboard-panel-status";
+    note.textContent = message;
+    elements[id].replaceChildren(note);
+  }
+}
+
 async function loadDashboard() {
-  const data = await api("/dashboard");
+  showDashboardStatus("Загружаем обзор магазина…");
+  let data;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      data = await api("/dashboard");
+      break;
+    } catch (error) {
+      if (error.message === "admin_not_authenticated") throw error;
+      if (attempt === 0 && (!error.status || error.status >= 500)) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        continue;
+      }
+      console.error("Не удалось загрузить обзор магазина", error);
+      showDashboardStatus("Не удалось загрузить данные обзора.", true);
+      return;
+    }
+  }
 
   const cards = [
     { label: "Товары", value: data.published_products, meta: `${data.draft_products || 0} в черновиках`, tone: "ink" },
@@ -1699,19 +1738,25 @@ elements["login-form"].addEventListener("submit", async (event) => {
   event.preventDefault();
   elements["login-message"].textContent = "Входим…";
   const form = new FormData(event.currentTarget);
+  let admin;
   try {
-    const { admin } = await api("/login", {
+    ({ admin } = await api("/login", {
       method: "POST",
       body: { email: form.get("email"), password: form.get("password") },
-    });
-    showCms(admin);
-    event.currentTarget.reset();
-    await switchSection(location.hash.slice(1) || "dashboard");
+    }));
   } catch (error) {
     elements["login-message"].textContent = error.message === "too_many_requests"
       ? "Слишком много попыток. Попробуйте через 15 минут."
-      : "Неверный email или пароль.";
+      : error.message === "invalid_credentials"
+        ? "Неверный email или пароль."
+        : "Не удалось подключиться к CMS. Попробуйте ещё раз.";
+    return;
   }
+  showCms(admin);
+  event.currentTarget.reset();
+  await switchSection(location.hash.slice(1) || "dashboard").catch((error) => {
+    if (error.message !== "admin_not_authenticated") console.error("Не удалось открыть раздел CMS", error);
+  });
 });
 
 elements["logout-button"].addEventListener("click", async () => {
