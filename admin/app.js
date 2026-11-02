@@ -220,8 +220,8 @@ async function loadDashboard() {
 
   const cards = [
     { label: "Товары", value: data.published_products, meta: `${data.draft_products || 0} в черновиках`, tone: "ink" },
-    { label: "Покупатели", value: data.customers, meta: "активных аккаунтов", tone: "sand" },
-    { label: "Новые покупатели", value: data.new_customers_7d, meta: "за последние 7 дней", tone: "rose" },
+    { label: "Пользователи", value: data.customers, meta: "активных аккаунтов", tone: "sand" },
+    { label: "Новые пользователи", value: data.new_customers_7d, meta: "за последние 7 дней", tone: "rose" },
   ];
   elements["dashboard-stats"].replaceChildren(...cards.map((item) => {
     const card = document.createElement("div");
@@ -375,7 +375,7 @@ async function loadCustomers() {
     const { customers } = await api(`/customers?${params}`);
     if (!customers.length) {
       const row = document.createElement("tr");
-      const cell = makeCell("Покупатели не найдены", "empty-cell");
+      const cell = makeCell("Пользователи не найдены", "empty-cell");
       cell.colSpan = 5;
       row.append(cell);
       elements["customer-rows"].replaceChildren(row);
@@ -396,7 +396,7 @@ async function loadCustomers() {
   } catch (error) {
     if (error.status === 403) {
       const row = document.createElement("tr");
-      const cell = makeCell("У вашей роли нет доступа к покупателям", "empty-cell");
+      const cell = makeCell("У вашей роли нет доступа к пользователям", "empty-cell");
       cell.colSpan = 5;
       row.append(cell);
       elements["customer-rows"].replaceChildren(row);
@@ -434,13 +434,13 @@ function renderCustomerDetail(customer, identities) {
   const title = document.createElement("h3");
   const meta = document.createElement("p");
   title.textContent = customerName(customer);
-  meta.textContent = customer.status === "blocked" ? "Аккаунт заблокирован" : "Активный покупатель";
+  meta.textContent = customer.status === "blocked" ? "Аккаунт заблокирован" : "Активный пользователь";
   identity.append(title, meta);
   heading.append(avatar, identity);
 
   const detailsTitle = document.createElement("h3");
   detailsTitle.className = "customer-section-title";
-  detailsTitle.textContent = "Данные покупателя";
+  detailsTitle.textContent = "Данные пользователя";
   const details = document.createElement("div");
   details.className = "customer-detail-grid";
   details.append(
@@ -486,7 +486,7 @@ function renderCustomerDetail(customer, identities) {
 }
 
 async function openCustomer(id) {
-  elements["customer-dialog-title"].textContent = "Покупатель";
+  elements["customer-dialog-title"].textContent = "Пользователь";
   elements["customer-detail"].textContent = "Загружаем данные…";
   elements["customer-dialog"].showModal();
   try {
@@ -495,8 +495,8 @@ async function openCustomer(id) {
     renderCustomerDetail(customer, identities || []);
   } catch (error) {
     elements["customer-detail"].textContent = error.status === 404
-      ? "Покупатель не найден"
-      : "Не удалось загрузить данные покупателя";
+      ? "Пользователь не найден"
+      : "Не удалось загрузить данные пользователя";
   }
 }
 
@@ -1737,7 +1737,8 @@ async function sendImport(apply = false) {
 elements["login-form"].addEventListener("submit", async (event) => {
   event.preventDefault();
   elements["login-message"].textContent = "Входим…";
-  const form = new FormData(event.currentTarget);
+  const loginForm = event.currentTarget;
+  const form = new FormData(loginForm);
   let admin;
   try {
     ({ admin } = await api("/login", {
@@ -1753,7 +1754,7 @@ elements["login-form"].addEventListener("submit", async (event) => {
     return;
   }
   showCms(admin);
-  event.currentTarget.reset();
+  loginForm.reset();
   await switchSection(location.hash.slice(1) || "dashboard").catch((error) => {
     if (error.message !== "admin_not_authenticated") console.error("Не удалось открыть раздел CMS", error);
   });
@@ -1974,7 +1975,8 @@ elements["staff-reset-form"].addEventListener("submit", async (event) => {
 });
 elements["staff-form"].addEventListener("submit", async (event) => {
   event.preventDefault();
-  const formData = new FormData(event.currentTarget);
+  const staffForm = event.currentTarget;
+  const formData = new FormData(staffForm);
   const password = String(formData.get("password") || "");
   if (password !== String(formData.get("confirmPassword") || "")) {
     elements["staff-message"].textContent = "Пароли не совпадают.";
@@ -1994,7 +1996,7 @@ elements["staff-form"].addEventListener("submit", async (event) => {
     elements["staff-message"].textContent = "";
     elements["staff-password"].hidden = false;
     elements["staff-password"].textContent = "Сотрудник создан. Вход доступен с паролем, который вы указали.";
-    event.currentTarget.querySelector('button[type="submit"]').disabled = true;
+    staffForm.querySelector('button[type="submit"]').disabled = true;
     await loadStaff();
   } catch (error) {
     elements["staff-message"].textContent = error.status === 409
