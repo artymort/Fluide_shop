@@ -36,6 +36,14 @@ const CATALOG_SECTION_LABELS = {
   care:"Уход",
   car:"Автопарфюм"
 };
+const CATALOG_SEO = {
+  all:{name:"Каталог FLUIDE",image:"assets/media/category-all-assortment-v2.webp"},
+  perfume:{name:"Парфюм FLUIDE",image:"assets/product-line/fragrance-hayati.webp"},
+  solid:{name:"Твердый парфюм",image:"images/products/solid-perfume-matsukita.webp"},
+  home:{name:"Ароматы для дома",image:"images/products/diffuser-black-pepper.webp"},
+  care:{name:"Уход",image:"assets/media/category-care-studio-v1.webp"},
+  car:{name:"Автопарфюм",image:"assets/media/category-auto-studio-v1.png"}
+};
 const PRODUCT_SEARCH_ALIASES = {
   "solid-perfume":"твердые духи твердый парфюм",
   "home-fragrance":"аромат для дома парфюм для дома",
@@ -295,6 +303,22 @@ function updateSortLabel(){
   sortValue.textContent=sortSelect.options[sortSelect.selectedIndex].textContent;
 }
 
+function catalogOfferMarkup(item,href,name,description,amount){
+  if(item.noindex||!item.image||!Number.isFinite(amount)||amount<=0)return {attributes:"",details:""};
+  const url=new URL(href,location.origin).href;
+  const image=new URL(item.image,location.origin).href;
+  return {
+    attributes:' itemprop="itemListElement" itemscope itemtype="https://schema.org/Offer"',
+    details:`<meta itemprop="name" content="${escapeHtml(name)}"><meta itemprop="description" content="${escapeHtml(description)}"><link itemprop="url" href="${escapeHtml(url)}"><link itemprop="image" href="${escapeHtml(image)}"><link itemprop="availability" href="https://schema.org/${item.available===false?"OutOfStock":"InStock"}"><meta itemprop="price" content="${amount}"><meta itemprop="priceCurrency" content="RUB">`
+  };
+}
+
+function catalogSeoMarkup(){
+  const info=CATALOG_SEO[activeCatalogSection]||CATALOG_SEO.all;
+  const description=`${info.name}: продукция FLUIDE Atelier. Выберите свой аромат и оформите заказ.`;
+  return `<meta itemprop="name" content="${escapeHtml(info.name)}"><meta itemprop="description" content="${escapeHtml(description)}"><link itemprop="image" href="${escapeHtml(new URL(info.image,location.origin).href)}">`;
+}
+
 function cardTemplate(fragrance,index){
   const id = catalogItemKey(fragrance);
   const active = favorites.includes(id);
@@ -302,7 +326,8 @@ function cardTemplate(fragrance,index){
   if(isCatalogProduct(fragrance)){
     const productMeta=[fragrance.typeLabel,fragrance.volume].filter(Boolean).join(" · ");
     const productHref=fragrance.url||`product.html?id=${encodeURIComponent(fragrance.id)}`;
-    return `<article class="fragrance-card catalog-product-card" data-id="${escapeHtml(fragrance.id)}">
+    const offer=catalogOfferMarkup(fragrance,productHref,fragrance.name||fragrance.title,productMeta||"Продукция FLUIDE Atelier",getPrice(fragrance));
+    return `<article class="fragrance-card catalog-product-card" data-id="${escapeHtml(fragrance.id)}"${offer.attributes}>${offer.details}
       <div class="fragrance-media-shell">
         <span class="fragrance-badge">${escapeHtml(fragrance.typeLabel)}</span>
         <a class="fragrance-media" href="${productHref}" aria-label="Открыть страницу товара ${escapeHtml(fragrance.title)}">
@@ -322,7 +347,8 @@ function cardTemplate(fragrance,index){
   const title = prettyTitle(fragrance.title);
   const cardName = `FLUIDE ${Number(fragrance.id)} ${title}`;
   const productHref=fragrance.url||`product.html?id=${encodeURIComponent(fragrance.id)}`;
-  return `<article class="fragrance-card" data-id="${escapeHtml(fragrance.id)}">
+  const offer=catalogOfferMarkup(fragrance,productHref,fragrance.name||cardName,noteSummary(fragrance),getPrice(fragrance));
+  return `<article class="fragrance-card" data-id="${escapeHtml(fragrance.id)}"${offer.attributes}>${offer.details}
     <div class="fragrance-media-shell">
       <span class="fragrance-badge">${escapeHtml(fragrance.isNew?"Новинка":fragrance.category)}</span>
       <a class="fragrance-media" href="${productHref}" aria-label="Открыть страницу аромата ${escapeHtml(title)}">
@@ -358,7 +384,7 @@ function renderProducts(){
     button.classList.toggle("is-active",active);
     button.setAttribute("aria-pressed",String(active));
   });
-  grid.innerHTML = shown.map(cardTemplate).join("");
+  grid.innerHTML = catalogSeoMarkup()+shown.map(cardTemplate).join("");
   resultCount.textContent = perfumeView
     ? `${filtered.length} ${plural(filtered.length,"аромат","аромата","ароматов")}`
     : `${filtered.length} ${plural(filtered.length,"товар","товара","товаров")}`;

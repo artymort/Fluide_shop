@@ -118,7 +118,14 @@ check_status 200 /catalog/home/
 check_status 301 '/product.html?id=025'
 check_status 200 /index.html
 check_status 200 /sitemap.xml
+check_status 200 /yandex-feed.yml
 check_status 200 /api/health
+
+feed_check="$backup_dir/yandex-feed.yml"
+curl --noproxy '*' --silent --show-error --fail --max-time 15 --resolve fluide-atelier.ru:443:127.0.0.1 \
+  --output "$feed_check" https://fluide-atelier.ru/yandex-feed.yml
+grep -q '<yml_catalog date=' "$feed_check"
+grep -q '<offer id=' "$feed_check"
 
 trap - ERR
 echo "SEO rollout succeeded. Nginx backup: $backup_dir"

@@ -18,3 +18,5 @@ The one-time rollout script is intentionally guarded for exactly this layout.
    monitor crawl errors and sales for the next several days.
 
 The checked-in `sitemap.xml` is a static fallback generated from repository JSON. Production must proxy `/sitemap.xml` to Node, which builds it from published PostgreSQL rows and excludes `noindex` products.
+
+Yandex Direct's product feed is separate from the sitemap. The dynamic `/yandex-feed.yml` route uses the same published PostgreSQL catalog, omits products without a positive price or image, and is installed through `fluide-seo-routes.conf`. After rollout, add `https://fluide-atelier.ru/yandex-feed.yml` in Direct → Library → Feeds. Do not submit this URL as a sitemap.

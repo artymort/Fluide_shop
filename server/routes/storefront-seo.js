@@ -7,10 +7,26 @@ const root = new URL("../../", import.meta.url);
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
 })[character]);
-const xmlEscape = escapeHtml;
+const xmlEscape = (value) => escapeHtml(String(value ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g, ""));
 const absolute = (path) => new URL(path, SITE_ORIGIN).href;
 const price = (amount) => new Intl.NumberFormat("ru-RU").format(Number(amount) || 0);
 const jsonScript = (value) => JSON.stringify(value).replace(/</g, "\\u003c");
+const CATALOG_SECTIONS = {
+  all: { id: 1, title: "Каталог FLUIDE", image: "/assets/media/category-all-assortment-v2.webp" },
+  perfume: { id: 2, title: "Парфюм FLUIDE", image: "/assets/product-line/fragrance-hayati.webp" },
+  solid: { id: 3, title: "Твердый парфюм", image: "/images/products/solid-perfume-matsukita.webp" },
+  home: { id: 4, title: "Ароматы для дома", image: "/images/products/diffuser-black-pepper.webp" },
+  care: { id: 5, title: "Уход", image: "/assets/media/category-care-studio-v1.webp" },
+  car: { id: 6, title: "Автопарфюм", image: "/assets/media/category-auto-studio-v1.png" },
+  other: { id: 7, title: "Другие товары FLUIDE", image: "/assets/media/category-all-assortment-v2.webp" },
+};
+const catalogDescription = (title) => `${title}: продукция FLUIDE Atelier. Выберите свой аромат и оформите заказ.`;
+const catalogPath = (section) => section === "all" || section === "other" ? "/catalog/" : `/catalog/${section}/`;
+const positivePrice = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
+const catalogAmount = (item) => {
+  const amounts = (item?.variants || []).map((variant) => Number(variant.price)).filter(positivePrice);
+  return amounts.length ? Math.min(...amounts) : Number(item?.price || 0);
+};
 
 function renderHead(template, { title, description, path, image, robots = "index,follow", schema }) {
   const canonical = absolute(path);
@@ -120,23 +136,87 @@ function renderGone(template) {
     .replace("<h1>Товар не найден</h1>", "<h1>Товар снят с продажи</h1>");
 }
 
-const sectionLabels = { all: "Каталог FLUIDE", perfume: "Парфюм FLUIDE", solid: "Твердый парфюм", home: "Ароматы для дома", care: "Уход", car: "Автопарфюм" };
-
 function renderCatalog(template, section, query, rows, items) {
-  const title = sectionLabels[section] || sectionLabels.all;
-  const path = section === "all" ? "/catalog/" : `/catalog/${section}/`;
+  const info = CATALOG_SECTIONS[section] || CATALOG_SECTIONS.all;
+  const title = info.title;
+  const path = catalogPath(section);
   const cards = rows.filter((row) => section === "all" || sectionForProduct(row) === section).map((row) => {
     const item = items.get(productPath(row));
     const image = item?.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(row.name)}" loading="lazy">` : "";
-    const amount = item?.variants?.length ? Math.min(...item.variants.map((variant) => Number(variant.price))) : Number(item?.price || 0);
-    return `<article class="fragrance-card"><a class="fragrance-media" href="${escapeHtml(productPath(row))}">${image}</a><div class="fragrance-info"><h3><a href="${escapeHtml(productPath(row))}">${escapeHtml(row.name)}</a></h3><strong class="card-price">${amount ? `от ${price(amount)} ₽` : "Цена уточняется"}</strong></div></article>`;
+    const amount = catalogAmount(item);
+    const productUrl = absolute(productPath(row));
+    const rich = !row.noindex && item?.image && positivePrice(amount);
+    const details = rich ? `<meta itemprop="name" content="${escapeHtml(row.name)}"><meta itemprop="description" content="${escapeHtml(productDescription(row, item))}"><link itemprop="url" href="${escapeHtml(productUrl)}"><link itemprop="image" href="${escapeHtml(absolute(item.image))}"><link itemprop="availability" href="https://schema.org/${row.fulfillment_mode === "unavailable" ? "OutOfStock" : "InStock"}"><meta itemprop="price" content="${amount}"><meta itemprop="priceCurrency" content="RUB">` : "";
+    return `<article class="fragrance-card"${rich ? ' itemprop="itemListElement" itemscope itemtype="https://schema.org/Offer"' : ""}>${details}<a class="fragrance-media" href="${escapeHtml(productPath(row))}">${image}</a><div class="fragrance-info"><h3><a href="${escapeHtml(productPath(row))}">${escapeHtml(row.name)}</a></h3><strong class="card-price">${amount ? `от ${price(amount)} ₽` : "Цена уточняется"}</strong></div></article>`;
   }).join("");
   return renderHead(template, {
-    title: `${title} — FLUIDE Atelier`, description: `${title}: продукция FLUIDE Atelier. Выберите свой аромат и оформите заказ.`,
+    title: `${title} — FLUIDE Atelier`, description: catalogDescription(title),
     path, robots: Object.keys(query).length ? "noindex,follow" : "index,follow",
   }).replace("<h1>Каталог FLUIDE</h1>", `<h1>${escapeHtml(title)}</h1>`)
     .replace('href="#catalog-main"', `href="${escapeHtml(path)}#catalog-main"`)
-    .replace('<div class="fragrance-grid"></div>', `<div class="fragrance-grid">${cards}</div>`);
+    .replace('<div class="fragrance-grid" itemscope itemtype="https://schema.org/OfferCatalog"></div>', `<div class="fragrance-grid" itemscope itemtype="https://schema.org/OfferCatalog"><meta itemprop="name" content="${escapeHtml(title)}"><meta itemprop="description" content="${escapeHtml(catalogDescription(title))}"><link itemprop="image" href="${escapeHtml(absolute(info.image))}">${cards}</div>`);
+}
+
+function renderYandexFeed(rows, items, generatedAt = new Date()) {
+  const offers = [];
+  const usedIds = new Set();
+  for (const row of rows) {
+    if (row.noindex || row.fulfillment_mode === "unavailable") continue;
+    const item = items.get(productPath(row));
+    if (!item?.image) continue;
+    const section = sectionForProduct(row);
+    const variants = row.kind === "fragrance" ? item.variants || [] : (item.variants || []).slice(0, 1);
+    for (const variant of variants) {
+      if (!positivePrice(variant.price)) continue;
+      const id = row.kind === "fragrance" ? `fragrance-${item.id}-${variant.size}` : item.id;
+      if (!id || usedIds.has(id)) continue;
+      usedIds.add(id);
+      const volume = String(variant.volume || "").trim();
+      const name = [row.name, volume].filter(Boolean).join(", ");
+      const description = [row.type_label, row.description].filter(Boolean).join(". ").replace(/\s+/g, " ").trim() || name;
+      offers.push(`    <offer id="${xmlEscape(id)}" available="true">
+      <url>${xmlEscape(absolute(productPath(row)))}</url>
+      <price>${Number(variant.price).toFixed(2)}</price>
+      <currencyId>RUB</currencyId>
+      <categoryId>${CATALOG_SECTIONS[section]?.id || CATALOG_SECTIONS.other.id}</categoryId>
+      <picture>${xmlEscape(absolute(item.image))}</picture>
+      <name>${xmlEscape(name)}</name>
+      <vendor>${xmlEscape(row.brand || "FLUIDE Atelier")}</vendor>
+      <vendorCode>${xmlEscape(variant.sku || row.sku)}</vendorCode>
+      <description>${xmlEscape(description)}</description>
+      <collectionId>${xmlEscape(section in SECTION_TYPES ? section : "all")}</collectionId>${volume ? `
+      <param name="Объем">${xmlEscape(volume)}</param>` : ""}
+    </offer>`);
+    }
+  }
+  if (!offers.length) return null;
+  const date = generatedAt.toISOString().slice(0, 16).replace("T", " ");
+  const categories = Object.values(CATALOG_SECTIONS).map(({ id, title }) => `      <category id="${id}">${xmlEscape(title)}</category>`).join("\n");
+  const collections = Object.entries(CATALOG_SECTIONS).filter(([section]) => section !== "other").map(([section, info]) => `    <collection id="${section}">
+      <url>${xmlEscape(absolute(catalogPath(section)))}</url>
+      <picture>${xmlEscape(absolute(info.image))}</picture>
+      <name>${xmlEscape(info.title)}</name>
+      <description>${xmlEscape(catalogDescription(info.title))}</description>
+    </collection>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<yml_catalog date="${date}">
+  <shop>
+    <name>FLUIDE Atelier</name>
+    <company>ИП Магомедрасулов Асхабали Магомедович</company>
+    <url>${SITE_ORIGIN}/</url>
+    <currencies><currency id="RUB" rate="1"/></currencies>
+    <categories>
+${categories}
+    </categories>
+    <offers>
+${offers.join("\n")}
+    </offers>
+    <collections>
+${collections}
+    </collections>
+  </shop>
+</yml_catalog>
+`;
 }
 
 export function createStorefrontSeoRouter(pool) {
@@ -153,7 +233,7 @@ export function createStorefrontSeoRouter(pool) {
     const [products, variants, media, archived] = await Promise.all([
       pool.query("SELECT * FROM catalog_products WHERE status = 'published' ORDER BY kind, legacy_id, name"),
       pool.query("SELECT v.* FROM catalog_variants v JOIN catalog_products p ON p.id = v.product_id WHERE p.status = 'published' AND v.active ORDER BY v.product_id, v.sort_order, v.id"),
-      pool.query("SELECT m.* FROM catalog_media m JOIN catalog_products p ON p.id = m.product_id WHERE p.status = 'published' ORDER BY m.product_id, m.sort_order, m.id"),
+      pool.query("SELECT m.* FROM catalog_media m JOIN catalog_products p ON p.id = m.product_id WHERE p.status = 'published' AND m.media_type = 'image' ORDER BY m.product_id, m.sort_order, m.id"),
       pool.query("SELECT legacy_id, slug FROM catalog_products WHERE status = 'archived'"),
     ]);
     const publicCatalog = serializePublicCatalog(products.rows, variants.rows, media.rows);
@@ -229,6 +309,15 @@ export function createStorefrontSeoRouter(pool) {
         ...urls.map(({ path, updated }) => `  <url><loc>${xmlEscape(absolute(path))}</loc>${updated ? `<lastmod>${new Date(updated).toISOString().slice(0, 10)}</lastmod>` : ""}</url>`),
         "</urlset>", ""].join("\n");
       response.type("application/xml").set("Cache-Control", "public, max-age=60").send(xml);
+    } catch (error) { next(error); }
+  });
+
+  router.get("/yandex-feed.yml", async (_request, response, next) => {
+    try {
+      const { rows, items } = await catalogSnapshot();
+      const feed = renderYandexFeed(rows, items);
+      if (!feed) return response.status(503).set("Cache-Control", "no-store").send("No eligible products");
+      response.type("application/xml").set("Cache-Control", "public, max-age=60").send(feed);
     } catch (error) { next(error); }
   });
 
